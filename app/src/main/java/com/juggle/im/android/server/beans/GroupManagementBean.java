@@ -2,7 +2,21 @@ package com.juggle.im.android.server.beans;
 
 import com.google.gson.annotations.SerializedName;
 
+/**
+ * 群组管理Bean
+ */
 public class GroupManagementBean {
+    @SerializedName("group_mute")
+    private int groupMute;
+    @SerializedName("max_admin_count")
+    private int maxAdminCount;
+    @SerializedName("admin_count")
+    private int adminCount;
+    @SerializedName("group_verify_type")
+    private int groupVerifyType;
+    @SerializedName("group_his_msg_visible")
+    private int historyMessageVisible;
+
     public int getGroupMute() {
         return groupMute;
     }
@@ -42,16 +56,4 @@ public class GroupManagementBean {
     public void setHistoryMessageVisible(int historyMessageVisible) {
         this.historyMessageVisible = historyMessageVisible;
     }
-
-    @SerializedName("group_mute")
-    private int groupMute;
-    @SerializedName("max_admin_count")
-    private int maxAdminCount;
-    @SerializedName("admin_count")
-    private int adminCount;
-    @SerializedName("group_verify_type")
-    private int groupVerifyType;
-    @SerializedName("group_his_msg_visible")
-    private int historyMessageVisible;
-
 }

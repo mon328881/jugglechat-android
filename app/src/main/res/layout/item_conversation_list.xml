@@ -4,68 +4,78 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="@color/white"
-    android:paddingLeft="12dp"
+    android:background="@android:color/white"
+    android:paddingStart="16dp"
+    android:paddingEnd="16dp"
     android:paddingTop="12dp"
-    android:paddingRight="12dp">
+    android:paddingBottom="12dp">
 
+    <!-- 头像容器 -->
     <FrameLayout
         android:id="@+id/avatar_container"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
+        android:layout_width="52dp"
+        android:layout_height="52dp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
+        <!-- 头像 -->
         <ImageView
             android:id="@+id/iv_avatar"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_margin="0dp"
             android:adjustViewBounds="true"
-            android:background="@android:color/transparent"
+            android:background="@drawable/avatar_circle_bg"
             android:clipToOutline="true"
-            android:contentDescription="avatar"
-            android:rotation="0"
-            android:scaleType="centerCrop"
-            android:useLevel="false" />
+            android:contentDescription="@string/avatar"
+            android:scaleType="centerCrop" />
 
+        <!-- 未读徽章 -->
         <TextView
-            android:id="@+id/unread_dot"
-            android:layout_width="21dp"
+            android:id="@+id/unread_badge"
+            android:layout_width="20dp"
             android:layout_height="20dp"
             android:layout_gravity="top|end"
-            android:layout_marginTop="0dp"
-            android:layout_marginEnd="0dp"
-            android:background="@drawable/red_circle_bg"
+            android:layout_marginTop="-2dp"
+            android:layout_marginEnd="-2dp"
+            android:background="@drawable/badge_circle_red"
             android:gravity="center"
-            android:text="99"
-            android:textColor="@color/white"
-            android:textSize="10sp" />
-
+            android:textColor="@android:color/white"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:visibility="gone"
+            tools:text="2"
+            tools:visibility="visible" />
     </FrameLayout>
 
+    <!-- 聊天名称 -->
     <TextView
         android:id="@+id/tv_name"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="12dp"
-        android:textColor="@color/title"
+        android:layout_marginEnd="8dp"
+        android:textColor="#000000"
         android:textSize="16sp"
+        android:textStyle="bold"
+        android:ellipsize="end"
+        android:maxLines="1"
         app:layout_constraintEnd_toStartOf="@id/tv_time"
         app:layout_constraintStart_toEndOf="@id/avatar_container"
         app:layout_constraintTop_toTopOf="@id/avatar_container"
-        tools:text="群聊名称" />
+        tools:text="林锐" />
 
+    <!-- 时间戳 -->
     <TextView
         android:id="@+id/tv_time"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textColor="@android:color/darker_gray"
+        android:textColor="#999999"
         android:textSize="12sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="@id/tv_name"
-        tools:text="12:34" />
+        tools:text="下午 2:15" />
 
+    <!-- 最后一条消息容器 -->
     <LinearLayout
         android:id="@+id/last_msg_container"
         android:layout_width="0dp"
@@ -77,53 +87,80 @@
         app:layout_constraintStart_toStartOf="@id/tv_name"
         app:layout_constraintTop_toBottomOf="@id/tv_name">
 
+        <!-- 消息状态指示 -->
         <FrameLayout
             android:layout_gravity="center_vertical"
-            android:paddingEnd="2dp"
+            android:paddingEnd="4dp"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content">
 
             <ProgressBar
                 android:id="@+id/msg_progress"
-                android:indeterminateDrawable="@drawable/msg_loading"
-                style="?android:attr/progressBarStyleSmallInverse"
-                android:layout_width="15dp"
-                android:layout_height="15dp"
+                style="?android:attr/progressBarStyleSmall"
+                android:layout_width="14dp"
+                android:layout_height="14dp"
                 android:visibility="gone"
-                android:layout_gravity="center" />
+                android:layout_gravity="center"
+                android:indeterminate="true" />
 
             <ImageView
                 android:id="@+id/iv_msg_status"
-                android:layout_width="15dp"
-                android:layout_height="15dp"
+                android:layout_width="14dp"
+                android:layout_height="14dp"
                 android:layout_gravity="center"
                 android:visibility="gone"
-                android:src="@drawable/ic_send_error"/>
+                android:src="@drawable/ic_send_error"
+                android:contentDescription="@string/message_status" />
         </FrameLayout>
 
+        <!-- 最后一条消息 -->
         <TextView
             android:id="@+id/tv_last_message"
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_weight="1"
             android:ellipsize="end"
             android:maxLines="1"
+            android:textColor="#999999"
             android:textSize="14sp"
-            tools:text="最后一条消息内容" />
+            tools:text="我已经把2026年Q1的产品报告发到..." />
     </LinearLayout>
 
+    <!-- 置顶图标 -->
+    <ImageView
+        android:id="@+id/iv_top"
+        android:layout_width="16dp"
+        android:layout_height="16dp"
+        android:layout_marginStart="8dp"
+        android:src="@drawable/ic_top"
+        android:contentDescription="@string/top"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toBottomOf="@id/last_msg_container"
+        app:tint="#999999" />
+
+    <!-- 静音图标 -->
     <ImageView
         android:id="@+id/iv_mute"
         android:layout_width="16dp"
         android:layout_height="16dp"
+        android:layout_marginStart="8dp"
         android:src="@drawable/ic_mute"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tv_name" />
+        android:contentDescription="@string/mute"
+        android:visibility="gone"
+        app:layout_constraintEnd_toStartOf="@id/iv_top"
+        app:layout_constraintBottom_toBottomOf="@id/last_msg_container"
+        app:tint="#999999" />
 
+    <!-- 底部分隔线 -->
     <View
-        android:layout_width="match_parent"
+        android:id="@+id/divider"
+        android:layout_width="0dp"
         android:layout_height="0.5dp"
-        android:layout_marginStart="50dp"
-        android:layout_marginTop="10dp"
-        android:background="@color/divider"
-        app:layout_constraintTop_toBottomOf="@id/last_msg_container" />
+        android:layout_marginTop="12dp"
+        android:background="#F0F0F0"
+        app:layout_constraintTop_toBottomOf="@id/last_msg_container"
+        app:layout_constraintStart_toStartOf="@id/tv_name"
+        app:layout_constraintEnd_toEndOf="parent" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>

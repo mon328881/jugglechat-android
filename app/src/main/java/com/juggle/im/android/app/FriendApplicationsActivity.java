@@ -63,7 +63,7 @@ public class FriendApplicationsActivity extends AppCompatActivity {
             @Override
             public void onError(int code, String message) {
                 progressBar.setVisibility(View.GONE);
-                Toast.makeText(FriendApplicationsActivity.this, "Failed to load: " + message, Toast.LENGTH_SHORT)
+                Toast.makeText(FriendApplicationsActivity.this, "加载失败: " + message, Toast.LENGTH_SHORT)
                         .show();
             }
         });
@@ -92,35 +92,35 @@ public class FriendApplicationsActivity extends AppCompatActivity {
         public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
             FriendApplicationBean app = items.get(position);
 
-            // Set nickname
+            // 设置昵称
             if (app.getUserInfo() != null) {
                 holder.tvNickname.setText(app.getUserInfo().getNickname());
                 AvatarUtils.loadAvatar(holder.ivAvatar, app.getUserInfo().getAvatar(), app.getUserInfo().getNickname());
             }
 
-            // Set description based on is_sponsor
+            // 根据is_sponsor设置描述
             if (app.isSponsor()) {
-                holder.tvDescription.setText("You applied");
+                holder.tvDescription.setText("你申请了");
             } else {
-                holder.tvDescription.setText("Applied to add you");
+                holder.tvDescription.setText("申请添加你");
             }
 
-            // Set status text based on status code
-            // 0: Applying, 1: Agreed, 2: Rejected, 3: Expired
+            // 根据状态码设置状态文本
+            // 0: 申请中, 1: 已同意, 2: 已拒绝, 3: 已过期
             String statusText;
             switch (app.getStatus()) {
                 case 1:
-                    statusText = "Added";
+                    statusText = "已添加";
                     break;
                 case 2:
-                    statusText = "Rejected";
+                    statusText = "已拒绝";
                     break;
                 case 3:
-                    statusText = "Expired";
+                    statusText = "已过期";
                     break;
                 case 0:
                 default:
-                    statusText = "Applying";
+                    statusText = "申请中";
                     break;
             }
             holder.tvStatus.setText(statusText);

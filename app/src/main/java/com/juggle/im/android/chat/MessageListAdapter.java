@@ -304,6 +304,7 @@ public class MessageListAdapter extends ListAdapter<UiMessage, RecyclerView.View
             View vRecall = popupView.findViewById(R.id.action_recall);
             View vTop = popupView.findViewById(R.id.action_top);
             View vEdit = popupView.findViewById(R.id.action_edit);
+            View vCollect = popupView.findViewById(R.id.action_collect);
 
 
             if (ui.getMessage().getDirection() == Message.MessageDirection.SEND) {
@@ -342,6 +343,11 @@ public class MessageListAdapter extends ListAdapter<UiMessage, RecyclerView.View
             vRecall.setOnClickListener(v -> {
                 pw.dismiss();
                 actionListener.onMessageAction(ui, Action.RECALL);
+            });
+            vCollect.setOnClickListener(v -> {
+                pw.dismiss();
+                // 收藏功能暂未实现，可以在这里添加
+                android.widget.Toast.makeText(anchor.getContext(), "收藏功能开发中", android.widget.Toast.LENGTH_SHORT).show();
             });
         }
     }

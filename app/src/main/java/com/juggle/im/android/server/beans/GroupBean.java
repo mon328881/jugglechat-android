@@ -1,19 +1,14 @@
 package com.juggle.im.android.server.beans;
 
+/**
+ * 群组Bean
+ */
 public class GroupBean {
-
-
-    /**
-     * group_id : z2ZpzuwPQ
-     * group_name : test1
-     * group_portrait : https://n.sinaimg.cn/sinakd20116/524/w662h662/20240323/f976-72df1b4969a54b98722af12d17d4c5e7.jpg
-     * members : null
-     * is_notify : false
-     */
-
     private String group_id;
     private String group_name;
     private String group_portrait;
+    private String creator_id;  // 群组创建者ID
+    private boolean is_creator; // 是否是创建者
 
     public String getGroup_id() {
         return group_id;
@@ -37,5 +32,21 @@ public class GroupBean {
 
     public void setGroup_portrait(String group_portrait) {
         this.group_portrait = group_portrait;
+    }
+
+    public String getCreator_id() {
+        return creator_id;
+    }
+
+    public void setCreator_id(String creator_id) {
+        this.creator_id = creator_id;
+    }
+
+    public boolean isIs_creator() {
+        return is_creator;
+    }
+
+    public void setIs_creator(boolean is_creator) {
+        this.is_creator = is_creator;
     }
 }

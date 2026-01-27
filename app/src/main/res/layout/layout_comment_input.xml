@@ -4,30 +4,35 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="horizontal"
-    android:padding="8dp"
+    android:padding="12dp"
     android:layout_gravity="bottom"
     android:gravity="center_vertical"
-    android:background="@drawable/rectangle_bg_5"
+    android:background="@android:color/white"
     android:layout_margin="0dp">
 
     <EditText
         android:id="@+id/edit_comment"
         android:layout_width="0dp"
-        android:layout_height="45dp"
+        android:layout_height="40dp"
         android:layout_weight="1"
         android:hint="@string/txt_post_comment"
-        android:background="@color/white"
-        android:padding="8dp"
+        android:background="@drawable/bg_comment_input"
+        android:paddingHorizontal="12dp"
+        android:paddingVertical="8dp"
+        android:textSize="14sp"
+        android:textColor="#333333"
+        android:textColorHint="#999999"
         android:imeOptions="actionSend" />
 
     <TextView
         android:id="@+id/btn_send_comment"
         android:layout_width="wrap_content"
-        android:layout_height="48dp"
+        android:layout_height="40dp"
+        android:layout_marginStart="12dp"
         android:gravity="center"
-        android:paddingLeft="12dp"
-        android:paddingRight="12dp"
+        android:paddingHorizontal="16dp"
         android:text="发送"
-        android:textColor="#007AFF" />
+        android:textColor="#007AFF"
+        android:textSize="14sp" />
 
 </LinearLayout>

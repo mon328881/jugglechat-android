@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg_light"
+    android:gravity="center_horizontal"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <ImageView
+        android:id="@+id/iv_qrcode"
+        android:layout_width="240dp"
+        android:layout_height="240dp"
+        android:layout_marginTop="32dp"
+        android:contentDescription="@string/cd_qrcode_share"
+        android:scaleType="fitCenter"
+        tools:src="@drawable/default_avatar" />
+
+    <TextView
+        android:id="@+id/tv_nickname"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:textColor="@color/title"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        tools:text="用户昵称" />
+
+    <TextView
+        android:id="@+id/tv_user_id"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:textColor="@color/gray"
+        android:textSize="14sp"
+        tools:text="@user_id" />
+
+    <TextView
+        android:id="@+id/tv_hint_app"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:gravity="center"
+        android:text="@string/qrcode_share_hint_app"
+        android:textColor="@color/title"
+        android:textSize="14sp" />
+
+    <TextView
+        android:id="@+id/tv_hint_web"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:gravity="center"
+        android:text="@string/qrcode_share_hint_web"
+        android:textColor="@color/gray"
+        android:textSize="12sp" />
+</LinearLayout>

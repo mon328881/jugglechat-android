@@ -1,5 +1,8 @@
 package com.juggle.im.android.server.beans;
 
+/**
+ * 验证码请求Bean
+ */
 public class CodeRequest {
     private String phone;
     private String email;

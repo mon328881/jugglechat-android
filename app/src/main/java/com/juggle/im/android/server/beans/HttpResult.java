@@ -2,6 +2,9 @@ package com.juggle.im.android.server.beans;
 
 import com.juggle.im.android.server.http.ApiException;
 
+/**
+ * HTTP响应结果包装类
+ */
 public class HttpResult<T> {
     private int code;
     private String msg;

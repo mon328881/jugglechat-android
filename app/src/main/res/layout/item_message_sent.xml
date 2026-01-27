@@ -4,18 +4,19 @@
     android:layout_height="wrap_content"
     xmlns:tools="http://schemas.android.com/tools"
     android:orientation="horizontal"
-    android:padding="6dp">
+    android:padding="8dp">
 
-    <!-- selection checkbox, hidden by default -->
+    <!-- 选择复选框，默认隐藏 -->
     <ImageView
         android:id="@+id/image_select_box"
         android:layout_width="36dp"
         android:layout_height="36dp"
         android:layout_gravity="start|center_vertical"
         android:layout_marginEnd="8dp"
-        android:contentDescription="select"
+        android:contentDescription="@string/select"
         android:padding="8dp"
-        android:src="@drawable/ic_checkbox_unselect" />
+        android:src="@drawable/ic_checkbox_unselect"
+        android:visibility="gone" />
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -23,33 +24,37 @@
         android:gravity="end"
         android:orientation="vertical">
 
+        <!-- 消息内容行 -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="end"
             android:orientation="horizontal">
 
+            <!-- 发送错误图标 -->
             <ImageView
                 android:id="@+id/send_error"
                 android:layout_width="18dp"
                 android:layout_height="18dp"
                 android:layout_gravity="start|center_vertical"
                 android:layout_marginEnd="8dp"
-                android:contentDescription="select"
+                android:contentDescription="@string/send_error"
                 android:src="@drawable/ic_send_error"
-                android:visibility="gone" />
+                android:visibility="gone"
+                android:tint="?attr/colorError" />
 
+            <!-- 发送进度 -->
             <ProgressBar
                 android:id="@+id/msg_send_status"
-                android:indeterminateDrawable="@drawable/msg_loading"
-                style="?android:attr/progressBarStyleSmallInverse"
-                android:layout_width="20dp"
-                android:layout_height="20dp"
+                style="?android:attr/progressBarStyleSmall"
+                android:layout_width="18dp"
+                android:layout_height="18dp"
                 android:layout_gravity="start|center_vertical"
+                android:layout_marginEnd="8dp"
                 android:indeterminate="true"
-                android:indeterminateTint="@color/black"
                 android:visibility="gone" />
 
+            <!-- 消息气泡容器 -->
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -57,45 +62,56 @@
                 android:gravity="end"
                 android:orientation="vertical">
 
-                <!-- container where a single content layout will be inflated at runtime -->
+                <!-- 消息内容容器 -->
                 <LinearLayout
-                    android:orientation="vertical"
                     android:id="@+id/message_content_container"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:background="@drawable/bg_message_sent" />
+                    android:orientation="vertical"
+                    android:background="@drawable/bg_message_sent_bubble"
+                    android:padding="12dp" />
             </LinearLayout>
 
+            <!-- 用户头像 -->
             <ImageView
                 android:id="@+id/image_avatar"
                 android:layout_width="40dp"
                 android:layout_height="40dp"
-                android:contentDescription="avatar"
-                android:src="@drawable/ic_avatar_placeholder" />
+                android:contentDescription="@string/avatar"
+                android:src="@drawable/ic_avatar_placeholder"
+                android:scaleType="centerCrop"
+                android:clipToOutline="true" />
 
         </LinearLayout>
 
+        <!-- 消息状态容器 -->
         <LinearLayout
             android:id="@+id/msg_status_container"
             android:layout_width="wrap_content"
             android:layout_height="24dp"
-            android:layout_marginRight="40dp"
+            android:layout_marginRight="48dp"
+            android:layout_marginTop="4dp"
             android:gravity="center_vertical|end"
             android:orientation="horizontal">
 
+            <!-- 发送时间 -->
             <TextView
                 android:id="@+id/msg_sent_time"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                tools:text="10:01"
-                android:textColor="@color/gray"
-                android:textSize="10sp" />
+                android:layout_marginEnd="4dp"
+                android:textColor="?attr/colorOnSurfaceVariant"
+                android:textSize="10sp"
+                tools:text="10:01" />
 
+            <!-- 已读状态 -->
             <ImageView
                 android:id="@+id/msg_read_status"
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:src="@drawable/ic_msg_read" />
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:src="@drawable/ic_msg_read"
+                android:contentDescription="@string/message_status"
+                android:tint="?attr/colorPrimary" />
         </LinearLayout>
     </LinearLayout>
 

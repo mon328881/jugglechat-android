@@ -2,7 +2,18 @@ package com.juggle.im.android.server.beans;
 
 import com.google.gson.annotations.SerializedName;
 
+/**
+ * 用户信息Bean
+ */
 public class UserInfoBean {
+    @SerializedName("user_id")
+    private String userId;
+    private String nickname;
+    private String avatar;
+    private String phone;
+    @SerializedName("is_friend")
+    private boolean isFriend;
+
     public String getUserId() {
         return userId;
     }
@@ -42,12 +53,4 @@ public class UserInfoBean {
     public void setFriend(boolean friend) {
         isFriend = friend;
     }
-
-    @SerializedName("user_id")
-    private String userId;
-    private String nickname;
-    private String avatar;
-    private String phone;
-    @SerializedName("is_friend")
-    private boolean isFriend;
 }

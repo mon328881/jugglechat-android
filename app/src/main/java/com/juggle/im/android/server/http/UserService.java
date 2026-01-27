@@ -5,10 +5,8 @@ import com.juggle.im.android.server.beans.*;
 import java.util.List;
 
 /**
- * Plain interface for user-related API operations. Implementations should
- * perform
- * network requests and invoke the provided {@link ApiCallback} on the UI
- * thread.
+ * 用户相关API操作接口
+ * 实现类应该执行网络请求并在UI线程上调用提供的ApiCallback
  */
 public interface UserService {
     void getSmsVerificationCode(CodeRequest phone, ApiCallback<Void> callback);
@@ -24,13 +22,13 @@ public interface UserService {
     void getQRCode(ApiCallback<QRCodeBean> callback);
 
     /**
-     * Get friends list with optional pagination and order tag (pinyin initial).
-     * page starts from 1, size default 20, max 50.
+     * 获取好友列表，支持分页和排序
+     * page从1开始，size默认20，最大50
      */
     void getFriendsList(Integer page, Integer size, String orderTag, ApiCallback<FriendsListData> callback);
 
     /**
-     * Search users by keyword. POST /jim/users/search {keyword: "..."}
+     * 按关键词搜索用户
      */
     void searchUsers(String keyword, ApiCallback<FriendsListData> callback);
 
@@ -39,32 +37,37 @@ public interface UserService {
     void searchMyGroups(String keyword, int limit, ApiCallback<GroupListData> callback);
 
     /**
-     * Apply (send friend request) to a user. POST /jim/friends/apply {friend_id:
-     * "..."}
+     * 申请添加好友
      */
-    void applyFriend(String friendId, ApiCallback<com.juggle.im.android.server.beans.FriendApplicationBean> callback);
+    void applyFriend(String friendId, ApiCallback<FriendApplicationBean> callback);
 
     /**
-     * Create a group with name, portrait and members. POST /jim/groups/add
+     * 创建群组
      */
-    void createGroup(Object body, ApiCallback<com.juggle.im.android.server.beans.CreateGroupResult> callback);
-
-    public void getGroupInfo(String groupId, ApiCallback<GroupDetailBean> callback);
+    void createGroup(Object body, ApiCallback<CreateGroupResult> callback);
 
     /**
-     * 加群
-     * 
-     * @param groupId
-     * @param userIds
-     * @param callback
+     * 获取群组信息
      */
-    public void inviteJoinGroup(String groupId, List<String> userIds, ApiCallback<Void> callback);
+    void getGroupInfo(String groupId, ApiCallback<GroupDetailBean> callback);
 
     /**
-     * Get friend applications list. GET /jim/friends/applications
-     * 
-     * @param start Starting index for pagination
-     * @param count Number of items to fetch (default 50)
+     * 邀请用户加入群组
+     */
+    void inviteJoinGroup(String groupId, List<String> userIds, ApiCallback<Void> callback);
+
+    /**
+     * 获取好友申请列表
      */
     void getFriendApplications(int start, int count, ApiCallback<FriendApplicationsData> callback);
+
+    /**
+     * 确认好友申请（接受或拒绝）
+     */
+    void confirmFriend(String sponsorId, boolean isAgree, ApiCallback<Void> callback);
+
+    /**
+     * 退出群组
+     */
+    void quitGroup(String groupId, ApiCallback<Void> callback);
 }

@@ -5,16 +5,17 @@ import com.google.gson.JsonObject;
 import com.juggle.im.android.server.beans.PostBean;
 import com.juggle.im.android.server.beans.PostsListData;
 
-import org.json.JSONArray;
-
 import java.util.HashMap;
 import java.util.List;
 
+import okhttp3.OkHttpClient;
+
 /**
- * Simple OkHttp based implementation for moment endpoints.
+ * 朋友圈服务实现类
+ * 使用OkHttp执行网络请求
  */
 public class MomentServiceImpl extends BaseService implements MomentService {
-    public MomentServiceImpl(okhttp3.OkHttpClient client, String baseUrl) {
+    public MomentServiceImpl(OkHttpClient client, String baseUrl) {
         super(client, baseUrl);
     }
 
@@ -64,11 +65,20 @@ public class MomentServiceImpl extends BaseService implements MomentService {
     }
 
     @Override
+    public void removeReaction(String postId, String key, ApiCallback<Void> callback) {
+        String url = "/jim/posts/reactions/del";
+        JsonObject body = new JsonObject();
+        body.addProperty("post_id", postId);
+        body.addProperty("key", key);
+        enqueueJson(url, body, Void.class, callback);
+    }
+
+    @Override
     public void deleteComment(List<String> commentIds, ApiCallback<Void> callback) {
         String url = "/jim/posts/comments/del";
         HashMap<String, Object> params = new HashMap<>();
         params.put("comment_ids", commentIds);
-        enqueueJson(url, params, Void.class, callback);;
+        enqueueJson(url, params, Void.class, callback);
     }
 
     @Override
@@ -82,5 +92,4 @@ public class MomentServiceImpl extends BaseService implements MomentService {
         body.add("post_ids", ids);
         enqueueJson(url, body, Void.class, callback);
     }
-
 }

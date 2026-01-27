@@ -272,14 +272,8 @@ public class ConversationListAdapter extends RecyclerView.Adapter<ConversationLi
         UiConversation uiConversation = uiConversations.get(position);
         holder.bind(uiConversation);
         
-        // 设置选中状态
-        if (position == selectedPosition) {
-            holder.itemView.setBackgroundResource(R.color.selected);
-        } else if (uiConversation.isTop()) {
-            holder.itemView.setBackgroundResource(R.color.app_primary_inverse);
-        } else {
-            holder.itemView.setBackgroundResource(android.R.color.transparent);
-        }
+        // 移除选中状态和置顶的背景色，保持统一的白色背景
+        holder.itemView.setBackgroundResource(android.R.color.transparent);
     }
 
     @Override
@@ -317,6 +311,7 @@ public class ConversationListAdapter extends RecyclerView.Adapter<ConversationLi
         private TextView timeView;
         private TextView lastMessageView;
         private ImageView muteView;
+        private ImageView ivTop;
         private ImageView avatarView;
         private TextView unreadDot;
         private ProgressBar progressBar;
@@ -330,8 +325,9 @@ public class ConversationListAdapter extends RecyclerView.Adapter<ConversationLi
             timeView = itemView.findViewById(R.id.tv_time);
             lastMessageView = itemView.findViewById(R.id.tv_last_message);
             muteView = itemView.findViewById(R.id.iv_mute);
+            ivTop = itemView.findViewById(R.id.iv_top);
             avatarView = itemView.findViewById(R.id.iv_avatar);
-            unreadDot = itemView.findViewById(R.id.unread_dot);
+            unreadDot = itemView.findViewById(R.id.unread_badge);  // 修复：使用正确的 ID
             progressBar = itemView.findViewById(R.id.msg_progress);
             ivMsgStatus = itemView.findViewById(R.id.iv_msg_status);
 
@@ -339,22 +335,7 @@ public class ConversationListAdapter extends RecyclerView.Adapter<ConversationLi
             itemView.setOnClickListener(v -> {
                 int position = getAbsoluteAdapterPosition();
                 if (position != RecyclerView.NO_POSITION && listener != null) {
-                    // 添加点击效果
-                    if (selectableItemBackground != null) {
-                        itemView.setBackground(selectableItemBackground);
-                    }
-                    
-                    // 延迟一点时间后恢复原状
-                    itemView.postDelayed(() -> {
-                        if (position == selectedPosition) {
-                            itemView.setBackgroundColor(itemView.getContext().getResources().getColor(R.color.gray));
-                        } else if (uiConversations.size() > position && uiConversations.get(position).isTop()) {
-                            itemView.setBackgroundResource(R.drawable.bg_pinned);
-                        } else {
-                            itemView.setBackgroundResource(android.R.color.transparent);
-                        }
-                    }, 100);
-                    
+                    // 移除点击效果，保持简洁的列表样式
                     listener.onConversationClick(uiConversations.get(position));
                 }
             });
@@ -397,6 +378,9 @@ public class ConversationListAdapter extends RecyclerView.Adapter<ConversationLi
 
             // 设置免打扰图标
             muteView.setVisibility(uiConversation.isMuted() ? VISIBLE : GONE);
+
+            // 设置置顶图标
+            ivTop.setVisibility(uiConversation.isTop() ? VISIBLE : GONE);
 
             // 未读红点（简单样式：如果 unreadCount > 0 则显示）
             if (uiConversation.getUnreadCount() > 0) {

@@ -1,5 +1,8 @@
 package com.juggle.im.android.server.http;
 
+/**
+ * API异常类
+ */
 public class ApiException extends Exception {
     private final int code;
 

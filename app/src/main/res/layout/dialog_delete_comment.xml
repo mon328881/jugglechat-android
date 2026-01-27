@@ -3,7 +3,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:background="@drawable/rectangle_bg">
+    android:background="@android:color/white">
 
     <Button
         android:id="@+id/btn_delete"
@@ -12,11 +12,11 @@
         android:text="@string/txt_del"
         android:background="?android:attr/selectableItemBackground"
         android:textSize="16sp"
-        android:textColor="#FF576B95"/>
+        android:textColor="#FF6B6B"/>
 
     <View
         android:layout_width="match_parent"
-        android:layout_height="8dp"
+        android:layout_height="1dp"
         android:background="#F0F0F0" />
 
     <Button
@@ -24,7 +24,7 @@
         android:background="?android:attr/selectableItemBackground"
         android:layout_width="match_parent"
         android:layout_height="56dp"
-        android:text="取消"
+        android:text="@string/txt_cancel"
         android:textSize="16sp"
         android:textColor="#999999"/>
 

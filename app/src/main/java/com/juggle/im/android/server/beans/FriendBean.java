@@ -1,14 +1,9 @@
 package com.juggle.im.android.server.beans;
 
+/**
+ * 好友Bean
+ */
 public class FriendBean {
-
-    /**
-     * user_id : P6zr6UIVw
-     * nickname : user955118
-     * phone : 15811111111
-     * status : 0
-     * is_friend : false
-     */
     private String user_id;
     private String nickname;
     private String phone;

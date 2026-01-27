@@ -104,6 +104,10 @@ public class BottomNavView extends LinearLayout {
         if (tabMeLabel != null) tabMeLabel.setTextColor(index == 3 ? activeColor : inactiveColor);
     }
 
+    public int getSelectedTab() {
+        return selectedIndex;
+    }
+
     public void setOnTabClickListener(OnTabClickListener listener) {
         this.listener = listener;
     }

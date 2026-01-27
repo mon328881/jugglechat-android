@@ -47,6 +47,8 @@ public class CreatePostActivity extends AppCompatActivity {
     private LinkedHashMap<String, String> mImageUrls = new LinkedHashMap<>();
     private String mVideoUrl = null;
     private static final int REQUEST_CODE_PICK_IMAGES = 1001;
+    private int uploadingCount = 0; // 记录正在上传的图片数量
+    private boolean isSubmitting = false; // 标记是否正在提交
 
     public static void start(Context context) {
         Intent intent = new Intent(context, CreatePostActivity.class);
@@ -85,6 +87,7 @@ public class CreatePostActivity extends AppCompatActivity {
         if (intent != null) {
             ArrayList<String> imageUrls = intent.getStringArrayListExtra("image_urls");
             if (imageUrls != null && !imageUrls.isEmpty()) {
+                uploadingCount = imageUrls.size();
                 for (String path: imageUrls) {
                     mImageUrls.put(path, "");
                     String u = FileUtils.convertContentUriToFile(getApplicationContext(), path);
@@ -92,11 +95,19 @@ public class CreatePostActivity extends AppCompatActivity {
                         @Override
                         public void onSuccess(String s) {
                             mImageUrls.put(path, s);
+                            uploadingCount--;
+                            // 如果所有图片都上传完成且用户已点击发布，则自动提交
+                            if (uploadingCount == 0 && isSubmitting) {
+                                doSubmitPost();
+                            }
                         }
 
                         @Override
                         public void onError(int i) {
                             Log.e("createpost", "error: " + i);
+                            uploadingCount--;
+                            Toast.makeText(CreatePostActivity.this, "图片上传失败", Toast.LENGTH_SHORT).show();
+                            isSubmitting = false;
                         }
                     });
                 }
@@ -127,9 +138,30 @@ public class CreatePostActivity extends AppCompatActivity {
             ArrayList<String> selectedImages = data.getStringArrayListExtra("selected_images");
             if (selectedImages != null && !selectedImages.isEmpty()) {
                 // 添加新选择的图片，最多9张
-                for (String imageUrl : selectedImages) {
+                for (String imagePath : selectedImages) {
                     if (mImageUrls.size() < 9) {
-                        mImageUrls.put(imageUrl, "");
+                        mImageUrls.put(imagePath, "");
+                        uploadingCount++;
+                        String u = FileUtils.convertContentUriToFile(getApplicationContext(), imagePath);
+                        JIM.getInstance().getMessageManager().uploadImage(u, new JIMConst.IResultCallback<String>() {
+                            @Override
+                            public void onSuccess(String s) {
+                                mImageUrls.put(imagePath, s);
+                                uploadingCount--;
+                                // 如果所有图片都上传完成且用户已点击发布，则自动提交
+                                if (uploadingCount == 0 && isSubmitting) {
+                                    doSubmitPost();
+                                }
+                            }
+
+                            @Override
+                            public void onError(int i) {
+                                Log.e("createpost", "error: " + i);
+                                uploadingCount--;
+                                Toast.makeText(CreatePostActivity.this, "图片上传失败", Toast.LENGTH_SHORT).show();
+                                isSubmitting = false;
+                            }
+                        });
                     }
                 }
                 mMediaAdapter.notifyDataSetChanged();
@@ -144,18 +176,44 @@ public class CreatePostActivity extends AppCompatActivity {
             return;
         }
 
+        // 检查是否所有图片都已上传完成
+        boolean allImagesUploaded = true;
+        for (String url : mImageUrls.values()) {
+            if (StringUtils.isBlank(url)) {
+                allImagesUploaded = false;
+                break;
+            }
+        }
+
+        if (!allImagesUploaded) {
+            // 如果还有图片在上传，标记为待提交状态
+            isSubmitting = true;
+            Toast.makeText(this, "图片上传中，请稍候...", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // 所有图片都已上传，执行提交
+        doSubmitPost();
+    }
+
+    private void doSubmitPost() {
+        String content = editPostContent.getText().toString().trim();
+        
         ContentBean postContent = new ContentBean();
         postContent.setText(content);
 
         if (!mImageUrls.isEmpty()) {
             List<ImageBean> images = new ArrayList<>();
             for (String url : mImageUrls.values()) {
-                if (StringUtils.isBlank(url)) continue;
-                ImageBean image = new ImageBean();
-                image.setUrl(url);
-                images.add(image);
+                if (!StringUtils.isBlank(url)) {
+                    ImageBean image = new ImageBean();
+                    image.setUrl(url);
+                    images.add(image);
+                }
             }
-            postContent.setImages(images);
+            if (!images.isEmpty()) {
+                postContent.setImages(images);
+            }
         }
 
         if (!TextUtils.isEmpty(mVideoUrl)) {
@@ -183,6 +241,7 @@ public class CreatePostActivity extends AppCompatActivity {
             @Override
             public void onError(int code, String message) {
                 Toast.makeText(CreatePostActivity.this, "发表失败: " + message, Toast.LENGTH_SHORT).show();
+                isSubmitting = false;
             }
         });
     }

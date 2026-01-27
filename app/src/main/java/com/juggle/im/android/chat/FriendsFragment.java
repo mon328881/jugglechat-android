@@ -16,6 +16,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.juggle.im.JIM;
 import com.juggle.im.android.R;
+import com.juggle.im.android.chat.component.FriendsListAdapter;
 import com.juggle.im.android.chat.component.UserListAdapter;
 import com.juggle.im.android.server.http.ApiCallback;
 import com.juggle.im.android.server.http.ServiceManager;
@@ -42,7 +43,8 @@ public class FriendsFragment extends Fragment {
     private static String MOMENT_NTF = "post_ntf";
 
     private RecyclerView recyclerView;
-    private UserListAdapter adapter;
+    private FriendsListAdapter adapter;
+    private UserListAdapter selectAdapter; // 用于选择模式
     private SelectionListener selectionListener;
     private String selectionMode = UserListAdapter.LIST_MODE_NORMAL;
 
@@ -57,28 +59,39 @@ public class FriendsFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         recyclerView = view.findViewById(R.id.rv_friends_list);
-        adapter = new UserListAdapter();
-        adapter.setMode(selectionMode);
-        adapter.setSelectionChangedListener((item, selected) -> {
-            if (selectionListener != null)
-                selectionListener.onMemberSelected(item, selected);
-        });
+        
+        // 根据模式选择不同的Adapter
+        if (selectionMode.equals(UserListAdapter.LIST_MODE_SELECT_MEMBER)) {
+            // 选择模式，使用UserListAdapter
+            selectAdapter = new UserListAdapter();
+            selectAdapter.setMode(selectionMode);
+            selectAdapter.setSelectionChangedListener((item, selected) -> {
+                if (selectionListener != null)
+                    selectionListener.onMemberSelected(item, selected);
+            });
+            recyclerView.setAdapter(selectAdapter);
+        } else {
+            // 普通模式，使用FriendsListAdapter
+            adapter = new FriendsListAdapter();
+            recyclerView.setAdapter(adapter);
+        }
+        
         recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
-        recyclerView.setAdapter(adapter);
 
         // Set up click listeners for header items
-        View searchFriendsItem = view.findViewById(R.id.search_friends_item);
+        View groupsItem = view.findViewById(R.id.groups_item);
         View newFriendsItem = view.findViewById(R.id.new_friends_item);
 
-        searchFriendsItem.setOnClickListener(v -> {
-            // Navigate to AddFriendActivity
+        // 群组选项
+        groupsItem.setOnClickListener(v -> {
+            // 跳转到群组列表页面
             android.content.Intent intent = new android.content.Intent(requireContext(),
-                    com.juggle.im.android.app.AddFriendActivity.class);
+                    com.juggle.im.android.chat.GroupListActivity.class);
             startActivity(intent);
         });
 
+        // 新朋友选项
         newFriendsItem.setOnClickListener(v -> {
-            // Navigate to FriendApplicationsActivity
             android.content.Intent intent = new android.content.Intent(requireContext(),
                     com.juggle.im.android.app.FriendApplicationsActivity.class);
             startActivity(intent);
@@ -97,8 +110,8 @@ public class FriendsFragment extends Fragment {
     }
 
     public void uncheckUser(String userId) {
-        if (adapter != null)
-            adapter.uncheckUser(userId);
+        if (selectAdapter != null)
+            selectAdapter.uncheckUser(userId);
     }
 
     public interface SelectionListener {
@@ -110,16 +123,34 @@ public class FriendsFragment extends Fragment {
             @Override
             public void onSuccess(FriendsListData data) {
                 List<FriendBean> items = data != null ? data.getItems() : null;
-                List<UserListAdapter.UserInfoObj> memberList = new ArrayList<>();
-                for (FriendBean member : items) {
-                    boolean disabled = false;
-                    UserListAdapter.UserInfoObj userInfoObj = new UserListAdapter.UserInfoObj(disabled);
-                    userInfoObj.setUserId(member.getUser_id());
-                    userInfoObj.setName(member.getNickname());
-                    userInfoObj.setAvatar(member.getAvatar());
-                    memberList.add(userInfoObj);
+                
+                if (selectionMode.equals(UserListAdapter.LIST_MODE_SELECT_MEMBER)) {
+                    // 选择模式，使用UserListAdapter
+                    List<UserListAdapter.UserInfoObj> memberList = new ArrayList<>();
+                    for (FriendBean member : items) {
+                        UserListAdapter.UserInfoObj userInfoObj = new UserListAdapter.UserInfoObj(false);
+                        userInfoObj.setUserId(member.getUser_id());
+                        userInfoObj.setName(member.getNickname());
+                        userInfoObj.setAvatar(member.getAvatar());
+                        memberList.add(userInfoObj);
+                    }
+                    if (selectAdapter != null) {
+                        selectAdapter.setItems(memberList);
+                    }
+                } else {
+                    // 普通模式，使用FriendsListAdapter
+                    List<FriendsListAdapter.FriendItem> friendList = new ArrayList<>();
+                    for (FriendBean member : items) {
+                        FriendsListAdapter.FriendItem friendItem = new FriendsListAdapter.FriendItem();
+                        friendItem.userId = member.getUser_id();
+                        friendItem.name = member.getNickname();
+                        friendItem.avatar = member.getAvatar();
+                        friendList.add(friendItem);
+                    }
+                    if (adapter != null) {
+                        adapter.setFriends(friendList);
+                    }
                 }
-                adapter.setItems(memberList);
             }
 
             @Override

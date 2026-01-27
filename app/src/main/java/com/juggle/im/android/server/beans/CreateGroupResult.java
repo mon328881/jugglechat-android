@@ -1,7 +1,10 @@
 package com.juggle.im.android.server.beans;
 
+/**
+ * 创建群组结果Bean
+ */
 public class CreateGroupResult {
-    String group_id;
+    private String group_id;
 
     public String getGroup_id() {
         return group_id;

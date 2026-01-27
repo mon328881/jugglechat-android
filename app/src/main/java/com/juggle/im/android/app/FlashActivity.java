@@ -24,7 +24,8 @@ public class FlashActivity extends AppCompatActivity {
     private static final String TAG = "FlashActivity";
     private static final String PREFS_NAME = "login_prefs";
     private static final String KEY_EXPIRE_TIME = "expire_time";
-    private static final long TOKEN_VALIDITY_DURATION = 2 * 24 * 60 * 60 * 1000; // 2天
+    // 默认 token 有效期为 30 天（与后端保持一致）
+    private static final long DEFAULT_TOKEN_VALIDITY_DURATION = 30 * 24 * 60 * 60 * 1000;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

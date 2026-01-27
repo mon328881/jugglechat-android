@@ -1,10 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="horizontal"
-    android:padding="6dp">
+    android:padding="8dp">
 
+    <!-- 选择复选框 -->
     <ImageView
         android:id="@+id/image_select_box"
         android:layout_width="36dp"
@@ -14,42 +16,53 @@
         android:padding="8dp"
         android:visibility="gone"
         android:src="@drawable/ic_checkbox_unselect"
-        android:contentDescription="select" />
+        android:contentDescription="@string/select" />
 
+    <!-- 用户头像 -->
     <ImageView
         android:id="@+id/image_avatar"
         android:layout_width="40dp"
         android:layout_height="40dp"
         android:src="@drawable/ic_avatar_placeholder"
-        android:contentDescription="avatar"
-        android:layout_marginEnd="8dp" />
+        android:contentDescription="@string/avatar"
+        android:layout_marginEnd="8dp"
+        android:scaleType="centerCrop"
+        android:clipToOutline="true" />
 
+    <!-- 消息内容容器 -->
     <LinearLayout
         android:orientation="vertical"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content">
 
+        <!-- 发送者名称 -->
         <TextView
             android:id="@+id/text_sender_name"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textSize="12sp"
-            android:textColor="#666666"
-            android:visibility="gone" />
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:visibility="gone"
+            tools:text="张三" />
 
+        <!-- 消息气泡 -->
         <LinearLayout
-            android:background="@drawable/bg_message_received"
             android:id="@+id/message_content_container"
             android:orientation="vertical"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_message_received_bubble"
+            android:padding="12dp" />
 
+        <!-- 消息时间 -->
         <TextView
             android:id="@+id/msg_sent_time"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textColor="@color/gray"
-            android:textSize="10sp" />
+            android:layout_marginTop="4dp"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:textSize="10sp"
+            tools:text="10:01" />
     </LinearLayout>
 
 </LinearLayout>

@@ -10,7 +10,7 @@
         android:layout_width="match_parent"
         android:layout_height="56dp"
         android:padding="16dp"
-        android:background="@android:color/white"
+        android:background="?attr/colorSurface"
         android:foreground="?android:attr/selectableItemBackground">
 
         <ImageView
@@ -18,7 +18,8 @@
             android:layout_height="20dp"
             android:layout_gravity="start|center_vertical"
             android:src="@drawable/tab_friend"
-            android:contentDescription=""/>
+            android:contentDescription="朋友圈"
+            android:tint="?attr/colorOnSurface"/>
 
         <TextView
             android:layout_marginStart="30dp"
@@ -26,14 +27,16 @@
             android:layout_height="wrap_content"
             android:text="朋友圈"
             android:layout_gravity="start|center_vertical"
-            android:textSize="16sp"/>
+            android:textSize="16sp"
+            android:textColor="?attr/colorOnSurface"/>
 
         <ImageView
             android:layout_width="20dp"
             android:layout_height="20dp"
             android:layout_gravity="end|center_vertical"
             android:src="@drawable/ic_right_arrow"
-            android:contentDescription=""/>
+            android:contentDescription="进入朋友圈"
+            android:tint="?attr/colorOnSurfaceVariant"/>
     </FrameLayout>
 
     <!-- placeholder: other discover items could go here -->

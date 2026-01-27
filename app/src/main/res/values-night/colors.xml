@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Material Design 3 - 深色主题颜色 -->
+    <!-- 主要颜色 -->
+    <color name="md3_primary">@color/md3_primary_dark</color>
+    <color name="md3_on_primary">@color/md3_on_primary_dark</color>
+    <color name="md3_primary_container">@color/md3_primary_container_dark</color>
+    <color name="md3_on_primary_container">@color/md3_on_primary_container_dark</color>
+
+    <!-- 辅助颜色 -->
+    <color name="md3_secondary">@color/md3_secondary_dark</color>
+    <color name="md3_on_secondary">@color/md3_on_secondary_dark</color>
+    <color name="md3_secondary_container">@color/md3_secondary_container_dark</color>
+    <color name="md3_on_secondary_container">@color/md3_on_secondary_container_dark</color>
+
+    <!-- 三级颜色 -->
+    <color name="md3_tertiary">@color/md3_tertiary_dark</color>
+    <color name="md3_on_tertiary">@color/md3_on_tertiary_dark</color>
+    <color name="md3_tertiary_container">@color/md3_tertiary_container_dark</color>
+    <color name="md3_on_tertiary_container">@color/md3_on_tertiary_container_dark</color>
+
+    <!-- 背景和表面 -->
+    <color name="md3_background">@color/md3_background_dark</color>
+    <color name="md3_on_background">@color/md3_on_background_dark</color>
+    <color name="md3_surface">@color/md3_surface_dark</color>
+    <color name="md3_on_surface">@color/md3_on_surface_dark</color>
+    <color name="md3_surface_variant">@color/md3_surface_variant_dark</color>
+    <color name="md3_on_surface_variant">@color/md3_on_surface_variant_dark</color>
+
+    <!-- 错误颜色 -->
+    <color name="md3_error">@color/md3_error_dark</color>
+    <color name="md3_on_error">@color/md3_on_error_dark</color>
+    <color name="md3_error_container">@color/md3_error_container_dark</color>
+    <color name="md3_on_error_container">@color/md3_on_error_container_dark</color>
+
+    <!-- 状态颜色 -->
+    <color name="md3_success">#09B83E</color>
+    <color name="md3_warning">#FBC6C4</color>
+    <color name="md3_info">#64B5F6</color>
+
+    <!-- 其他颜色 -->
+    <color name="md3_divider">#3F3F3F</color>
+    <color name="md3_hint">#717182</color>
+    <color name="md3_disabled">#4A4A4A</color>
+
+    <!-- 应用特定颜色 -->
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
+    <color name="gray">#808080</color>
+    <color name="divider">#3F3F3F</color>
+    <color name="app_primary">#ADD8FF</color>
+    <color name="app_primary_inverse">#004B8F</color>
+    <color name="red">#EF4444</color>
+    <color name="call_gray">#505050</color>
+    <color name="call_green">#09B83E</color>
+    <color name="notification_red">#EF4444</color>
+    <color name="input_bg_light">#3F3F3F</color>
+    <color name="background">#1C1B1F</color>
+    <color name="connect_warning">#FBC6C4</color>
+    <color name="selected">#004B8F</color>
+    <color name="call_gb">#505050</color>
+</resources>

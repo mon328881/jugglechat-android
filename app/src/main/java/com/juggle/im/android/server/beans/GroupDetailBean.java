@@ -4,7 +4,27 @@ import com.google.gson.annotations.SerializedName;
 
 import java.util.List;
 
+/**
+ * 群组详情Bean
+ */
 public class GroupDetailBean {
+    @SerializedName("group_id")
+    private String groupId;
+    @SerializedName("group_name")
+    private String groupName;
+    @SerializedName("group_portrait")
+    private String portrait;
+    @SerializedName("member_count")
+    private int memberCount;
+    private List<GroupMemberBean> members;
+    private GroupMemberBean owner;
+    @SerializedName("my_role")
+    private int myRole;
+    @SerializedName("group_management")
+    private GroupManagementBean groupManagement;
+    @SerializedName("grp_display_name")
+    private String groupDisplayName;
+
     public String getGroupId() {
         return groupId;
     }
@@ -76,21 +96,4 @@ public class GroupDetailBean {
     public void setGroupDisplayName(String groupDisplayName) {
         this.groupDisplayName = groupDisplayName;
     }
-
-    @SerializedName("group_id")
-    private String groupId;
-    @SerializedName("group_name")
-    private String groupName;
-    @SerializedName("group_portrait")
-    private String portrait;
-    @SerializedName("member_count")
-    private int memberCount;
-    private List<GroupMemberBean> members;
-    private GroupMemberBean owner;
-    @SerializedName("my_role")
-    private int myRole;
-    @SerializedName("group_management")
-    private GroupManagementBean groupManagement;
-    @SerializedName("grp_display_name")
-    private String groupDisplayName;
 }

@@ -2,6 +2,9 @@ package com.juggle.im.android.server.beans;
 
 import com.google.gson.annotations.SerializedName;
 
+/**
+ * 好友申请Bean
+ */
 public class FriendApplicationBean {
     @SerializedName("target_user")
     private FriendBean userInfo;

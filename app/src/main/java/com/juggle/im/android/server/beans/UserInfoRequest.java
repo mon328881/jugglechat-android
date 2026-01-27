@@ -2,6 +2,9 @@ package com.juggle.im.android.server.beans;
 
 import com.google.gson.annotations.SerializedName;
 
+/**
+ * 用户信息更新请求
+ */
 public class UserInfoRequest {
     @SerializedName("user_id")
     private String userId;

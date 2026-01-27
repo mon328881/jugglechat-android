@@ -3,7 +3,7 @@ package com.juggle.im.android.server.beans;
 import java.util.List;
 
 /**
- * Data wrapper for friends list API: { items: [FriendBean, ...] }
+ * 群组列表数据包装类
  */
 public class GroupListData {
     private List<GroupBean> items;

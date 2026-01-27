@@ -1,17 +1,28 @@
 package com.juggle.im.android.server.http;
+
 import java.io.InputStream;
 import java.security.KeyStore;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
-import javax.net.ssl.*;
+
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.TrustManagerFactory;
+import javax.net.ssl.X509TrustManager;
+
+/**
+ * SSL/TLS辅助类
+ */
 public class SSLHelper {
-    // 获取TrustManager
+    /**
+     * 获取TrustManager
+     */
     public static X509TrustManager getTrustManager(InputStream certInputStream) {
         try {
             CertificateFactory certificateFactory = CertificateFactory.getInstance("X.509");
             X509Certificate certificate = (X509Certificate) certificateFactory.generateCertificate(certInputStream);
 
-            // 创建TrustManager并返回
             KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
             keyStore.load(null, null);
             keyStore.setCertificateEntry("ca", certificate);
@@ -26,7 +37,9 @@ public class SSLHelper {
         }
     }
 
-    // 获取自签名证书的SSL Socket Factory
+    /**
+     * 获取自签名证书的SSL Socket Factory
+     */
     public static SSLSocketFactory getSSLSocketFactory(InputStream certInputStream) {
         try {
             SSLContext sslContext = SSLContext.getInstance("TLS");
@@ -38,7 +51,9 @@ public class SSLHelper {
         }
     }
 
-    // 获取一个信任所有证书的SSL Socket Factory
+    /**
+     * 获取信任所有证书的SSL Socket Factory
+     */
     public static SSLSocketFactory getTrustAllSSLSocketFactory() {
         try {
             SSLContext sslContext = SSLContext.getInstance("TLS");
@@ -63,7 +78,9 @@ public class SSLHelper {
         }
     }
 
-    // 获取一个信任所有证书的TrustManager
+    /**
+     * 获取信任所有证书的TrustManager
+     */
     public static X509TrustManager getTrustAllManager() {
         return new X509TrustManager() {
             @Override

@@ -4,6 +4,9 @@ import com.google.gson.annotations.SerializedName;
 
 import java.util.Objects;
 
+/**
+ * 群组成员Bean
+ */
 public class GroupMemberBean {
     @SerializedName("user_id")
     private String userId;

@@ -2,62 +2,91 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical">
+    android:orientation="vertical"
+    android:background="@color/white">
 
-    <!-- Header -->
+    <!-- 标题栏 -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:orientation="horizontal"
+        android:layout_height="56dp"
+        android:gravity="center_vertical"
         android:paddingStart="16dp"
         android:paddingEnd="16dp"
-        android:background="@color/primary_bg_light"
-        android:gravity="center_vertical">
+        android:background="@color/white"
+        android:orientation="horizontal">
 
         <TextView
             android:id="@+id/tv_cancel"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="取消"
+            android:textColor="@color/title"
             android:textSize="16sp"
-            android:textColor="@android:color/white" />
+            android:padding="8dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless" />
 
         <TextView
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="更改昵称"
-            android:layout_gravity="center"
-            android:gravity="center"
+            android:text="编辑昵称"
+            android:textColor="@color/title"
             android:textSize="18sp"
             android:textStyle="bold"
-            android:textColor="@android:color/white" />
+            android:gravity="center" />
 
         <TextView
             android:id="@+id/tv_save"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="保存"
+            android:textColor="#1E90FF"
             android:textSize="16sp"
-            android:textColor="@android:color/white" />
+            android:padding="8dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless" />
     </LinearLayout>
 
     <View
         android:layout_width="match_parent"
         android:layout_height="0.5dp"
-        android:background="@color/divider" />
+        android:background="#E0E0E0" />
 
-    <EditText
-        android:id="@+id/et_nickname"
+    <!-- 内容区域 -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_margin="16dp"
-        android:padding="12dp"
-        android:background="@drawable/shape_white_corner"
-        android:hint="请输入昵称"
-        android:textSize="16sp"
-        android:textColor="@android:color/black"
-        android:textColorHint="@android:color/darker_gray"
-        android:maxLength="20" />
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="昵称"
+            android:textColor="@color/title"
+            android:textSize="14sp"
+            android:layout_marginBottom="8dp" />
+
+        <EditText
+            android:id="@+id/et_nickname"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:hint="请输入昵称"
+            android:textColor="@color/title"
+            android:textColorHint="@color/gray"
+            android:textSize="16sp"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:background="@drawable/bg_profile_card"
+            android:inputType="text"
+            android:maxLength="20" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="最多20个字符"
+            android:textColor="@color/gray"
+            android:textSize="12sp"
+            android:layout_marginTop="8dp" />
+    </LinearLayout>
 
 </LinearLayout>

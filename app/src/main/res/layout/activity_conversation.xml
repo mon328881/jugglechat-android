@@ -29,7 +29,7 @@
             android:layout_weight="1"
             android:gravity="center"
             android:text="@string/history_messages"
-            android:textColor="@color/white"
+            android:textColor="?attr/colorOnPrimary"
             android:textSize="18sp"
             android:textStyle="bold" />
 
@@ -53,7 +53,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
-        android:background="@color/white"
+        android:background="?attr/colorSurface"
         android:minHeight="58dp" />
 
     <FrameLayout

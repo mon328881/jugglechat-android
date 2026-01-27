@@ -54,6 +54,7 @@ public class ConversationListFragment extends Fragment implements ConversationLi
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+        
         conversationListView = view.findViewById(R.id.rv_conversation_list);
         conversationListAdapter = new ConversationListAdapter();
         conversationListAdapter.setOnConversationClickListener(this);

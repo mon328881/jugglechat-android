@@ -16,9 +16,7 @@
             android:layout_width="match_parent"
             android:layout_height="250dp"
             android:fitsSystemWindows="true"
-            app:collapsedTitleTextAppearance="@style/TitleTextAppearance"
             app:contentScrim="@android:color/white"
-            app:expandedTitleTextAppearance="@style/NoTitleTextAppearance"
             app:layout_scrollFlags="scroll|exitUntilCollapsed">
             <!-- 添加背景图片 -->
             <ImageView
@@ -36,25 +34,29 @@
                 android:layout_gravity="bottom"
                 android:gravity="end|bottom"
                 android:orientation="horizontal"
-                android:padding="5dp">
+                android:padding="16dp">
 
                 <TextView
                     android:id="@+id/tv_name"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="start|center_vertical"
-                    android:padding="15dp"
-                    android:textSize="20sp"
+                    android:padding="12dp"
+                    android:textSize="18sp"
                     android:textStyle="bold"
+                    android:textColor="@android:color/white"
                     tools:text="xxx" />
 
                 <ImageView
                     android:id="@+id/iv_avatar"
-                    android:layout_width="80dp"
-                    android:layout_height="80dp"
+                    android:layout_width="72dp"
+                    android:layout_height="72dp"
                     android:layout_gravity="end|bottom"
-                    android:background="@android:color/transparent"
-                    android:src="@drawable/ic_avatar_placeholder" />
+                    android:layout_marginEnd="8dp"
+                    android:background="@drawable/bg_avatar_circle_white"
+                    android:src="@drawable/ic_avatar_placeholder"
+                    android:scaleType="centerCrop"
+                    android:clipToOutline="true" />
             </LinearLayout>
 
             <androidx.appcompat.widget.Toolbar
@@ -63,9 +65,7 @@
                 android:layout_height="48dp"
                 android:background="@color/primary_bg_light"
                 android:gravity="center"
-                app:layout_collapseMode="pin"
-                app:title="朋友圈"
-                app:titleTextColor="@color/white">
+                app:layout_collapseMode="pin">
 
                 <ImageView
                     android:id="@+id/btn_camera"
@@ -91,7 +91,8 @@
             android:id="@+id/rv_moments"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:fitsSystemWindows="true" />
+            android:fitsSystemWindows="true"
+            android:background="#FAFAFA" />
 
     </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 

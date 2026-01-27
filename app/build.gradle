@@ -14,6 +14,11 @@ android {
         versionName "1.0"
         multiDexEnabled true
         namespace "com.juggle.im.android"
+        manifestPlaceholders = [
+                JPUSH_PKGNAME: "com.juggle.im.android",
+                JPUSH_APPKEY : "d381f2fe7e594b7f28d42986",
+                JPUSH_CHANNEL: "developer-default"
+        ]
         ndk {
             abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64'
         }
@@ -106,4 +111,17 @@ dependencies {
     implementation 'com.juggle.call.zego:juggle:1.8.25'
     implementation 'im.zego:express-video:3.17.3'
 
+    // 腾讯地图
+    // 腾讯地图 Android 向量 SDK（版本号可按官网更新）
+    implementation 'com.tencent.map:tencent-map-vector-sdk:5.7.0'
+
+    // 视频播放（朋友圈视频、mp4/m3u8）
+    implementation 'com.google.android.exoplayer:exoplayer:2.19.1'
+
+    // 极光推送
+    implementation 'cn.jiguang.sdk:jpush:6.0.1'
+    // JuggleIM 极光推送插件（请将 JGPlugin.aar 放到 app/libs 目录）
+    implementation files('libs/JGPlugin-release.aar')
+
+    implementation 'com.belerweb:pinyin4j:2.5.1'
 }

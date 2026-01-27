@@ -1,5 +1,8 @@
 package com.juggle.im.android.server.beans;
 
+/**
+ * 登录结果Bean
+ */
 public class LoginResult {
     private String user_id;
     private String authorization;
@@ -7,6 +10,7 @@ public class LoginResult {
     private String avatar;
     private int status;
     private String im_token;
+    private long expires_in;  // Token 过期时间（秒）
 
     public String getUser_id() {
         return user_id;
@@ -54,5 +58,13 @@ public class LoginResult {
 
     public void setIm_token(String im_token) {
         this.im_token = im_token;
+    }
+
+    public long getExpires_in() {
+        return expires_in;
+    }
+
+    public void setExpires_in(long expires_in) {
+        this.expires_in = expires_in;
     }
 }

@@ -4,51 +4,69 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/background"
+    android:background="#F5F5F5"
     android:orientation="vertical">
 
+    <!-- 顶部群组信息区域 -->
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/cl_group_info"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@drawable/profile_cover"
-        tools:visibility="visible">
+        android:layout_height="280dp"
+        android:background="@drawable/profile_cover">
 
+        <!-- 返回按钮 -->
         <ImageView
             android:id="@+id/iv_back"
             android:layout_width="36dp"
             android:layout_height="36dp"
-            android:layout_marginStart="8dp"
-            android:layout_marginTop="8dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="16dp"
             android:src="@drawable/ic_back_white"
+            android:contentDescription="返回"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
+        <!-- 编辑按钮 -->
+        <ImageView
+            android:id="@+id/iv_edit"
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:layout_marginTop="16dp"
+            android:layout_marginEnd="16dp"
+            android:src="@drawable/ic_edit"
+            android:contentDescription="编辑"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <!-- 群头像 -->
         <ImageView
             android:id="@+id/iv_group_avatar"
             android:layout_width="80dp"
             android:layout_height="80dp"
+            android:layout_marginTop="40dp"
             android:src="@drawable/default_avatar"
-            app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintVertical_bias="0.4" />
+            app:layout_constraintTop_toTopOf="parent" />
 
+
+        <!-- 群名称 -->
         <TextView
             android:id="@+id/tv_group_name"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
+            android:layout_marginTop="12dp"
             android:textColor="@color/white"
             android:textSize="18sp"
             android:textStyle="bold"
-            style="?android:attr/textAppearanceSmall"
-            app:layout_constraintEnd_toEndOf="@+id/iv_group_avatar"
-            app:layout_constraintStart_toStartOf="@+id/iv_group_avatar"
+            android:maxLines="1"
+            android:ellipsize="end"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/iv_group_avatar"
-            tools:text="Group Name" />
+            tools:text="啊呀、abdullah、c..." />
 
+        <!-- 成员数 -->
         <TextView
             android:id="@+id/tv_member_count"
             android:layout_width="wrap_content"
@@ -56,212 +74,239 @@
             android:layout_marginTop="4dp"
             android:textColor="@color/white"
             android:textSize="14sp"
-            app:layout_constraintEnd_toEndOf="@id/tv_group_name"
-            app:layout_constraintStart_toStartOf="@id/tv_group_name"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/tv_group_name"
-            tools:text="361 members" />
+            tools:text="5 个成员" />
 
+        <!-- 快捷按钮区域 -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
             android:gravity="center"
             android:orientation="horizontal"
-            app:layout_constraintEnd_toEndOf="@id/tv_member_count"
-            app:layout_constraintStart_toStartOf="@id/tv_member_count"
             app:layout_constraintTop_toBottomOf="@id/tv_member_count">
 
-            <TextView
+            <!-- 置顶 -->
+            <LinearLayout
                 android:id="@+id/btn_pin"
-                android:layout_width="100dp"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                style="?android:attr/textAppearanceSmall"
-                android:layout_margin="5dp"
-                android:background="@drawable/rectangle_primary_bg_5"
-                android:drawableTop="@drawable/ic_pin"
-                android:drawablePadding="4dp"
+                android:layout_weight="1"
                 android:gravity="center"
-                android:padding="8dp"
-                android:text="置顶"
-                android:textColor="@color/white"
-                android:textSize="14sp" />
+                android:orientation="vertical"
+                android:padding="8dp">
 
-            <TextView
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/ic_pin"
+                    android:contentDescription="置顶" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="置顶"
+                    android:textColor="@color/white"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
+            <!-- 免打扰 -->
+            <LinearLayout
                 android:id="@+id/btn_mute"
-                android:layout_width="100dp"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                style="?android:attr/textAppearanceSmall"
-                android:layout_margin="5dp"
-                android:background="@drawable/rectangle_primary_bg_5"
-                android:drawableTop="@drawable/ic_conv_mute"
-                android:drawablePadding="4dp"
+                android:layout_weight="1"
                 android:gravity="center"
-                android:padding="8dp"
-                android:text="免打扰"
-                android:textColor="@color/white"
-                android:textSize="14sp" />
+                android:orientation="vertical"
+                android:padding="8dp">
 
-            <TextView
-                android:id="@+id/btn_add"
-                android:layout_width="100dp"
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/ic_conv_mute"
+                    android:contentDescription="免打扰" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="免打扰"
+                    android:textColor="@color/white"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
+            <!-- 清空消息 -->
+            <LinearLayout
+                android:id="@+id/btn_clear_messages"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_margin="5dp"
-                style="?android:attr/textAppearanceSmall"
-                android:background="@drawable/rectangle_primary_bg_5"
-                android:drawableTop="@drawable/ic_add_memb"
-                android:drawablePadding="4dp"
+                android:layout_weight="1"
                 android:gravity="center"
-                android:padding="8dp"
-                android:text="添加成员"
-                android:textColor="@color/white"
-                android:textSize="14sp" />
+                android:orientation="vertical"
+                android:padding="8dp">
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/ic_delete_white"
+                    android:contentDescription="清空消息" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="清空消息"
+                    android:textColor="@color/white"
+                    android:textSize="12sp" />
+            </LinearLayout>
         </LinearLayout>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
+
+    <!-- 内容区域 -->
     <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:fillViewport="true">
 
         <LinearLayout
-            android:id="@+id/group_container"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
+            <!-- 添加成员 -->
+            <LinearLayout
+                android:id="@+id/ll_add_member"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:background="@color/white"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp">
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/ic_add"
+                    android:tint="#1E90FF"
+                    android:contentDescription="添加成员" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:layout_weight="1"
+                    android:text="添加成员"
+                    android:textColor="#1E90FF"
+                    android:textSize="16sp" />
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@drawable/ic_arrow_right"
+                    android:contentDescription="进入" />
+            </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="0.5dp"
+                android:layout_marginStart="52dp"
+                android:background="#E0E0E0" />
+
+            <!-- 群组成员 -->
             <LinearLayout
                 android:id="@+id/ll_group_members"
                 android:layout_width="match_parent"
                 android:layout_height="56dp"
+                android:background="@color/white"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
                 android:paddingStart="16dp"
-                android:paddingEnd="16dp"
-                tools:visibility="visible">
+                android:paddingEnd="16dp">
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/ic_add_memb"
+                    android:tint="#4CAF50"
+                    android:contentDescription="群组成员" />
 
                 <TextView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
                     android:layout_weight="1"
                     android:text="群组成员"
+                    android:textColor="#4CAF50"
                     android:textSize="16sp" />
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@drawable/ic_arrow_right"
+                    android:contentDescription="进入" />
+            </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="8dp"
+                android:background="#F5F5F5" />
+
+            <!-- 群组管理 -->
+            <LinearLayout
+                android:id="@+id/ll_group_management"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:background="@color/white"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp">
 
                 <ImageView
                     android:layout_width="24dp"
                     android:layout_height="24dp"
-                    android:src="@drawable/ic_arrow_right" />
-            </LinearLayout>
-
-            <View
-                android:id="@+id/divider_group_members"
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:background="@color/divider"
-                tools:visibility="visible" />
-
-            <LinearLayout
-                android:id="@+id/ll_group_nickname"
-                android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:paddingStart="16dp"
-                android:paddingEnd="16dp"
-                tools:visibility="visible">
+                    android:src="@drawable/ic_settings"
+                    android:tint="#00BCD4"
+                    android:contentDescription="群组管理" />
 
                 <TextView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
                     android:layout_weight="1"
-                    android:text="我在本群昵称"
-                    android:textSize="16sp" />
-
-                <TextView
-                    android:id="@+id/tv_my_nickname"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginEnd="8dp"
-                    android:textColor="@color/gray"
-                    android:textSize="16sp"
-                    tools:text="gogogo" />
-
-                <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:src="@drawable/ic_arrow_right" />
-            </LinearLayout>
-
-            <View
-                android:id="@+id/divider_group_nickname"
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:background="@color/divider"
-                android:visibility="gone"
-                tools:visibility="visible" />
-
-            <LinearLayout
-                android:id="@+id/ll_group_qrcode"
-                android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:paddingStart="16dp"
-                android:paddingEnd="16dp"
-                android:visibility="gone"
-                tools:visibility="visible">
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="群组二维码"
+                    android:text="群组管理"
+                    android:textColor="#00BCD4"
                     android:textSize="16sp" />
 
                 <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:src="@drawable/ic_arrow_right" />
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@drawable/ic_arrow_right"
+                    android:contentDescription="进入" />
             </LinearLayout>
 
             <View
-                android:id="@+id/divider_qrcode"
                 android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:background="@color/divider"
-                android:visibility="gone"
-                tools:visibility="visible" />
+                android:layout_height="8dp"
+                android:background="#F5F5F5" />
 
-            <View
+            <!-- 退出群组按钮 -->
+            <Button
+                android:id="@+id/btn_leave_group"
                 android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:background="@color/divider" />
+                android:layout_height="48dp"
+                android:layout_margin="16dp"
+                android:background="@drawable/bg_red_button"
+                android:text="退出群组"
+                android:textColor="@color/white"
+                android:textSize="16sp" />
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <Button
-                    android:id="@+id/btn_clear_chat"
-                    android:layout_width="match_parent"
-                    android:layout_height="48dp"
-                    android:background="@drawable/bg_primary_button"
-                    android:gravity="center"
-                    android:text="@string/msg_clear"
-                    android:textColor="@color/white" />
-
-
-                <Button
-                    android:id="@+id/btn_leave_group"
-                    android:layout_width="match_parent"
-                    android:layout_height="48dp"
-                    android:layout_marginTop="20dp"
-                    android:background="@drawable/bg_red_button"
-                    android:gravity="center"
-                    android:text="@string/msg_quite_conversation"
-                    android:textColor="@color/white" />
-            </LinearLayout>
         </LinearLayout>
     </ScrollView>
 

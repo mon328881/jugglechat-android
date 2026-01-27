@@ -36,8 +36,6 @@ import com.juggle.im.android.chat.mention.MentionModel;
 import com.juggle.im.android.chat.plugin.CameraPlugin;
 import com.juggle.im.android.chat.plugin.FilePlugin;
 import com.juggle.im.android.chat.plugin.ImagePlugin;
-import com.juggle.im.android.chat.plugin.VideoCallPlugin;
-import com.juggle.im.android.chat.plugin.VoiceCallPlugin;
 import com.juggle.im.android.chat.utils.FileUtils;
 import com.juggle.im.android.chat.utils.MessageUtils;
 import com.juggle.im.android.chat.view.ChatInputActionBar;
@@ -78,8 +76,6 @@ public class ConversationActivity extends AppCompatActivity {
     public static final String EXTRA_UNREAD_COUNT = "extra_unread_count";
     public static final int REQ_FORWARD = 2001;
     public static final int REQ_MENTION = 2002;
-    public static final int REQ_MULTI_CALL_VOICE = 2003;
-    public static final int REQ_MULTI_CALL_VIDEO = 2004;
     private boolean isGroup;
     private String conversationId;
     private Conversation conversation;
@@ -336,15 +332,8 @@ public class ConversationActivity extends AppCompatActivity {
             } else {
                 frag.showKeyboardIfNeed();
             }
-        } else if ((requestCode == REQ_MULTI_CALL_VOICE || requestCode == REQ_MULTI_CALL_VIDEO)
-                && resultCode == RESULT_OK) {
-            ArrayList<String> newIds = data.getStringArrayListExtra(SELECTED_MEMBERS);
-            BaseCallActivity.startMultiCall(this, conversationId,
-                    requestCode == REQ_MULTI_CALL_VIDEO,
-                    JIM.getInstance().getCurrentUserId(),
-                    newIds,
-                    "outgoing");
         }
+        // 移除了通话相关的 ActivityResult 处理
     }
 
     private void scrollMessageListIfNeed(boolean panelVisible) {
@@ -437,23 +426,8 @@ public class ConversationActivity extends AppCompatActivity {
             long size = f.length();
             fileMessage.setSize(size);
             sendFileMessage(fileMessage, conversation);
-        } else if (pluginId.equals(VoiceCallPlugin.ID) || pluginId.equals(VideoCallPlugin.ID)) {
-            if (isGroup) {
-                Intent it = new Intent(this, SelectMemberActivity.class);
-                it.putExtra("GROUP_ID", conversationId);
-                startActivityForResult(it,
-                        pluginId.equals(VideoCallPlugin.ID) ? REQ_MULTI_CALL_VIDEO : REQ_MULTI_CALL_VOICE);
-            } else {
-                ArrayList<String> ids = new ArrayList<>();
-                ids.add(conversationId);
-                BaseCallActivity.startSingleCall(this,
-                        conversationId,
-                        isGroup,
-                        pluginId.equals(VideoCallPlugin.ID),
-                        JIM.getInstance().getCurrentUserId(),
-                        ids, "outgoing");
-            }
         }
+        // 移除了通话插件的处理逻辑
     }
 
     private void editTextMessage(String msgId, TextMessage msg, MessageOptions options, Conversation conversation) {

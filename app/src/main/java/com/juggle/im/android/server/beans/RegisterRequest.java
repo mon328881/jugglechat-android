@@ -1,5 +1,8 @@
 package com.juggle.im.android.server.beans;
 
+/**
+ * 注册请求Bean
+ */
 public class RegisterRequest {
     private String account;
     private String phone;

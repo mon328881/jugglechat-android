@@ -143,16 +143,23 @@ public class CreateGroupActivity extends AppCompatActivity implements FriendsFra
         }
         // build members array
         List<Map<String, String>> members = new ArrayList<>();
-        StringBuilder nameBuilder = new StringBuilder();
+        String firstName = null;
         for (UserListAdapter.UserInfoObj m : selectedMap.values()) {
             Map<String, String> mm = new HashMap<>();
             mm.put("user_id", m.getUserId());
             members.add(mm);
-            if (nameBuilder.length() > 0) nameBuilder.append(", ");
-            nameBuilder.append(m.getName() != null ? m.getName() : m.getUserId());
+            
+            // 只取第一个成员的名字
+            if (firstName == null) {
+                firstName = m.getName() != null ? m.getName() : m.getUserId();
+            }
         }
+        
+        // ✅ 生成群组名称：xxx等人的群聊
+        String groupName = firstName + "等人的群聊";
+        
         Map<String, Object> body = new HashMap<>();
-        body.put("group_name", nameBuilder.toString());
+        body.put("group_name", groupName);
         body.put("group_portrait", "");
         body.put("members", members);
 

@@ -25,7 +25,7 @@ public class ImagePlugin extends MorePlugin {
     public String getId() { return ID; }
 
     @Override
-    public int getIconRes() { return R.drawable.ic_input_img; }
+    public int getIconRes() { return R.drawable.ic_image; }
 
     @Override
     public String getLabel(Context ctx) { return ctx.getString(R.string.photo); }

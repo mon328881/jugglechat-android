@@ -1,6 +1,61 @@
 <!-- res/values/dimens.xml -->
 <resources>
+    <!-- 原有尺寸定义（保持兼容性） -->
     <dimen name="message_image_fixed_height">200dp</dimen>
     <dimen name="chat_input_height">60dp</dimen>
     <dimen name="input_panel_height">250dp</dimen>
+
+    <!-- Material Design 3 间距系统 -->
+    <!-- 极小间距 -->
+    <dimen name="spacing_xs">4dp</dimen>
+    <!-- 小间距 -->
+    <dimen name="spacing_sm">8dp</dimen>
+    <!-- 中间距 -->
+    <dimen name="spacing_md">16dp</dimen>
+    <!-- 大间距 -->
+    <dimen name="spacing_lg">24dp</dimen>
+    <!-- 极大间距 -->
+    <dimen name="spacing_xl">32dp</dimen>
+
+    <!-- 圆角规范 -->
+    <!-- 无圆角 -->
+    <dimen name="corner_none">0dp</dimen>
+    <!-- 小圆角 -->
+    <dimen name="corner_sm">4dp</dimen>
+    <!-- 中圆角 -->
+    <dimen name="corner_md">8dp</dimen>
+    <!-- 大圆角 -->
+    <dimen name="corner_lg">12dp</dimen>
+    <!-- 完全圆形 -->
+    <dimen name="corner_full">50%</dimen>
+
+    <!-- 文本大小 -->
+    <!-- 标题 1 -->
+    <dimen name="text_headline_l">32sp</dimen>
+    <!-- 标题 2 -->
+    <dimen name="text_headline_m">28sp</dimen>
+    <!-- 标题 3 -->
+    <dimen name="text_headline_s">24sp</dimen>
+    <!-- 正文大 -->
+    <dimen name="text_body_l">16sp</dimen>
+    <!-- 正文中 -->
+    <dimen name="text_body_m">14sp</dimen>
+    <!-- 正文小 -->
+    <dimen name="text_body_s">12sp</dimen>
+    <!-- 标签大 -->
+    <dimen name="text_label_l">14sp</dimen>
+    <!-- 标签中 -->
+    <dimen name="text_label_m">12sp</dimen>
+    <!-- 标签小 -->
+    <dimen name="text_label_s">11sp</dimen>
+
+    <!-- 触摸目标最小尺寸 -->
+    <dimen name="touch_target_min">48dp</dimen>
+
+    <!-- 阴影高度 -->
+    <dimen name="elevation_none">0dp</dimen>
+    <dimen name="elevation_sm">2dp</dimen>
+    <dimen name="elevation_md">4dp</dimen>
+    <dimen name="elevation_lg">8dp</dimen>
+    <dimen name="elevation_xl">16dp</dimen>
 </resources>

@@ -10,8 +10,8 @@
     <string name="photo">照片</string>
     <string name="camera">相机</string>
     <string name="location">位置</string>
-    <string name="call_video">视频通话</string>
-    <string name="call_voice">音频通话</string>
+    <string name="favorite">我的收藏</string>
+    <string name="quick_recall">一键撤回</string>
     <string name="contact">联系人</string>
     <string name="emoji_history">最近使用</string>
     <string name="delete">删除</string>
@@ -71,6 +71,102 @@
     <string name="txt_register">注册</string>
     <string name="txt_copy">复制</string>
     <string name="txt_reply">回复</string>
+    <string name="txt_collect">收藏</string>
     <string name="msg_top">置顶</string>
     <string name="msg_edit">编辑</string>
+    <string name="new_friends">新朋友</string>
+
+    <!-- IM前台服务通知相关 -->
+    <string name="im_service_title">聊天服务运行中</string>
+    <string name="im_service_content">正在保持连接，确保消息及时送达</string>
+    <string name="im_service_channel_name">IM前台服务</string>
+    <string name="im_service_channel_description">保持IM长连接，防止消息丢失</string>
+
+    <!-- UI 美化相关字符串 -->
+    <string name="avatar">头像</string>
+    <string name="select">选择</string>
+    <string name="send_error">发送失败</string>
+    <string name="message_status">消息状态</string>
+    <string name="mute">静音</string>
+    <string name="top">置顶</string>
+    <string name="txt_register_new">没有账号？立即注册</string>
+    <string name="more">更多</string>
+    <string name="like">点赞</string>
+    <string name="comment">评论</string>
+    <string name="share">分享</string>
+    <string name="edit">编辑</string>
+    <string name="about">关于</string>
+
+    <!-- 我的页面 -->
+    <string name="profile_personal_settings">修改昵称</string>
+    <string name="profile_general_settings">通用设置</string>
+    <string name="profile_my_favorites">我的收藏</string>
+    <string name="profile_user_agreement">用户协议</string>
+    <string name="profile_permission_manage">权限管理</string>
+    <string name="permission_manage_title">权限管理</string>
+    <string name="permission_manage_desc">为确保及时收到消息与通知，建议在系统设置中放开以下限制。</string>
+    <string name="permission_step_autostart">允许自启动</string>
+    <string name="permission_step_background">允许后台运行（或「不限制」）</string>
+    <string name="permission_step_battery">关闭省电限制 / 允许后台活动</string>
+    <string name="permission_step_notification">通知权限（部分机型需单独开启）</string>
+    <string name="permission_btn_app_settings">前往应用设置</string>
+    <string name="permission_btn_battery">电池与省电设置</string>
+    <string name="permission_line_1">1. 允许自启动</string>
+    <string name="permission_line_2">2. 允许后台运行（或「不限制」）</string>
+    <string name="permission_line_3">3. 关闭省电限制 / 允许后台活动</string>
+    <string name="permission_line_4">4. 通知权限（部分机型需单独开启）</string>
+    <string name="permission_suggest_title">建议在应用信息或电池设置中完成：</string>
+    <string name="profile_privacy_policy">隐私协议</string>
+    <string name="profile_feedback">意见反馈</string>
+    <string name="profile_version_info">版本信息</string>
+    <string name="profile_check_update">检查更新</string>
+
+    <!-- 二维码分享与扫一扫 -->
+    <string name="qrcode_share_title">我的二维码</string>
+    <string name="qrcode_share_hint_app">使用壹趣扫一扫，可添加我为好友</string>
+    <string name="qrcode_share_hint_web">非APP扫码将跳转至下载页</string>
+    <string name="cd_qrcode_share">二维码分享</string>
+
+    <!-- 隐私协议 -->
+    <string name="privacy_policy_full">
+1. 我们收集的信息\n\n
+• 账号信息：您注册账号时填写的账号、昵称、头像等基础资料，仅用于账号登录、展示和好友识别。\n
+• 设备与网络信息：用于保障消息连接质量（如服务器路由、异常排查），不会用于画像或广告投放。\n
+• 消息内容：仅用于实现即时通讯功能和历史消息展示，不会对外出售或用于与本服务无关的用途。\n\n
+2. 权限使用说明\n\n
+• 相机权限：用于拍照发送图片、视频通话时采集画面；不会在后台偷偷开启相机。\n
+• 麦克风权限：用于语音消息、语音/视频通话；不会在未发起相关功能时录音。\n
+• 存储/媒体权限：用于从相册选择图片/视频、发送文件，以及将收到的图片/视频/文件保存到本地。\n
+• 通知权限：用于在应用关闭或后台运行时，向您推送新消息提醒。\n
+• 定位权限（ACCESS_FINE_LOCATION）：仅在您【主动进入"发送位置"/位置选择页面】并使用地图选点时按需申请，用于在地图上定位当前位置或发送地理位置。不在应用启动时自动申请，也不会在后台持续定位，您可以拒绝授权并通过手动在地图上选点的方式发送位置。\n\n
+3. 第三方服务\n\n
+• 腾讯地图 SDK：仅在您使用位置相关功能时，用于展示地图、选点并计算经纬度，不会单独识别您的个人身份。\n
+• 极光推送 SDK：用于生成推送标识并向您下发离线消息通知，不会读取短信、通讯录等与推送无关的敏感数据。\n
+• 音视频服务提供商（如 Zego）：仅在通话过程中处理音视频流，用于实现实时通话功能。\n\n
+4. 您的控制权\n\n
+您可以在系统设置中随时关闭相机、麦克风、定位、存储等权限。关闭后，对应功能可能无法使用，但不影响您正常登录、收发普通文字消息。\n\n
+5. 隐私协议更新\n\n
+如我们对隐私协议进行重大变更，将在应用内以显著方式提示，并在获得您的确认后再继续提供相应服务。
+    </string>
+
+    <!-- 通用无障碍描述 -->
+    <string name="cd_avatar">头像</string>
+    <string name="cd_back">返回</string>
+    <string name="cd_forward">转发</string>
+    <string name="cd_delete">删除</string>
+    <string name="cd_play">播放</string>
+    <string name="cd_voice">语音</string>
+    <string name="cd_file">文件</string>
+    <string name="cd_search">搜索</string>
+    <string name="cd_select">选择</string>
+    <string name="cd_app_logo">应用图标</string>
+    <string name="cd_emoji">表情</string>
+    <string name="cd_more">更多</string>
+    <string name="user_avatar">用户头像</string>
+    <string name="user_name">用户昵称</string>
+    <string name="user_id">@用户ID</string>
+    <string name="add">添加</string>
+    <string name="status_online">在线</string>
+    <string name="status_offline">离线</string>
+    <string name="status_unstable">网络波动</string>
 </resources>

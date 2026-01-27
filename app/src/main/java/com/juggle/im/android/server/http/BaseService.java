@@ -15,6 +15,9 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 
+/**
+ * HTTP服务基类
+ */
 public abstract class BaseService {
     private Gson gson = new Gson();
     private Handler mainHandler = new Handler(Looper.getMainLooper());
@@ -26,6 +29,16 @@ public abstract class BaseService {
         this.baseUrl = baseUrl;
     }
 
+    /**
+     * 获取OkHttpClient，供子类在需要时直接使用
+     */
+    protected OkHttpClient getClient() {
+        return client;
+    }
+
+    /**
+     * 发送JSON POST请求
+     */
     protected <T> void enqueueJson(String path, Object bodyObj, Class<T> dataClass, ApiCallback<T> callback) {
         Runnable r = () -> {
             try {
@@ -35,17 +48,17 @@ public abstract class BaseService {
                 Request request = new Request.Builder().url(url).post(body).build();
                 Response resp = client.newCall(request).execute();
                 if (!resp.isSuccessful()) {
-                    postError(callback, -1, "Network error: " + resp.code());
+                    postError(callback, -1, "网络错误: " + resp.code());
                     return;
                 }
                 String respBody = resp.body() != null ? resp.body().string() : null;
                 if (respBody == null) {
-                    postError(callback, -1, "Empty response");
+                    postError(callback, -1, "响应为空");
                     return;
                 }
                 HttpResult<T> result = parseHttpResult(respBody, dataClass);
                 if (result == null) {
-                    postError(callback, -1, "Parse error");
+                    postError(callback, -1, "解析错误");
                     return;
                 }
                 if (result.isSuccess()) {
@@ -57,9 +70,12 @@ public abstract class BaseService {
                 postError(callback, -1, e.getMessage());
             }
         };
-        new Thread(r, "UserService-network").start();
+        new Thread(r, "BaseService-network").start();
     }
 
+    /**
+     * 发送GET请求
+     */
     protected <T> void enqueueGet(String path, Class<T> dataClass, ApiCallback<T> callback) {
         Runnable r = () -> {
             try {
@@ -67,17 +83,17 @@ public abstract class BaseService {
                 Request request = new Request.Builder().url(url).get().build();
                 Response resp = client.newCall(request).execute();
                 if (!resp.isSuccessful()) {
-                    postError(callback, -1, "Network error: " + resp.code());
+                    postError(callback, -1, "网络错误: " + resp.code());
                     return;
                 }
                 String respBody = resp.body() != null ? resp.body().string() : null;
                 if (respBody == null) {
-                    postError(callback, -1, "Empty response");
+                    postError(callback, -1, "响应为空");
                     return;
                 }
                 HttpResult<T> result = parseHttpResult(respBody, dataClass);
                 if (result == null) {
-                    postError(callback, -1, "Parse error");
+                    postError(callback, -1, "解析错误");
                     return;
                 }
                 if (result.isSuccess()) {
@@ -89,22 +105,21 @@ public abstract class BaseService {
                 postError(callback, -1, e.getMessage());
             }
         };
-        new Thread(r, "UserService-network").start();
+        new Thread(r, "BaseService-network").start();
     }
 
+    /**
+     * 解析HTTP响应结果
+     */
     protected <T> HttpResult<T> parseHttpResult(String json, Class<T> dataClass) {
         try {
-            // parse outer HttpResult while parsing data field into dataClass
-            // First parse generic map, then replace data
             HttpResult raw = gson.fromJson(json, HttpResult.class);
-            // now parse data field separately
             com.google.gson.JsonObject jo = gson.fromJson(json, com.google.gson.JsonObject.class);
             if (jo.has("data") && !jo.get("data").isJsonNull()) {
                 try {
                     T data = gson.fromJson(jo.get("data"), dataClass);
                     raw.setData(data);
                 } catch (JsonSyntaxException e) {
-                    // can't parse data into expected class
                     return null;
                 }
             }
@@ -114,6 +129,9 @@ public abstract class BaseService {
         }
     }
 
+    /**
+     * 在主线程上发送成功回调
+     */
     protected <T> void postSuccess(ApiCallback<T> callback, T data) {
         if (callback == null) return;
         if (Looper.myLooper() == Looper.getMainLooper()) {
@@ -123,8 +141,11 @@ public abstract class BaseService {
         }
     }
 
+    /**
+     * 在主线程上发送错误回调
+     */
     protected void postError(ApiCallback<?> callback, int code, String msg) {
-        Log.e("BaseService", "postError: " + code + " - " + msg);
+        Log.e("BaseService", "错误: " + code + " - " + msg);
         if (callback == null) return;
         if (Looper.myLooper() == Looper.getMainLooper()) {
             callback.onError(code, msg);
@@ -132,5 +153,4 @@ public abstract class BaseService {
             mainHandler.post(() -> callback.onError(code, msg));
         }
     }
-
 }

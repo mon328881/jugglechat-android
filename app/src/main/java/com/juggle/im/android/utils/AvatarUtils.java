@@ -7,35 +7,48 @@ import android.graphics.LinearGradient;
 import android.graphics.Paint;
 import android.graphics.RectF;
 import android.graphics.Shader;
+import android.media.MediaMetadataRetriever;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.widget.ImageView;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.resource.bitmap.CircleCrop;
-import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
 import com.juggle.im.android.R;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 /**
- * Simple avatar helper: loads avatar from url if present, otherwise generates a circular bitmap
- * with the initial letter and a gradient background deterministically derived from the letter.
+ * 头像工具类：支持加载远程头像或生成首字母头像
  */
 public final class AvatarUtils {
     private AvatarUtils() {
     }
 
-    // 使用一个不会与其他资源冲突的 ID 作为 tag key
     private static final int TAG_URL = 0x7F0A0001;
+    private static final int TAG_VIDEO_COVER = 0x7F0A0002;
+    private static final ExecutorService videoCoverExecutor = Executors.newFixedThreadPool(2);
+    private static final Handler mainHandler = new Handler(Looper.getMainLooper());
 
+    /**
+     * 加载头像：优先使用远程URL，如果URL为空则生成首字母头像
+     *
+     * @param iv   目标ImageView
+     * @param url  远程头像URL（可为空）
+     * @param name 用户名或昵称（用于生成首字母头像）
+     */
     public static void loadAvatar(ImageView iv, String url, String name) {
         if (iv == null) return;
         Context ctx = iv.getContext();
 
-        // 检查 URL 是否与当前已加载的相同，避免重复加载导致闪烁
+        // 检查URL是否与当前已加载的相同，避免重复加载导致闪烁
         String currentUrl = (String) iv.getTag(TAG_URL);
         if (!TextUtils.isEmpty(url)) {
             if (url.equals(currentUrl)) {
-                return; // URL 相同，跳过加载
+                return; // URL相同，跳过加载
             }
             iv.setTag(TAG_URL, url);
 
@@ -48,8 +61,7 @@ public final class AvatarUtils {
             return;
         }
 
-        // 处理没有 URL 的情况（生成首字母头像）
-        // 使用 name + 特殊前缀作为 tag，区分不同的生成的头像
+        // 处理没有URL的情况（生成首字母头像）
         String generatedTag = "generated:" + name;
         if (generatedTag.equals(currentUrl)) {
             return; // 相同的生成头像，跳过
@@ -62,20 +74,62 @@ public final class AvatarUtils {
         Glide.with(iv).load(bmp).circleCrop().dontAnimate().into(iv);
     }
 
+    /**
+     * 加载图片
+     */
     public static void loadImage(ImageView iv, String url) {
         Glide.with(iv)
                 .load(url)
                 .centerCrop()
                 .placeholder(R.drawable.default_image)
-                .dontAnimate() // 禁用动画，避免图片更新时闪烁
+                .dontAnimate()
                 .into(iv);
+    }
+
+    /**
+     * 加载朋友圈视频封面：优先snapshotUrl，若无则从videoUrl截取首帧作为封面
+     */
+    public static void loadVideoCover(ImageView iv, String snapshotUrl, String videoUrl) {
+        if (iv == null) return;
+        if (!TextUtils.isEmpty(snapshotUrl)) {
+            iv.setTag(TAG_VIDEO_COVER, null);
+            loadImage(iv, snapshotUrl);
+            return;
+        }
+        if (TextUtils.isEmpty(videoUrl)) {
+            iv.setImageResource(R.drawable.default_image);
+            return;
+        }
+        iv.setTag(TAG_VIDEO_COVER, videoUrl);
+        iv.setImageResource(R.drawable.default_image);
+        videoCoverExecutor.execute(() -> {
+            Bitmap frame = null;
+            try {
+                MediaMetadataRetriever retriever = new MediaMetadataRetriever();
+                retriever.setDataSource(videoUrl);
+                frame = retriever.getFrameAtTime(0, MediaMetadataRetriever.OPTION_CLOSEST_SYNC);
+                retriever.release();
+            } catch (Throwable ignored) {
+            }
+            Bitmap finalFrame = frame;
+            mainHandler.post(() -> {
+                if (iv == null) return;
+                Object tag = iv.getTag(TAG_VIDEO_COVER);
+                if (!videoUrl.equals(tag)) return;
+                if (finalFrame != null) {
+                    iv.setImageBitmap(finalFrame);
+                    iv.setScaleType(ImageView.ScaleType.CENTER_CROP);
+                } else {
+                    iv.setImageResource(R.drawable.default_image);
+                }
+            });
+        });
     }
 
     private static String extractInitial(String name) {
         if (TextUtils.isEmpty(name)) return "";
         name = name.trim();
         if (name.length() == 0) return "";
-        // use first code point
         int cp = name.codePointAt(0);
         return new String(Character.toChars(cp)).toUpperCase();
     }
@@ -85,7 +139,7 @@ public final class AvatarUtils {
         Bitmap bmp = Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.ARGB_8888);
         Canvas c = new Canvas(bmp);
 
-        // background gradient based on initial hash
+        // 背景渐变色
         int[] colors = colorsForString(initial);
         Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
         Shader shader = new LinearGradient(0, 0, sizePx, sizePx, colors[0], colors[1], Shader.TileMode.CLAMP);
@@ -96,7 +150,6 @@ public final class AvatarUtils {
         if (!initial.isEmpty()) {
             Paint textPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
             textPaint.setColor(0xFFFFFFFF);
-            // center text
             textPaint.setTextSize(sizePx * 0.45f);
             textPaint.setTextAlign(Paint.Align.CENTER);
             Paint.FontMetrics fm = textPaint.getFontMetrics();
@@ -113,7 +166,6 @@ public final class AvatarUtils {
             return new int[]{0xFF888888, 0xFFBBBBBB};
         }
         int h = s.hashCode();
-        // derive two colors from hash
         int r1 = 80 + (Math.abs(h) % 120);
         int g1 = 80 + (Math.abs(h / 31) % 120);
         int b1 = 80 + (Math.abs(h / 17) % 120);

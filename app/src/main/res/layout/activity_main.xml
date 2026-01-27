@@ -5,7 +5,7 @@
     android:layout_height="match_parent">
 
     <!-- Header -->
-    <FrameLayout
+    <LinearLayout
         android:id="@+id/main_header"
         android:layout_width="0dp"
         android:layout_height="48dp"
@@ -18,17 +18,102 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
-        <TextView
-            android:id="@+id/tv_title"
-            android:layout_width="match_parent"
+        <!-- 用户信息区域 -->
+        <LinearLayout
+            android:id="@+id/user_info_container"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:gravity="center"
-            android:text="@string/main_title"
-            android:textColor="@android:color/white"
-            android:textSize="20sp"
-            android:textStyle="bold" />
+            android:layout_weight="1"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:visibility="visible">
 
+            <!-- 用户头像 -->
+            <ImageView
+                android:id="@+id/iv_user_avatar"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:src="@drawable/default_avatar"
+                android:contentDescription="@string/user_avatar"
+                android:scaleType="centerCrop" />
+
+            <!-- 用户昵称和ID -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginStart="8dp">
+
+                <!-- 第一行：用户昵称和用户ID -->
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <TextView
+                        android:id="@+id/tv_user_name"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/user_name"
+                        android:textColor="?attr/colorOnPrimary"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <!-- 用户ID -->
+                    <TextView
+                        android:id="@+id/tv_user_id"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/user_id"
+                        android:textColor="?attr/colorOnPrimary"
+                        android:textSize="12sp"
+                        android:alpha="0.7"
+                        android:layout_marginStart="8dp" />
+                </LinearLayout>
+
+                <!-- 第二行：在线状态 -->
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginTop="2dp">
+
+                    <!-- 在线状态指示点 -->
+                    <View
+                        android:id="@+id/status_indicator"
+                        android:layout_width="8dp"
+                        android:layout_height="8dp"
+                        android:background="@drawable/status_indicator_online"
+                        android:layout_marginEnd="4dp" />
+
+                    <!-- 在线状态文本 -->
+                    <TextView
+                        android:id="@+id/tv_status"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/status_online"
+                        android:textColor="?attr/colorOnPrimary"
+                        android:textSize="12sp"
+                        android:alpha="0.7" />
+                </LinearLayout>
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- 页面标题 -->
+        <TextView
+            android:id="@+id/page_title"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="标题"
+            android:textColor="?attr/colorOnPrimary"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
+
+        <!-- 右侧按钮 -->
         <LinearLayout
             android:layout_gravity="end|center_vertical"
             android:layout_width="wrap_content"
@@ -40,16 +125,18 @@
                 android:layout_width="36dp"
                 android:layout_height="36dp"
                 android:padding="6dp"
-                android:src="@drawable/ic_search" />
+                android:src="@drawable/ic_search"
+                android:contentDescription="@string/search" />
 
             <ImageView
                 android:id="@+id/btn_more"
                 android:layout_width="36dp"
                 android:layout_height="36dp"
                 android:padding="6dp"
-                android:src="@drawable/ic_add_white" />
+                android:src="@drawable/ic_add_white"
+                android:contentDescription="@string/add" />
         </LinearLayout>
-    </FrameLayout>
+    </LinearLayout>
 
     <LinearLayout
         android:id="@+id/connect_status"
@@ -77,8 +164,21 @@
             android:layout_marginEnd="20dp"
             android:layout_weight="1"
             android:gravity="start"
-            android:textColor="@android:color/black"
+            android:textColor="?attr/colorOnSurface"
             android:textSize="14sp" />
+
+        <!-- 手动重连按钮 -->
+        <Button
+            android:id="@+id/btn_reconnect"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="20dp"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:text="重连"
+            android:textSize="12sp"
+            android:visibility="gone"
+            style="@style/Widget.AppCompat.Button.Colored" />
     </LinearLayout>
 
     <FrameLayout
@@ -94,7 +194,7 @@
         android:id="@+id/footer_nav"
         android:layout_width="0dp"
         android:layout_height="60dp"
-        android:background="@color/white"
+        android:background="?attr/colorSurface"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />

@@ -118,7 +118,10 @@ public class MomentsActivity extends AppCompatActivity {
 
         toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-        if (getSupportActionBar() != null) getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+            getSupportActionBar().setTitle(""); // 移除顶部标题
+        }
         toolbar.setNavigationOnClickListener(v -> finish());
 
         appBarLayout = findViewById(R.id.appbar);
@@ -126,8 +129,47 @@ public class MomentsActivity extends AppCompatActivity {
         swipeRefreshLayout = findViewById(R.id.swipe_refresh);
         tvName = findViewById(R.id.tv_name);
         ivAvatar = findViewById(R.id.iv_avatar);
-        tvName.setText(ConfigUtils.myName);
-        AvatarUtils.loadAvatar(ivAvatar, ConfigUtils.myAvatarUrl, ConfigUtils.myName);
+        
+        // 从JIM SDK获取当前用户信息，而不是依赖ConfigUtils
+        String currentUserId = JIM.getInstance().getCurrentUserId();
+        String userName = ConfigUtils.myName;
+        String userAvatar = ConfigUtils.myAvatarUrl;
+        
+        // 如果ConfigUtils中的值为空，尝试从服务器获取用户信息
+        if (TextUtils.isEmpty(userName) || TextUtils.isEmpty(userAvatar)) {
+            ServiceManager.getUserService().getUserInfo(currentUserId, new ApiCallback<com.juggle.im.android.server.beans.UserInfoBean>() {
+                @Override
+                public void onSuccess(com.juggle.im.android.server.beans.UserInfoBean data) {
+                    if (data != null) {
+                        String nickname = data.getNickname();
+                        String avatar = data.getAvatar();
+                        
+                        // 更新ConfigUtils缓存
+                        if (!TextUtils.isEmpty(nickname)) {
+                            ConfigUtils.myName = nickname;
+                        }
+                        if (!TextUtils.isEmpty(avatar)) {
+                            ConfigUtils.myAvatarUrl = avatar;
+                        }
+                        
+                        // 更新UI
+                        runOnUiThread(() -> {
+                            tvName.setText(!TextUtils.isEmpty(nickname) ? nickname : "我");
+                            AvatarUtils.loadAvatar(ivAvatar, avatar, nickname);
+                        });
+                    }
+                }
+
+                @Override
+                public void onError(int code, String message) {
+                    Log.e("MomentsActivity", "获取用户信息失败: " + message);
+                }
+            });
+        }
+        
+        // 先显示ConfigUtils中的值，如果为空则显示默认值
+        tvName.setText(!TextUtils.isEmpty(userName) ? userName : "我");
+        AvatarUtils.loadAvatar(ivAvatar, userAvatar, !TextUtils.isEmpty(userName) ? userName : "我");
 
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         adapter = new MomentsAdapter(new ArrayList<>());
@@ -392,17 +434,45 @@ public class MomentsActivity extends AppCompatActivity {
     }
 
     private void likePost(int position, PostBean post) {
-        ServiceManager.getMomentService().addReaction(post.getPost_id(), "key", "v", new ApiCallback<Void>() {
-            @Override
-            public void onSuccess(Void data) {
-                refreshPostItem(post);
+        // 检查当前用户是否已点赞
+        String currentUserId = JIM.getInstance().getCurrentUserId();
+        boolean hasLiked = false;
+        if (post.getReactions() != null && post.getReactions().containsKey("like")) {
+            for (com.juggle.im.android.server.beans.ReactionItem item : post.getReactions().get("like")) {
+                if (item.getUser_info() != null && item.getUser_info().getUserId().equals(currentUserId)) {
+                    hasLiked = true;
+                    break;
+                }
             }
+        }
+        
+        if (hasLiked) {
+            // 取消点赞
+            ServiceManager.getMomentService().removeReaction(post.getPost_id(), "like", new ApiCallback<Void>() {
+                @Override
+                public void onSuccess(Void data) {
+                    refreshPostItem(post);
+                }
 
-            @Override
-            public void onError(int code, String message) {
-                Log.e("MomentsActivity", "Failed to add reaction: " + message);
-            }
-        });
+                @Override
+                public void onError(int code, String message) {
+                    Log.e("MomentsActivity", "Failed to remove reaction: " + message);
+                }
+            });
+        } else {
+            // 添加点赞
+            ServiceManager.getMomentService().addReaction(post.getPost_id(), "like", "like", new ApiCallback<Void>() {
+                @Override
+                public void onSuccess(Void data) {
+                    refreshPostItem(post);
+                }
+
+                @Override
+                public void onError(int code, String message) {
+                    Log.e("MomentsActivity", "Failed to add reaction: " + message);
+                }
+            });
+        }
     }
 
     private void showPostComment(int position, PostBean post, TopCommentBean topCommentBean) {
@@ -627,12 +697,6 @@ public class MomentsActivity extends AppCompatActivity {
             // name
             if (post.getUser_info() != null) {
                 holder.tvName.setText(post.getUser_info().getNickname());
-                if (post.getUser_info().getUserId().equals(JIM.getInstance().getCurrentUserId())) {
-                    holder.vDelete.setVisibility(VISIBLE);
-                    holder.vDelete.setOnClickListener(v -> {
-                        if (listener != null) listener.onDeletePost(position, post);
-                    });
-                }
             } else {
                 holder.tvName.setText("匿名");
             }
@@ -652,57 +716,88 @@ public class MomentsActivity extends AppCompatActivity {
             if (post.getContent() != null && post.getContent().getImages() != null && !post.getContent().getImages().isEmpty()) {
                 holder.mediaContainer.setVisibility(VISIBLE);
                 int imageSize = post.getContent().getImages().size();
+                
+                // 限制最多显示9张图片
+                int displaySize = Math.min(imageSize, 9);
 
-                // 根据图片数量确定行列数
+                // 根据图片数量确定行列数和尺寸
                 int rows, cols;
-                if (imageSize < 4) {
-                    // 少于4张，单行展示
+                int spacing = 8; // 图片间距
+                
+                if (displaySize == 1) {
+                    // 1张图片：平铺（占满宽度）
                     rows = 1;
-                    cols = imageSize;
-                } else if (imageSize == 4) {
-                    // 4张图片，2行2列展示
+                    cols = 1;
+                } else if (displaySize == 2) {
+                    // 2张图片：平分宽度
+                    rows = 1;
+                    cols = 2;
+                } else if (displaySize == 3) {
+                    // 3张图片：3列展示
+                    rows = 1;
+                    cols = 3;
+                } else if (displaySize == 4) {
+                    // 4张图片：2行2列
                     rows = 2;
                     cols = 2;
-                } else {
-                    // 多于4张，3列展示
+                } else if (displaySize <= 6) {
+                    // 5-6张图片：2行3列
+                    rows = 2;
                     cols = 3;
-                    rows = (imageSize + 2) / 3; // 向上取整
+                } else {
+                    // 7-9张图片：3行3列
+                    rows = 3;
+                    cols = 3;
                 }
 
                 // 设置GridLayout的行列数
                 GridLayout gridLayout = (GridLayout) holder.mediaContainer;
                 gridLayout.setRowCount(rows);
                 gridLayout.setColumnCount(cols);
+                
+                // 计算每个图片的宽度和高度
+                int screenWidth = holder.itemView.getResources().getDisplayMetrics().widthPixels;
+                int containerWidth = screenWidth - 32; // 减去左右padding (16dp * 2)
+                int totalSpacing = spacing * (cols - 1); // 总间距
+                int imageWidth = (containerWidth - totalSpacing) / cols;
+                int imageHeight = imageWidth; // 正方形图片
 
                 // 添加图片视图
-                int idx = 0;
-                for (com.juggle.im.android.server.beans.ImageBean img : post.getContent().getImages()) {
+                for (int i = 0; i < displaySize; i++) {
+                    com.juggle.im.android.server.beans.ImageBean img = post.getContent().getImages().get(i);
                     ImageView iv = new ImageView(holder.itemView.getContext());
 
-                    // 计算图片尺寸
-                    int dp;
-                    if (imageSize < 4) {
-                        // 少于4张，每张图片宽度为容器宽度的1/3
-                        dp = (int) (80 * holder.itemView.getResources().getDisplayMetrics().density);
-                    } else if (imageSize == 4) {
-                        // 4张图片，每张图片更大一些
-                        dp = (int) (120 * holder.itemView.getResources().getDisplayMetrics().density);
-                    } else {
-                        // 多于4张，每张图片小一些以适应3列
-                        dp = (int) (90 * holder.itemView.getResources().getDisplayMetrics().density);
-                    }
-
                     GridLayout.LayoutParams lp = new GridLayout.LayoutParams();
-                    lp.width = dp;
-                    lp.height = dp;
-                    lp.setMargins(4, 4, 4, 4);
+                    
+                    // 设置行列位置
+                    lp.columnSpec = GridLayout.spec(i % cols);
+                    lp.rowSpec = GridLayout.spec(i / cols);
+                    
+                    // 设置具体的宽高
+                    lp.width = imageWidth;
+                    lp.height = imageHeight;
+                    
+                    // 设置间距 - 只在右侧和下方添加间距
+                    int marginRight = (i % cols == cols - 1) ? 0 : spacing;
+                    int marginBottom = (i / cols == rows - 1) ? 0 : spacing;
+                    lp.setMargins(0, 0, marginRight, marginBottom);
+                    
                     iv.setLayoutParams(lp);
                     iv.setScaleType(ImageView.ScaleType.CENTER_CROP);
-                    iv.setBackgroundColor(0xFFCCCCCC);
+                    iv.setBackgroundColor(0xFFE0E0E0);
+                    
+                    // 添加圆角效果
+                    iv.setClipToOutline(true);
+                    android.graphics.drawable.RippleDrawable ripple = new android.graphics.drawable.RippleDrawable(
+                        android.content.res.ColorStateList.valueOf(0x20000000),
+                        null,
+                        null
+                    );
+                    iv.setForeground(ripple);
+                    
                     AvatarUtils.loadImage(iv, img.getUrl());
 
                     gridLayout.addView(iv);
-                    idx++;
                     final int positionCopy = position;
                     final String imageUrl = img.getUrl();
                     iv.setOnClickListener(l -> {
@@ -800,33 +895,71 @@ public class MomentsActivity extends AppCompatActivity {
 
             // btnMore click listener for popup menu
             holder.btnMore.setOnClickListener(v -> {
-                View popupView = LayoutInflater.from(holder.itemView.getContext()).inflate(R.layout.popup_menu, null);
+                // 创建自定义弹出菜单
+                View popupView = LayoutInflater.from(holder.itemView.getContext()).inflate(R.layout.popup_moment_menu, null);
                 PopupWindow popupWindow = new PopupWindow(popupView, ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, true);
-
-                // Set click listeners for popup menu items
-                popupView.findViewById(R.id.btn_like).setOnClickListener(view -> {
+                popupWindow.setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
+                
+                // 检查当前用户是否已点赞
+                String currentUserId = JIM.getInstance().getCurrentUserId();
+                boolean hasLiked = false;
+                if (post.getReactions() != null && post.getReactions().containsKey("like")) {
+                    for (com.juggle.im.android.server.beans.ReactionItem item : post.getReactions().get("like")) {
+                        if (item.getUser_info() != null && item.getUser_info().getUserId().equals(currentUserId)) {
+                            hasLiked = true;
+                            break;
+                        }
+                    }
+                }
+                
+                // 根据是否已点赞，更新菜单文本和图标颜色
+                TextView likeText = popupView.findViewById(R.id.like_text);
+                ImageView likeIcon = popupView.findViewById(R.id.like_icon);
+                if (hasLiked) {
+                    likeText.setText(R.string.txt_cancel);
+                    likeIcon.setColorFilter(0xFFFF6B9D, android.graphics.PorterDuff.Mode.SRC_IN);
+                } else {
+                    likeText.setText(R.string.like);
+                    likeIcon.setColorFilter(0xFFFFFFFF, android.graphics.PorterDuff.Mode.SRC_IN);
+                }
+                
+                // 如果不是发布者，隐藏删除选项
+                LinearLayout deleteLayout = popupView.findViewById(R.id.action_delete);
+                if (post.getUser_info() == null || !post.getUser_info().getUserId().equals(currentUserId)) {
+                    deleteLayout.setVisibility(View.GONE);
+                }
+                
+                // 设置点赞按钮点击事件
+                popupView.findViewById(R.id.action_like).setOnClickListener(view -> {
                     popupWindow.dismiss();
                     likePost(position, post);
                 });
-
-                popupView.findViewById(R.id.btn_comment).setOnClickListener(view -> {
+                
+                // 设置评论按钮点击事件
+                popupView.findViewById(R.id.action_comment).setOnClickListener(view -> {
                     popupWindow.dismiss();
-                    // Handle comment action
                     showPostComment(position, post, null);
                 });
-
-                // 获取 PopupWindow 宽度
-                popupWindow.getContentView().measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
-                int popupWidth = popupWindow.getContentView().getMeasuredWidth();
-                int popupHeight = popupWindow.getContentView().getMeasuredHeight();
+                
+                // 设置删除按钮点击事件
+                popupView.findViewById(R.id.action_delete).setOnClickListener(view -> {
+                    popupWindow.dismiss();
+                    if (listener != null) listener.onDeletePost(position, post);
+                });
+                
+                // 显示弹出菜单 - 让菜单右边靠近更多按钮的左侧
+                popupView.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
+                int popupWidth = popupView.getMeasuredWidth();
+                int popupHeight = popupView.getMeasuredHeight();
+                
                 int[] location = new int[2];
                 holder.btnMore.getLocationOnScreen(location);
-                int xPos = location[0] - popupWidth;
-                int yPos = location[1] - 10;
+                
+                // 计算位置：菜单右边靠近更多按钮的左侧
+                int xPos = location[0] - popupWidth - 8; // 8dp间距
+                int yPos = location[1] - popupHeight - 8; // 8dp间距
+                
                 popupWindow.showAtLocation(holder.btnMore, Gravity.NO_GRAVITY, xPos, yPos);
-                // Set animation style for popup
-                popupWindow.getContentView().setTranslationX(xPos);  // 从右侧开始
-                popupWindow.getContentView().animate().translationX(0f).setDuration(300).start();  // 滑动到目标位置
             });
         }
 
@@ -838,7 +971,7 @@ public class MomentsActivity extends AppCompatActivity {
         class VH extends RecyclerView.ViewHolder {
             ImageView ivAvatar;
             TextView tvName;
-            ImageView vDelete;
+            LinearLayout vDelete;
             ImageView btnMore;
             TextView tvContent;
             GridLayout mediaContainer;

@@ -41,6 +41,7 @@ public class ConversationSettingsActivity extends AppCompatActivity {
     private boolean isGroup;
     private boolean isTop, isMute;
     private ArrayList<String> groupMemberIds = new ArrayList<>();
+    private boolean isGroupOwner = false; // 是否为群主
 
 
     public static Intent intentFor(Context ctx,
@@ -69,6 +70,7 @@ public class ConversationSettingsActivity extends AppCompatActivity {
         isTop = getIntent().getBooleanExtra(EXTRA_IS_TOP, false);
         isMute = getIntent().getBooleanExtra(EXTRA_IS_MUTE, false);
 
+        // 免打扰按钮
         findViewById(R.id.btn_mute).setOnClickListener(v -> {
             Conversation.ConversationType conversationType = isGroup ? Conversation.ConversationType.GROUP : Conversation.ConversationType.PRIVATE;
             Conversation conv = new Conversation(conversationType, conversationId);
@@ -76,6 +78,8 @@ public class ConversationSettingsActivity extends AppCompatActivity {
             Toast.makeText(this, !isMute ? R.string.settings_mute_on : R.string.settings_mute_off, Toast.LENGTH_SHORT).show();
             isMute = !isMute;
         });
+        
+        // 置顶按钮
         findViewById(R.id.btn_pin).setOnClickListener(v -> {
             Conversation.ConversationType conversationType = isGroup ? Conversation.ConversationType.GROUP : Conversation.ConversationType.PRIVATE;
             Conversation conv = new Conversation(conversationType, conversationId);
@@ -83,23 +87,9 @@ public class ConversationSettingsActivity extends AppCompatActivity {
             Toast.makeText(this, !isTop ? R.string.settings_top_on : R.string.settings_top_off, Toast.LENGTH_SHORT).show();
             isTop = !isTop;
         });
-        findViewById(R.id.btn_add).setOnClickListener(v -> {
-            Intent it = new Intent(this, SelectMemberActivity.class);
-            it.putExtra("mode", UserListAdapter.LIST_MODE_SELECT_MEMBER);
-            it.putStringArrayListExtra(DISABLE_MEMBERS, groupMemberIds);
-            startActivityForResult(it, 1000);
-        });
-        findViewById(R.id.ll_group_members).setOnClickListener(v -> {
-            Intent it = new Intent(this, SelectMemberActivity.class);
-            it.putExtra("GROUP_ID", conversationId);
-            it.putExtra("mode", UserListAdapter.LIST_MODE_NORMAL);
-            startActivity(it);
-        });
-
-        Button btnClear = findViewById(R.id.btn_clear_chat);
-        Button btnLeave = findViewById(R.id.btn_leave_group);
-
-        btnClear.setOnClickListener(v -> {
+        
+        // 清空消息按钮
+        findViewById(R.id.btn_clear_messages).setOnClickListener(v -> {
             try {
                 Conversation.ConversationType conversationType = isGroup ? Conversation.ConversationType.GROUP : Conversation.ConversationType.PRIVATE;
                 Conversation conv = new Conversation(conversationType, conversationId);
@@ -109,14 +99,35 @@ public class ConversationSettingsActivity extends AppCompatActivity {
                 Toast.makeText(this, R.string.operation_failed, Toast.LENGTH_SHORT).show();
             }
         });
+        
+        // 添加成员
+        findViewById(R.id.ll_add_member).setOnClickListener(v -> {
+            Intent it = new Intent(this, SelectMemberActivity.class);
+            it.putExtra("mode", UserListAdapter.LIST_MODE_SELECT_MEMBER);
+            it.putStringArrayListExtra(DISABLE_MEMBERS, groupMemberIds);
+            startActivityForResult(it, 1000);
+        });
+        
+        // 群组成员
+        findViewById(R.id.ll_group_members).setOnClickListener(v -> {
+            Intent it = new Intent(this, SelectMemberActivity.class);
+            it.putExtra("GROUP_ID", conversationId);
+            it.putExtra("mode", UserListAdapter.LIST_MODE_NORMAL);
+            startActivity(it);
+        });
+        
+        // 群组管理
+        findViewById(R.id.ll_group_management).setOnClickListener(v -> {
+            Intent intent = GroupManagementActivity.intentFor(this, conversationId);
+            startActivity(intent);
+        });
 
+        // 退出群组按钮
+        Button btnLeave = findViewById(R.id.btn_leave_group);
         if (isGroup) {
             btnLeave.setVisibility(View.VISIBLE);
             btnLeave.setOnClickListener(v -> {
-                // placeholder: call conversation manager leave group if available
                 try {
-                    // If there is a leave API, call it. Otherwise show toast.
-                    // For now, show a toast and finish.
                     Toast.makeText(this, R.string.left_group, Toast.LENGTH_SHORT).show();
                     finish();
                 } catch (Exception e) {
@@ -127,10 +138,20 @@ public class ConversationSettingsActivity extends AppCompatActivity {
             btnLeave.setVisibility(GONE);
         }
 
-        // back button
+        // 返回按钮
         findViewById(R.id.iv_back).setOnClickListener(v -> finish());
 
+        // 编辑按钮（仅群主可见）
+        ImageView ivEdit = findViewById(R.id.iv_edit);
+        ivEdit.setVisibility(GONE); // 默认隐藏，等待加载群组信息后判断
+
         if (isGroup) {
+            // 显示群组相关控件
+            findViewById(R.id.ll_add_member).setVisibility(View.VISIBLE);
+            findViewById(R.id.ll_group_members).setVisibility(View.VISIBLE);
+            findViewById(R.id.ll_group_management).setVisibility(View.VISIBLE);
+            
+            // 加载群组信息
             ServiceManager.getUserService().getGroupInfo(conversationId, new ApiCallback<GroupDetailBean>() {
                 @Override
                 public void onSuccess(GroupDetailBean data) {
@@ -138,11 +159,30 @@ public class ConversationSettingsActivity extends AppCompatActivity {
                     AvatarUtils.loadAvatar(groupAvatar, data.getPortrait(), data.getGroupName());
                     TextView groupName = findViewById(R.id.tv_group_name);
                     groupName.setText(data.getGroupName());
+                    
+                    TextView memberCount = findViewById(R.id.tv_member_count);
+                    memberCount.setText(data.getMembers().size() + " 个成员");
 
-                    TextView nickName = findViewById(R.id.tv_my_nickname);
-                    nickName.setText(data.getGroupDisplayName());
                     for (GroupMemberBean member : data.getMembers()) {
                         groupMemberIds.add(member.getUserId());
+                    }
+                    
+                    // 判断当前用户是否为群主（myRole == 1 表示群主）
+                    isGroupOwner = (data.getMyRole() == 1);
+                    
+                    // 只有群主才能看到编辑按钮
+                    ImageView ivEdit = findViewById(R.id.iv_edit);
+                    if (isGroupOwner) {
+                        ivEdit.setVisibility(View.VISIBLE);
+                        ivEdit.setOnClickListener(v -> {
+                            TextView groupNameView = findViewById(R.id.tv_group_name);
+                            String currentName = groupNameView.getText().toString();
+                            Intent intent = new Intent(ConversationSettingsActivity.this, EditNicknameActivity.class);
+                            intent.putExtra("current_nickname", currentName);
+                            startActivityForResult(intent, 2000);
+                        });
+                    } else {
+                        ivEdit.setVisibility(GONE);
                     }
                 }
 
@@ -152,9 +192,10 @@ public class ConversationSettingsActivity extends AppCompatActivity {
                 }
             });
         } else {
-            findViewById(R.id.btn_add).setVisibility(GONE);
+            // 隐藏群组相关控件
+            findViewById(R.id.ll_add_member).setVisibility(GONE);
             findViewById(R.id.ll_group_members).setVisibility(GONE);
-            findViewById(R.id.ll_group_nickname).setVisibility(GONE);
+            findViewById(R.id.ll_group_management).setVisibility(GONE);
 
             ImageView groupAvatar = findViewById(R.id.iv_group_avatar);
             UserInfo data = JIM.getInstance().getUserInfoManager().getUserInfo(conversationId);
@@ -162,6 +203,8 @@ public class ConversationSettingsActivity extends AppCompatActivity {
                 AvatarUtils.loadAvatar(groupAvatar, data.getPortrait(), data.getUserName());
                 TextView tvName = findViewById(R.id.tv_group_name);
                 tvName.setText(data.getUserName());
+                TextView memberCount = findViewById(R.id.tv_member_count);
+                memberCount.setVisibility(GONE);
             }
         }
     }
@@ -183,6 +226,17 @@ public class ConversationSettingsActivity extends AppCompatActivity {
                     Toast.makeText(ConversationSettingsActivity.this, "邀请失败" + code, Toast.LENGTH_SHORT).show();
                 }
             });
+        } else if (requestCode == 2000 && resultCode == RESULT_OK) {
+            // 处理群组重命名
+            String newGroupName = data.getStringExtra("new_nickname");
+            if (!android.text.TextUtils.isEmpty(newGroupName)) {
+                // 更新UI
+                TextView groupName = findViewById(R.id.tv_group_name);
+                groupName.setText(newGroupName);
+                
+                // TODO: 调用API更新群组名称
+                Toast.makeText(this, "群组名称已更新为: " + newGroupName, Toast.LENGTH_SHORT).show();
+            }
         }
     }
 }

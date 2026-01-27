@@ -6,9 +6,12 @@ import android.content.Intent;
 
 import com.juggle.im.android.R;
 
+/**
+ * 地图定位插件
+ */
 public class LocationPlugin extends MorePlugin {
     public static final String ID = "location";
-    public static final int REQ = 12003;
+    public static final int REQ = 12009;
 
     public LocationPlugin(Callback callback) {
         super(callback);
@@ -21,7 +24,7 @@ public class LocationPlugin extends MorePlugin {
 
     @Override
     public int getIconRes() {
-        return R.drawable.ic_input_location;
+        return R.drawable.ic_location;
     }
 
     @Override
@@ -41,7 +44,8 @@ public class LocationPlugin extends MorePlugin {
 
     @Override
     public void onClick(Activity activity) {
-        callback.onPluginAction(getId(), getAction(), null);
+        // TODO: 实现地图定位功能
+        // 目前只是占位，不执行任何操作
     }
 
     @Override

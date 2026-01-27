@@ -1,173 +1,159 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/bg_light">
+    android:background="?attr/colorBackground"
+    android:orientation="vertical"
+    android:padding="24dp">
 
-    <androidx.appcompat.widget.Toolbar
-        android:id="@+id/forward_toolbar"
+    <!-- 顶部空白区域 -->
+    <Space
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="0.5" />
+
+    <!-- 应用名称 -->
+    <TextView
+        android:id="@+id/app_name_text"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:paddingTop="4dp"
-        android:paddingBottom="2dp"
-        android:background="@color/primary_bg_light"
-        app:layout_constraintTop_toTopOf="parent">
+        android:layout_marginBottom="8dp"
+        android:text="@string/txt_register"
+        android:textColor="?attr/colorOnBackground"
+        android:textSize="28sp"
+        android:textStyle="bold"
+        android:gravity="center" />
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:text="@string/txt_register"
-            android:textColor="@color/white"
-            android:textSize="18sp"
-            android:textStyle="bold" />
-    </androidx.appcompat.widget.Toolbar>
-
-    <!-- 应用图标 -->
-    <ImageView
-        android:id="@+id/app_icon"
-        android:layout_width="80dp"
-        android:layout_height="80dp"
-        android:layout_marginTop="30dp"
-        android:src="@mipmap/ic_launcher"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/forward_toolbar" />
-
-    <!-- 注册表单容器 -->
-    <androidx.cardview.widget.CardView
-        android:id="@+id/register_form_container"
-        android:layout_width="0dp"
+    <!-- 应用描述 -->
+    <TextView
+        android:id="@+id/app_description"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginHorizontal="24dp"
-        android:layout_marginTop="20dp"
-        app:cardCornerRadius="16dp"
-        app:cardElevation="4dp"
-        app:cardBackgroundColor="@color/white"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/app_icon">
+        android:layout_marginBottom="32dp"
+        android:text="创建账号开始连接"
+        android:textColor="?attr/colorOnSurfaceVariant"
+        android:textSize="14sp"
+        android:gravity="center" />
 
-        <LinearLayout
+    <!-- 账号/手机/邮箱输入框 -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/inputFieldLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
+        app:boxBackgroundMode="outline"
+        app:boxCornerRadiusBottomEnd="8dp"
+        app:boxCornerRadiusBottomStart="8dp"
+        app:boxCornerRadiusTopEnd="8dp"
+        app:boxCornerRadiusTopStart="8dp"
+        app:hintTextColor="?attr/colorPrimary">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/inputField"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="24dp">
+            android:layout_height="56dp"
+            android:hint="手机号/邮箱/账号"
+            android:drawableStart="@drawable/ic_account"
+            android:drawablePadding="12dp"
+            android:textColor="?attr/colorOnSurface"
+            android:textColorHint="?attr/colorOnSurfaceVariant" />
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="注册方式"
-                android:textColor="@color/black"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                android:layout_marginBottom="12dp" />
+    </com.google.android.material.textfield.TextInputLayout>
 
-            <RadioGroup
-                android:id="@+id/registerTypeGroup"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginBottom="16dp">
+    <!-- 密码输入框 -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/passwordInputLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
+        app:boxBackgroundMode="outline"
+        app:boxCornerRadiusBottomEnd="8dp"
+        app:boxCornerRadiusBottomStart="8dp"
+        app:boxCornerRadiusTopEnd="8dp"
+        app:boxCornerRadiusTopStart="8dp"
+        app:endIconMode="password_toggle"
+        app:hintTextColor="?attr/colorPrimary">
 
-                <RadioButton
-                    android:id="@+id/accountRadio"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="账号注册"
-                    android:textColor="@color/black"
-                    android:buttonTint="@color/primary_bg_light" />
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/passwordInput"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:hint="设置密码"
+            android:drawableStart="@drawable/ic_lock"
+            android:drawablePadding="12dp"
+            android:inputType="textPassword"
+            android:textColor="?attr/colorOnSurface"
+            android:textColorHint="?attr/colorOnSurfaceVariant" />
 
-                <RadioButton
-                    android:id="@+id/phoneRadio"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="手机注册"
-                    android:textColor="@color/black"
-                    android:buttonTint="@color/primary_bg_light" />
+    </com.google.android.material.textfield.TextInputLayout>
 
-                <RadioButton
-                    android:id="@+id/emailRadio"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="邮箱注册"
-                    android:textColor="@color/black"
-                    android:buttonTint="@color/primary_bg_light" />
-            </RadioGroup>
+    <!-- 确认密码输入框 -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/confirmPasswordInputLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="24dp"
+        app:boxBackgroundMode="outline"
+        app:boxCornerRadiusBottomEnd="8dp"
+        app:boxCornerRadiusBottomStart="8dp"
+        app:boxCornerRadiusTopEnd="8dp"
+        app:boxCornerRadiusTopStart="8dp"
+        app:endIconMode="password_toggle"
+        app:hintTextColor="?attr/colorPrimary">
 
-            <EditText
-                android:id="@+id/inputField"
-                android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:background="@drawable/input_background"
-                android:hint="请输入账号"
-                android:padding="16dp"
-                android:textColor="@color/black"
-                android:textColorHint="@color/hint_bg"
-                android:layout_marginBottom="16dp" />
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/confirmPasswordInput"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:hint="确认密码"
+            android:drawableStart="@drawable/ic_lock"
+            android:drawablePadding="12dp"
+            android:inputType="textPassword"
+            android:textColor="?attr/colorOnSurface"
+            android:textColorHint="?attr/colorOnSurfaceVariant" />
 
-            <EditText
-                android:id="@+id/verificationCode"
-                android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:background="@drawable/input_background"
-                android:hint="验证码"
-                android:inputType="number"
-                android:padding="16dp"
-                android:textColor="@color/black"
-                android:textColorHint="@color/hint_bg"
-                android:layout_marginBottom="16dp"
-                android:visibility="gone" />
+    </com.google.android.material.textfield.TextInputLayout>
 
-            <RelativeLayout
-                android:id="@+id/getCodeButtonContainer"
-                android:layout_width="match_parent"
-                android:visibility="gone"
-                android:layout_height="56dp"
-                android:layout_marginBottom="16dp">
+    <!-- 同意协议复选框 -->
+    <com.google.android.material.checkbox.MaterialCheckBox
+        android:id="@+id/agreeCheckbox"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="24dp"
+        android:text="我已阅读并同意服务协议和隐私政策"
+        android:textColor="?attr/colorOnSurface"
+        android:textSize="13sp" />
 
-                <Button
-                    android:id="@+id/getCodeButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="40dp"
-                    android:layout_alignParentEnd="true"
-                    android:layout_centerVertical="true"
-                    android:background="@drawable/bg_primary_button"
-                    android:text="获取验证码"
-                    android:textColor="@color/white"
-                    android:textSize="12sp"
-                    android:visibility="gone" />
+    <!-- 注册按钮 -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/registerButton"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_marginBottom="16dp"
+        android:text="立即注册"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        app:cornerRadius="8dp"
+        app:backgroundTint="?attr/colorPrimary" />
 
-            </RelativeLayout>
+    <!-- 返回登录按钮 -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/backToLoginButton"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_marginBottom="24dp"
+        android:text="返回登录"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        app:cornerRadius="8dp"
+        app:backgroundTint="?attr/colorSurfaceVariant"
+        android:textColor="?attr/colorOnSurface" />
 
-            <EditText
-                android:id="@+id/passwordInput"
-                android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:background="@drawable/input_background"
-                android:hint="密码"
-                android:inputType="textPassword"
-                android:padding="16dp"
-                android:textColor="@color/black"
-                android:textColorHint="@color/hint_bg"
-                android:layout_marginBottom="24dp" />
+    <!-- 底部空白区域 -->
+    <Space
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
 
-            <Button
-                android:id="@+id/registerButton"
-                android:layout_width="match_parent"
-                android:layout_height="48dp"
-                android:background="@drawable/bg_primary_button"
-                android:text="注册"
-                android:textColor="@color/white"
-                android:textStyle="bold" />
-
-        </LinearLayout>
-
-    </androidx.cardview.widget.CardView>
-
-</androidx.constraintlayout.widget.ConstraintLayout>
+</LinearLayout>

@@ -39,8 +39,9 @@ import com.juggle.im.android.chat.plugin.CameraPlugin;
 import com.juggle.im.android.chat.plugin.FilePlugin;
 import com.juggle.im.android.chat.plugin.ImagePlugin;
 import com.juggle.im.android.chat.plugin.MorePlugin;
-import com.juggle.im.android.chat.plugin.VideoCallPlugin;
-import com.juggle.im.android.chat.plugin.VoiceCallPlugin;
+import com.juggle.im.android.chat.plugin.FavoritePlugin;
+import com.juggle.im.android.chat.plugin.LocationPlugin;
+import com.juggle.im.android.chat.plugin.RecallPlugin;
 import com.juggle.im.model.MessageMentionInfo;
 
 import androidx.core.app.ActivityCompat;
@@ -165,8 +166,9 @@ public class ChatInputActionBar extends LinearLayout {
         morePlugins.add(new ImagePlugin(cb));
         morePlugins.add(new CameraPlugin(cb));
         morePlugins.add(new FilePlugin(cb));
-        morePlugins.add(new VoiceCallPlugin(cb));
-        morePlugins.add(new VideoCallPlugin(cb));
+        morePlugins.add(new FavoritePlugin(cb));
+        morePlugins.add(new LocationPlugin(cb));
+        morePlugins.add(new RecallPlugin(cb));
     }
 
     private void setupListeners() {
@@ -460,10 +462,18 @@ public class ChatInputActionBar extends LinearLayout {
         panelContainer.removeAllViews();
         if (!panelSwitched) {
             panelContainer.postDelayed(() -> {
+                // 检查panel是否已经有父容器，如果有则先移除
+                if (panel.getParent() != null) {
+                    ((ViewGroup) panel.getParent()).removeView(panel);
+                }
                 panelContainer.addView(panel);
                 panelContainer.setVisibility(VISIBLE);
             }, 120);
         } else {
+            // 检查panel是否已经有父容器，如果有则先移除
+            if (panel.getParent() != null) {
+                ((ViewGroup) panel.getParent()).removeView(panel);
+            }
             panelContainer.addView(panel);
             panelContainer.setVisibility(VISIBLE);
         }
@@ -740,19 +750,29 @@ public class ChatInputActionBar extends LinearLayout {
                     item.setGravity(Gravity.CENTER);
                     ImageView iv = new ImageView(getContext());
                     iv.setImageResource(plugin.getIconRes());
-                    LinearLayout.LayoutParams ivlp = new LinearLayout.LayoutParams((int) (48 * getResources().getDisplayMetrics().density), (int) (48 * getResources().getDisplayMetrics().density));
+                    // 调整图标大小为 32dp，图标本身已包含白色圆角背景
+                    LinearLayout.LayoutParams ivlp = new LinearLayout.LayoutParams(
+                            (int) (32 * getResources().getDisplayMetrics().density), 
+                            (int) (32 * getResources().getDisplayMetrics().density));
                     iv.setLayoutParams(ivlp);
+                    iv.setScaleType(ImageView.ScaleType.FIT_CENTER);
                     TextView tv = new TextView(getContext());
                     tv.setText(plugin.getLabel(getContext()));
                     tv.setTextSize(12);
+                    tv.setTextColor(0xFF666666);
                     tv.setGravity(Gravity.CENTER);
+                    LinearLayout.LayoutParams tvlp = new LinearLayout.LayoutParams(
+                            LinearLayout.LayoutParams.WRAP_CONTENT,
+                            LinearLayout.LayoutParams.WRAP_CONTENT);
+                    tvlp.topMargin = (int) (4 * getResources().getDisplayMetrics().density);
+                    tv.setLayoutParams(tvlp);
                     GridLayout.LayoutParams glp = new GridLayout.LayoutParams();
                     glp.width = 0;
                     glp.columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f);
                     glp.rowSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f);
                     item.addView(iv);
                     item.addView(tv);
-                    int padding = (int) (8 * getResources().getDisplayMetrics().density);
+                    int padding = (int) (12 * getResources().getDisplayMetrics().density);
                     item.setPadding(padding, padding, padding, padding);
                     final com.juggle.im.android.chat.plugin.MorePlugin pplugin = plugin;
                     // make plugin item show touch feedback

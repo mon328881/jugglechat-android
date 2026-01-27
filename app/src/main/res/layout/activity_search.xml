@@ -34,7 +34,7 @@
             android:paddingEnd="8dp"
             android:cursorVisible="true"
             android:textCursorDrawable="@drawable/cursor_edittext"
-            android:textColor="@android:color/black"
+            android:textColor="?attr/colorOnSurface"
             android:textColorHint="#888888" />
     </LinearLayout>
     <androidx.recyclerview.widget.RecyclerView

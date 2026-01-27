@@ -87,16 +87,16 @@ public class AddFriendActivity extends AppCompatActivity {
         });
 
         adapter.setOnItemClick(user -> {
-            // apply friend
+            // 申请添加好友
             ServiceManager.getUserService().applyFriend(user.getUser_id(), new ApiCallback<FriendApplicationBean>() {
                 @Override
                 public void onSuccess(FriendApplicationBean data) {
-                    Toast.makeText(AddFriendActivity.this, "Request sent", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(AddFriendActivity.this, "申请已发送", Toast.LENGTH_SHORT).show();
                 }
 
                 @Override
                 public void onError(int code, String message) {
-                    Toast.makeText(AddFriendActivity.this, "Failed: " + message, Toast.LENGTH_SHORT).show();
+                    Toast.makeText(AddFriendActivity.this, "失败: " + message, Toast.LENGTH_SHORT).show();
                 }
             });
         });
@@ -115,7 +115,7 @@ public class AddFriendActivity extends AppCompatActivity {
             @Override
             public void onError(int code, String message) {
                 progressBar.setVisibility(View.GONE);
-                Toast.makeText(AddFriendActivity.this, "Search failed: " + message, Toast.LENGTH_SHORT).show();
+                Toast.makeText(AddFriendActivity.this, "搜索失败: " + message, Toast.LENGTH_SHORT).show();
             }
         });
     }
@@ -177,7 +177,7 @@ public class AddFriendActivity extends AppCompatActivity {
         @Override public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
             if (getItemViewType(position) == TYPE_PREVIEW) {
                 PreviewHolder h = (PreviewHolder) holder;
-                h.tv.setText("Search: " + preview);
+                h.tv.setText("搜索: " + preview);
                 h.itemView.setOnClickListener(v -> {
                     if (previewClick != null) previewClick.onClick(preview);
                 });
