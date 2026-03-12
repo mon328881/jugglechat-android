@@ -138,7 +138,7 @@ public class CreateGroupActivity extends AppCompatActivity implements FriendsFra
 
     private void doCreateGroup() {
         if (selectedMap.isEmpty()) {
-            Toast.makeText(this, "Please select at least one friend", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "请至少选择一个好友", Toast.LENGTH_SHORT).show();
             return;
         }
         // build members array
@@ -168,7 +168,7 @@ public class CreateGroupActivity extends AppCompatActivity implements FriendsFra
             @Override
             public void onSuccess(CreateGroupResult data) {
                 btnCreate.setEnabled(true);
-                Toast.makeText(CreateGroupActivity.this, "Group created", Toast.LENGTH_SHORT).show();
+                Toast.makeText(CreateGroupActivity.this, "群组已创建", Toast.LENGTH_SHORT).show();
                 // return to conversation list
                 finish();
             }
@@ -176,7 +176,7 @@ public class CreateGroupActivity extends AppCompatActivity implements FriendsFra
             @Override
             public void onError(int code, String message) {
                 btnCreate.setEnabled(true);
-                Toast.makeText(CreateGroupActivity.this, "Create failed: " + message, Toast.LENGTH_SHORT).show();
+                Toast.makeText(CreateGroupActivity.this, "创建失败: " + message, Toast.LENGTH_SHORT).show();
             }
         });
     }

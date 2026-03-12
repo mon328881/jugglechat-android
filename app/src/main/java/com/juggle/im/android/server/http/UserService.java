@@ -70,4 +70,44 @@ public interface UserService {
      * 退出群组
      */
     void quitGroup(String groupId, ApiCallback<Void> callback);
+
+    /**
+     * 更新群组名称（仅群主可调用）
+     */
+    void updateGroupName(String groupId, String groupName, ApiCallback<Void> callback);
+
+    /**
+     * 解散群组（仅群主可调用）
+     */
+    void dissolveGroup(String groupId, ApiCallback<Void> callback);
+
+    /**
+     * 设置群组权限
+     */
+    void setGroupSettings(String groupId, java.util.Map<String, Object> settings, ApiCallback<Void> callback);
+
+    /**
+     * 设置群组历史消息可见性
+     */
+    void setGroupHistoryMessageVisible(String groupId, boolean visible, ApiCallback<Void> callback);
+
+    /**
+     * 转让群主
+     */
+    void transferGroupOwner(String groupId, String newOwnerId, ApiCallback<Void> callback);
+
+    /**
+     * 添加群组管理员
+     */
+    void addGroupAdministrators(String groupId, List<String> adminIds, ApiCallback<Void> callback);
+
+    /**
+     * 删除群组管理员
+     */
+    void delGroupAdministrators(String groupId, List<String> adminIds, ApiCallback<Void> callback);
+
+    /**
+     * 查询群组管理员列表
+     */
+    void queryGroupAdministrators(String groupId, ApiCallback<List<GroupMemberBean>> callback);
 }

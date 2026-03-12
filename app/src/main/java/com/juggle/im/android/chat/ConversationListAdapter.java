@@ -10,6 +10,7 @@ import android.graphics.drawable.Drawable;
 import android.text.SpannableString;
 import android.text.Spanned;
 import android.text.style.ForegroundColorSpan;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -47,7 +48,7 @@ public class ConversationListAdapter extends RecyclerView.Adapter<ConversationLi
     }
 
     /**
-     * 新会话插入监听器，当新会话插入到顶部时回调
+     * 新会话插入监听器，当新会话插入到顶部时回�?
      */
     public interface OnNewConversationListener {
         void onNewConversationAtTop();
@@ -149,15 +150,15 @@ public class ConversationListAdapter extends RecyclerView.Adapter<ConversationLi
                 uiConversations.add(targetPos, item);
                 notifyItemMoved(currentPos, targetPos);
                 
-                // 检查是否移动到了顶部,如果是且满足条件,则自动滚动
+                // 检查是否移动到了顶�?如果是且满足条件,则自动滚�?
                 boolean isMovingToTop = (targetPos == 0);
                 if (isMovingToTop && recyclerView != null) {
-                    // 检查是否应该自动滚动(用户是否在顶部且未主动滚动离开)
+                    // 检查是否应该自动滚�?用户是否在顶部且未主动滚动离开)
                     boolean shouldScroll = (shouldAutoScrollChecker == null) || shouldAutoScrollChecker.shouldAutoScroll();
-                    android.util.Log.i(TAG, "[移动] 会话移动到顶部, shouldScroll=" + shouldScroll);
+                    android.util.Log.i(TAG, "[移动] 会话移动到顶�? shouldScroll=" + shouldScroll);
                     
                     if (shouldScroll) {
-                        // 直接滚动,不等待RecyclerView的自动调整
+                        // 直接滚动,不等待RecyclerView的自动调�?
                         LinearLayoutManager layoutManager = (LinearLayoutManager) recyclerView.getLayoutManager();
                         if (layoutManager != null) {
                             layoutManager.scrollToPositionWithOffset(0, 0);
@@ -173,21 +174,21 @@ public class ConversationListAdapter extends RecyclerView.Adapter<ConversationLi
             UiConversation newUi = updateMap.get(id);
             int insertIndex = findInsertIndex(newUi.isTop(), newUi.getSortTime(), uiConversations);
             
-            // 在插入之前先通知监听器(此时可以准确判断是否在顶部)
+            // 在插入之前先通知监听�?此时可以准确判断是否在顶�?
             boolean isInsertingAtTop = (insertIndex == 0);
             
             uiConversations.add(insertIndex, newUi);
             notifyItemInserted(insertIndex);
 
-            // 如果新会话插入到顶部,检查是否应该自动滚动
+            // 如果新会话插入到顶部,检查是否应该自动滚�?
             // 关键:在notifyItemInserted之后立即滚动,不使用post延迟
             if (isInsertingAtTop && recyclerView != null) {
-                // 检查是否应该自动滚动(用户是否在顶部且未主动滚动离开)
+                // 检查是否应该自动滚�?用户是否在顶部且未主动滚动离开)
                 boolean shouldScroll = (shouldAutoScrollChecker == null) || shouldAutoScrollChecker.shouldAutoScroll();
                 android.util.Log.i(TAG, "[插入] 新会话插入到顶部, shouldScroll=" + shouldScroll);
                 
                 if (shouldScroll) {
-                    // 直接滚动,不等待RecyclerView的自动调整
+                    // 直接滚动,不等待RecyclerView的自动调�?
                     LinearLayoutManager layoutManager = (LinearLayoutManager) recyclerView.getLayoutManager();
                     if (layoutManager != null) {
                         layoutManager.scrollToPositionWithOffset(0, 0);
@@ -198,7 +199,7 @@ public class ConversationListAdapter extends RecyclerView.Adapter<ConversationLi
                 }
             }
             
-            // 仍然通知监听器(用于其他逻辑,如用户滚动状态追踪)
+            // 仍然通知监听�?用于其他逻辑,如用户滚动状态追�?
             if (isInsertingAtTop && newConversationListener != null) {
                 newConversationListener.onNewConversationAtTop();
             }
@@ -272,7 +273,7 @@ public class ConversationListAdapter extends RecyclerView.Adapter<ConversationLi
         UiConversation uiConversation = uiConversations.get(position);
         holder.bind(uiConversation);
         
-        // 移除选中状态和置顶的背景色，保持统一的白色背景
+        // 移除选中状态和置顶的背景色，保持统一的白色背�?
         holder.itemView.setBackgroundResource(android.R.color.transparent);
     }
 
@@ -281,7 +282,7 @@ public class ConversationListAdapter extends RecyclerView.Adapter<ConversationLi
         return uiConversations.size();
     }
     
-    // 添加方法来清除选中状态
+    // 添加方法来清除选中状�?
     public void clearSelectedPosition() {
         if (selectedPosition >= 0) {
             int previousPosition = selectedPosition;
@@ -290,16 +291,16 @@ public class ConversationListAdapter extends RecyclerView.Adapter<ConversationLi
         }
     }
     
-    // 添加方法来设置选中状态
+    // 添加方法来设置选中状�?
     public void setSelectedPosition(int position) {
-        // 清除之前的选中状态
+        // 清除之前的选中状�?
         if (selectedPosition >= 0) {
             int previousPosition = selectedPosition;
             selectedPosition = -1;
             notifyItemChanged(previousPosition);
         }
         
-        // 设置新的选中状态
+        // 设置新的选中状�?
         if (position >= 0) {
             selectedPosition = position;
             notifyItemChanged(position);
@@ -359,10 +360,10 @@ public class ConversationListAdapter extends RecyclerView.Adapter<ConversationLi
             // 设置时间
             timeView.setText(MessageUtils.formateConversationTime(uiConversation.getSortTime()));
 
-            // 设置最后一条消息
+            // 设置最后一条消�?
             Message lastMessage = uiConversation.getLastMessage();
             if (lastMessage != null) {
-                String senderName = lastMessage.getSenderUserId().equals(JIM.getInstance().getCurrentUserId()) ? "你" : uiConversation.getLastMessageUserName();
+                String senderName = lastMessage.getSenderUserId().equals(JIM.getInstance().getCurrentUserId()) ? "我" : uiConversation.getLastMessageUserName();
                 if (uiConversation.getConversationInfo().getMentionInfo() != null) {
                     SpannableString spannable = new SpannableString("[有人@我]" + MessageUtils.formatChatListMessageSummary(itemView, senderName, lastMessage));
                     spannable.setSpan(
@@ -376,7 +377,7 @@ public class ConversationListAdapter extends RecyclerView.Adapter<ConversationLi
                 }
             }
 
-            // 设置免打扰图标
+            // 设置免打扰图�?
             muteView.setVisibility(uiConversation.isMuted() ? VISIBLE : GONE);
 
             // 设置置顶图标
@@ -406,7 +407,7 @@ public class ConversationListAdapter extends RecyclerView.Adapter<ConversationLi
     }
 
     /**
-     * 获取会话在列表中的位置
+     * 获取会话在列表中的位�?
      *
      * @param uiConversation 会话对象
      * @return 位置索引，未找到返回-1
@@ -431,11 +432,31 @@ public class ConversationListAdapter extends RecyclerView.Adapter<ConversationLi
             uiConversations.remove(position);
             notifyItemRemoved(position);
             
-            // 如果删除的是选中的项目，清除选中状态
+            // 如果删除的是选中的项目，清除选中状�?
             if (position == selectedPosition) {
                 selectedPosition = -1;
             }
         }
+    }
+
+    /**
+     * 通过conversationId删除会话
+     */
+    public void removeConversationById(String conversationId) {
+        for (int i = 0; i < uiConversations.size(); i++) {
+            if (uiConversations.get(i).getId().equals(conversationId)) {
+                uiConversations.remove(i);
+                notifyItemRemoved(i);
+                
+                // 如果删除的是选中的项目，清除选中状态
+                if (i == selectedPosition) {
+                    selectedPosition = -1;
+                }
+                Log.d("ConvListAdapter", "已删除会话: " + conversationId + ", 剩余会话数: " + uiConversations.size());
+                return;
+            }
+        }
+        Log.w("ConvListAdapter", "未找到要删除的会话: " + conversationId);
     }
 
     /**

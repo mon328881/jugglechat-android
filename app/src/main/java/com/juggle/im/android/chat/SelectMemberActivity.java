@@ -150,6 +150,7 @@ public class SelectMemberActivity extends AppCompatActivity {
             public void onSuccess(GroupDetailBean data) {
                 if (data != null && data.getMembers() != null) {
                     List<UserListAdapter.UserInfoObj> memberList = new ArrayList<>();
+                    String currentUserId = JIM.getInstance().getCurrentUserId();
                     for (GroupMemberBean member : data.getMembers()) {
                         boolean disabled = false;
                         if (disabledMembers != null && disabledMembers.contains(member.getUserId())) {
@@ -159,6 +160,8 @@ public class SelectMemberActivity extends AppCompatActivity {
                         userInfoObj.setUserId(member.getUserId());
                         userInfoObj.setName(member.getNickname());
                         userInfoObj.setAvatar(member.getAvatar());
+                        userInfoObj.setRole(member.getRole());
+                        userInfoObj.setIsCurrentUser(member.getUserId().equals(currentUserId));
                         memberList.add(userInfoObj);
                     }
                     selectCallMemberAdapter.setItems(memberList);
@@ -167,7 +170,7 @@ public class SelectMemberActivity extends AppCompatActivity {
 
             @Override
             public void onError(int code, String message) {
-                Toast.makeText(SelectMemberActivity.this, "Failed to load members: " + message, Toast.LENGTH_SHORT).show();
+                Toast.makeText(SelectMemberActivity.this, "加载成员失败: " + message, Toast.LENGTH_SHORT).show();
             }
         });
     }

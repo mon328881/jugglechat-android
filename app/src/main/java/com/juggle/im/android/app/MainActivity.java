@@ -417,6 +417,10 @@ public class MainActivity extends AppCompatActivity {
             if (btnReconnect != null) {
                 btnReconnect.setVisibility(GONE);
             }
+            // 更新用户状态指示器为在线（绿点）
+            View statusIndicator = findViewById(R.id.status_indicator);
+            TextView tvStatus = findViewById(R.id.tv_status);
+            updateConnectionStatus(statusIndicator, tvStatus, status);
             return;
         }
 

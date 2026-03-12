@@ -21,14 +21,22 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.juggle.im.android.R;
 import com.juggle.im.android.chat.component.UserListAdapter;
+import com.juggle.im.android.event.ConversationIdDeletedEvent;
+import com.juggle.im.android.events.GroupNameUpdatedEvent;
 import com.juggle.im.android.server.beans.GroupDetailBean;
 import com.juggle.im.android.server.beans.GroupMemberBean;
 import com.juggle.im.android.server.http.ApiCallback;
 import com.juggle.im.android.server.http.ServiceManager;
 import com.juggle.im.android.utils.AvatarUtils;
+import com.juggle.im.android.utils.HiddenConversationStore;
 import com.juggle.im.model.Conversation;
 import com.juggle.im.JIM;
 import com.juggle.im.model.UserInfo;
+import com.juggle.im.interfaces.IConversationManager;
+import com.juggle.im.model.ConversationInfo;
+import org.greenrobot.eventbus.EventBus;
+
+import java.util.List;
 
 import java.util.ArrayList;
 
@@ -127,11 +135,72 @@ public class ConversationSettingsActivity extends AppCompatActivity {
         if (isGroup) {
             btnLeave.setVisibility(View.VISIBLE);
             btnLeave.setOnClickListener(v -> {
-                try {
-                    Toast.makeText(this, R.string.left_group, Toast.LENGTH_SHORT).show();
-                    finish();
-                } catch (Exception e) {
-                    Toast.makeText(this, R.string.operation_failed, Toast.LENGTH_SHORT).show();
+                // 检查是否为群主
+                if (isGroupOwner) {
+                    Toast.makeText(this, "群主无法退出群组，只能解散群组", Toast.LENGTH_SHORT).show();
+                } else {
+                    try {
+                        // 调用API退出群组
+                        ServiceManager.getUserService().quitGroup(conversationId, new ApiCallback<Void>() {
+                            @Override
+                            public void onSuccess(Void data) {
+                                // 使用当前会话列表中的 Conversation 对象，确保包含正确的 subChannel
+                                IConversationManager cm = JIM.getInstance().getConversationManager();
+                                Conversation targetConv = new Conversation(Conversation.ConversationType.GROUP, conversationId);
+                                try {
+                                    List<ConversationInfo> all = cm.getConversationInfoList();
+                                    if (all != null) {
+                                        for (ConversationInfo info : all) {
+                                            if (info == null || info.getConversation() == null) continue;
+                                            Conversation c = info.getConversation();
+                                            if (c.getConversationType() == Conversation.ConversationType.GROUP
+                                                    && conversationId.equals(c.getConversationId())) {
+                                                targetConv = c;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                } catch (Exception e) {
+                                    Log.w("ConversationSettings", "find conversation for delete failed", e);
+                                }
+
+                                cm.deleteConversationInfo(
+                                        targetConv,
+                                        new IConversationManager.ISimpleCallback() {
+                                            @Override
+                                            public void onSuccess() {
+                                                Toast.makeText(ConversationSettingsActivity.this,
+                                                        R.string.left_group, Toast.LENGTH_SHORT).show();
+                                                // 将该会话加入本地隐藏列表，防止后续同步重新出现在会话列表
+                                                HiddenConversationStore.addHidden(ConversationSettingsActivity.this, conversationId);
+                                                // 主动通知会话列表移除该会话，保证 UI 一定更新
+                                                EventBus.getDefault().post(new ConversationIdDeletedEvent(conversationId));
+                                                // 导航回到消息列表页面
+                                                Intent intent = new Intent(ConversationSettingsActivity.this, com.juggle.im.android.app.MainActivity.class);
+                                                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+                                                startActivity(intent);
+                                                finish();
+                                            }
+
+                                            @Override
+                                            public void onError(int errorCode) {
+                                                Log.e("ConversationSettings",
+                                                        "deleteConversationInfo failed, code=" + errorCode);
+                                                Toast.makeText(ConversationSettingsActivity.this,
+                                                        R.string.operation_failed, Toast.LENGTH_SHORT).show();
+                                            }
+                                        });
+                            }
+
+                            @Override
+                            public void onError(int code, String message) {
+                                Toast.makeText(ConversationSettingsActivity.this, R.string.operation_failed,
+                                        Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                    } catch (Exception e) {
+                        Toast.makeText(this, R.string.operation_failed, Toast.LENGTH_SHORT).show();
+                    }
                 }
             });
         } else {
@@ -230,13 +299,55 @@ public class ConversationSettingsActivity extends AppCompatActivity {
             // 处理群组重命名
             String newGroupName = data.getStringExtra("new_nickname");
             if (!android.text.TextUtils.isEmpty(newGroupName)) {
-                // 更新UI
-                TextView groupName = findViewById(R.id.tv_group_name);
-                groupName.setText(newGroupName);
-                
-                // TODO: 调用API更新群组名称
-                Toast.makeText(this, "群组名称已更新为: " + newGroupName, Toast.LENGTH_SHORT).show();
+                // 调用API更新群组名称
+                ServiceManager.getUserService().updateGroupName(conversationId, newGroupName, new ApiCallback<Void>() {
+                    @Override
+                    public void onSuccess(Void data) {
+                        Toast.makeText(ConversationSettingsActivity.this, "群组名称已更新", Toast.LENGTH_SHORT).show();
+                        // 发送事件通知ConversationActivity更新标题
+                        EventBus.getDefault().post(new GroupNameUpdatedEvent(conversationId, newGroupName));
+                        // 重新加载群组信息以更新UI
+                        reloadGroupInfo();
+                    }
+
+                    @Override
+                    public void onError(int code, String message) {
+                        Log.e("updateGroupName", code + ": " + message);
+                        Toast.makeText(ConversationSettingsActivity.this, "更新群组名称失败", Toast.LENGTH_SHORT).show();
+                    }
+                });
             }
         }
+    }
+
+    /**
+     * 重新加载群组信息并更新UI
+     */
+    private void reloadGroupInfo() {
+        ServiceManager.getUserService().getGroupInfo(conversationId, new ApiCallback<GroupDetailBean>() {
+            @Override
+            public void onSuccess(GroupDetailBean data) {
+                ImageView groupAvatar = findViewById(R.id.iv_group_avatar);
+                AvatarUtils.loadAvatar(groupAvatar, data.getPortrait(), data.getGroupName());
+                TextView groupName = findViewById(R.id.tv_group_name);
+                groupName.setText(data.getGroupName());
+                
+                TextView memberCount = findViewById(R.id.tv_member_count);
+                memberCount.setText(data.getMembers().size() + " 个成员");
+
+                groupMemberIds.clear();
+                for (GroupMemberBean member : data.getMembers()) {
+                    groupMemberIds.add(member.getUserId());
+                }
+                
+                // 判断当前用户是否为群主（myRole == 1 表示群主）
+                isGroupOwner = (data.getMyRole() == 1);
+            }
+
+            @Override
+            public void onError(int code, String message) {
+                Log.e("reloadGroupInfo", code + ": " + message);
+            }
+        });
     }
 }

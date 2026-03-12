@@ -21,6 +21,10 @@ import com.juggle.im.android.utils.AvatarUtils;
 import com.juggle.im.model.Message;
 import com.juggle.im.model.UserInfo;
 
+import android.graphics.Color;
+import android.text.SpannableString;
+import android.text.style.ForegroundColorSpan;
+
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -60,7 +64,30 @@ public abstract class MessageView<T extends UiMessage, K> extends RecyclerView.V
             if (txSender != null) {
                 if (isGroup && message.getDirection() != com.juggle.im.model.Message.MessageDirection.SEND) {
                     txSender.setVisibility(VISIBLE);
-                    txSender.setText(sendUser.getUserName());
+                    String displayName = sendUser.getUserName();
+                    String roleText = "";
+                    
+                    // 获取发送者的角色
+                    int role = message.getSenderRole();
+                    if (role == 1) {
+                        roleText = " (群主)";
+                    } else if (role == 2) {
+                        roleText = " (管理员)";
+                    }
+                    
+                    // 使用 SpannableString 为角色文本设置绿色
+                    if (!roleText.isEmpty()) {
+                        SpannableString spannable = new SpannableString(displayName + roleText);
+                        spannable.setSpan(
+                                new ForegroundColorSpan(Color.parseColor("#4CAF50")),
+                                displayName.length(),
+                                spannable.length(),
+                                SpannableString.SPAN_EXCLUSIVE_EXCLUSIVE
+                        );
+                        txSender.setText(spannable);
+                    } else {
+                        txSender.setText(displayName);
+                    }
                 } else {
                     txSender.setVisibility(GONE);
                 }

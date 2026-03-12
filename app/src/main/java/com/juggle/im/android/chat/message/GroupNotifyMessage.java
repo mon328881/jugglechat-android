@@ -113,7 +113,13 @@ public class GroupNotifyMessage extends MessageContent {
             case ADD_MEMBER:
                 return sender + " 邀请 " + ul + " 加入群聊";
             case REMOVE_MEMBER:
+                // 检查是否是用户自己被移除（操作者是用户自己，且被移除的成员也是用户自己）
+                if (isSender && !mMembers.isEmpty() && mMembers.get(0).getUserId().equals(JIM.getInstance().getCurrentUserId())) {
+                    return ul + "退出了群聊";
+                }
                 return sender + " 将 " + ul + " 移除群聊";
+            case QUIT_MEMBER:
+                return ul + "退出了群聊";
             case RENAME:
                 return sender + " 修改群名称为 " + mName;
             case CHANGE_OWNER:
@@ -131,7 +137,8 @@ public class GroupNotifyMessage extends MessageContent {
         REMOVE_MEMBER(2),
         RENAME(3),
         CHANGE_OWNER(4),
-        JOIN(5);
+        JOIN(5),
+        QUIT_MEMBER(6);  // 用户自己退出群组
 
         final int mValue;
 

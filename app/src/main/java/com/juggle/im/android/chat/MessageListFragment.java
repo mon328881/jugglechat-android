@@ -632,6 +632,7 @@ public class MessageListFragment extends Fragment {
         List<UiMessage> current = new ArrayList<>(adapter.getCurrentList());
         current.addAll(pendingMessages);
         this.setMessageRead(pendingMessages);
+        this.setSenderRoles(pendingMessages);
         pendingMessages.clear();
 
         adapter.submitList(current, () -> {
@@ -660,6 +661,42 @@ public class MessageListFragment extends Fragment {
         Conversation conversation = new Conversation(
                 isGroup ? Conversation.ConversationType.GROUP : Conversation.ConversationType.PRIVATE, conversationId);
         JIM.getInstance().getMessageManager().sendReadReceipt(conversation, msgIds, null);
+    }
+
+    private void setSenderRoles(List<UiMessage> uiMessages) {
+        if (!isGroup || uiMessages.isEmpty()) {
+            return;
+        }
+        
+        // 获取群组成员信息以设置角色
+        com.juggle.im.android.server.http.ServiceManager.getUserService().getGroupInfo(conversationId, 
+            new com.juggle.im.android.server.http.ApiCallback<com.juggle.im.android.server.beans.GroupDetailBean>() {
+                @Override
+                public void onSuccess(com.juggle.im.android.server.beans.GroupDetailBean data) {
+                    if (data == null || data.getMembers() == null) {
+                        return;
+                    }
+                    
+                    // 构建成员角色映射
+                    java.util.Map<String, Integer> memberRoles = new java.util.HashMap<>();
+                    for (com.juggle.im.android.server.beans.GroupMemberBean member : data.getMembers()) {
+                        memberRoles.put(member.getUserId(), member.getRole());
+                    }
+                    
+                    // 为消息设置发送者角色
+                    for (UiMessage um : uiMessages) {
+                        Integer role = memberRoles.get(um.getSenderId());
+                        if (role != null) {
+                            um.setSenderRole(role);
+                        }
+                    }
+                }
+
+                @Override
+                public void onError(int code, String message) {
+                    // 忽略错误，继续显示消息
+                }
+            });
     }
 
     public void onUpdateMessage(List<Message> messages) {
@@ -698,7 +735,7 @@ public class MessageListFragment extends Fragment {
                     if (cm != null)
                         cm.setPrimaryClip(clip);
                 }
-                android.widget.Toast.makeText(requireContext(), "Copied", android.widget.Toast.LENGTH_SHORT).show();
+                android.widget.Toast.makeText(requireContext(), "已复制", android.widget.Toast.LENGTH_SHORT).show();
                 break;
             case MessageListAdapter.Action.TOP:
                 Conversation conversation = message.getMessage().getConversation();
@@ -806,7 +843,7 @@ public class MessageListFragment extends Fragment {
 
                     @Override
                     public void onError(int i) {
-                        Toast.makeText(requireContext(), "Delete failed", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(requireContext(), "删除失败", Toast.LENGTH_SHORT).show();
                     }
                 });
     }

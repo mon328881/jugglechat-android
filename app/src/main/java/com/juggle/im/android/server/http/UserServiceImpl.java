@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.juggle.im.android.server.beans.*;
 import com.juggle.im.android.utils.SHA1Utils;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -139,5 +140,101 @@ public class UserServiceImpl extends BaseService implements UserService {
         Map<String, Object> body = new HashMap<>();
         body.put("group_id", groupId);
         enqueueJson("/jim/groups/quit", body, Void.class, callback);
+    }
+
+    @Override
+    public void updateGroupName(String groupId, String groupName, ApiCallback<Void> callback) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("group_id", groupId);
+        body.put("group_name", groupName);
+        enqueueJson("/jim/groups/update", body, Void.class, callback);
+    }
+
+    @Override
+    public void dissolveGroup(String groupId, ApiCallback<Void> callback) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("group_id", groupId);
+        enqueueJson("/jim/groups/dissolve", body, Void.class, callback);
+    }
+
+    @Override
+    public void setGroupSettings(String groupId, Map<String, Object> settings, ApiCallback<Void> callback) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("group_id", groupId);
+        
+        // 将settings中的键值对直接添加到body中
+        if (settings != null) {
+            body.putAll(settings);
+        }
+        
+        enqueueJson("/jim/groups/management/set", body, Void.class, callback);
+    }
+
+    @Override
+    public void setGroupHistoryMessageVisible(String groupId, boolean visible, ApiCallback<Void> callback) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("group_id", groupId);
+        body.put("visible", visible ? 1 : 0);
+        enqueueJson("/jim/groups/management/sethismsgvisible", body, Void.class, callback);
+    }
+
+    @Override
+    public void transferGroupOwner(String groupId, String newOwnerId, ApiCallback<Void> callback) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("group_id", groupId);
+        body.put("owner_id", newOwnerId);
+        enqueueJson("/jim/groups/management/chgowner", body, Void.class, callback);
+    }
+
+    @Override
+    public void addGroupAdministrators(String groupId, List<String> adminIds, ApiCallback<Void> callback) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("group_id", groupId);
+        body.put("admin_ids", adminIds);
+        enqueueJson("/jim/groups/management/administrators/add", body, Void.class, callback);
+    }
+
+    @Override
+    public void delGroupAdministrators(String groupId, List<String> adminIds, ApiCallback<Void> callback) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("group_id", groupId);
+        body.put("admin_ids", adminIds);
+        enqueueJson("/jim/groups/management/administrators/del", body, Void.class, callback);
+    }
+
+    @Override
+    public void queryGroupAdministrators(String groupId, ApiCallback<List<GroupMemberBean>> callback) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("group_id", groupId);
+        enqueueJson("/jim/groups/management/administrators/list", body, AdminsListWrapper.class, new ApiCallback<AdminsListWrapper>() {
+            @Override
+            public void onSuccess(AdminsListWrapper data) {
+                if (data != null && data.getAdmins() != null) {
+                    callback.onSuccess(data.getAdmins());
+                } else {
+                    callback.onSuccess(new ArrayList<>());
+                }
+            }
+
+            @Override
+            public void onError(int code, String message) {
+                callback.onError(code, message);
+            }
+        });
+    }
+    
+    /**
+     * 管理员列表包装类
+     */
+    private static class AdminsListWrapper {
+        private List<GroupMemberBean> admins;
+        
+        public List<GroupMemberBean> getAdmins() {
+            return admins;
+        }
+        
+        public void setAdmins(List<GroupMemberBean> admins) {
+            this.admins = admins;
+        }
     }
 }

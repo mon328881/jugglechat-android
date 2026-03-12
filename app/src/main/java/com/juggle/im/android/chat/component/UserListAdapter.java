@@ -2,6 +2,9 @@ package com.juggle.im.android.chat.component;
 
 import android.annotation.SuppressLint;
 import android.content.Intent;
+import android.graphics.Color;
+import android.text.SpannableString;
+import android.text.style.ForegroundColorSpan;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -27,12 +30,18 @@ public class UserListAdapter extends RecyclerView.Adapter<UserListAdapter.VH> {
         public String name;
         public String avatar;
         public boolean disabled;
+        public int role;  // 0=成员, 1=群主, 2=管理员
+        public boolean isCurrentUser;
 
         public UserInfoObj(boolean disabled) {
             this.disabled = disabled;
+            this.role = 0;
+            this.isCurrentUser = false;
         }
 
         public UserInfoObj() {
+            this.role = 0;
+            this.isCurrentUser = false;
         }
 
         public String getUserId() {
@@ -47,6 +56,14 @@ public class UserListAdapter extends RecyclerView.Adapter<UserListAdapter.VH> {
             return avatar;
         }
 
+        public int getRole() {
+            return role;
+        }
+
+        public boolean isCurrentUser() {
+            return isCurrentUser;
+        }
+
         public void setUserId(String userId) {
             this.userId = userId;
         }
@@ -57,6 +74,14 @@ public class UserListAdapter extends RecyclerView.Adapter<UserListAdapter.VH> {
 
         public void setAvatar(String avatar) {
             this.avatar = avatar;
+        }
+
+        public void setRole(int role) {
+            this.role = role;
+        }
+
+        public void setIsCurrentUser(boolean isCurrentUser) {
+            this.isCurrentUser = isCurrentUser;
         }
     }
 
@@ -103,7 +128,32 @@ public class UserListAdapter extends RecyclerView.Adapter<UserListAdapter.VH> {
     @Override
     public void onBindViewHolder(@NonNull VH holder, int position) {
         UserInfoObj f = items.get(position);
-        holder.tv.setText(f.getName() != null ? f.getName() : f.getUserId());
+        
+        // 设置昵称和角色
+        String displayName = f.getName() != null ? f.getName() : f.getUserId();
+        String roleText = "";
+        if (f.isCurrentUser()) {
+            roleText = " (我)";
+        } else if (f.getRole() == 1) {
+            roleText = " (群主)";
+        } else if (f.getRole() == 2) {
+            roleText = " (管理员)";
+        }
+        
+        // 使用 SpannableString 为角色文本设置绿色
+        if (!roleText.isEmpty()) {
+            SpannableString spannable = new SpannableString(displayName + roleText);
+            spannable.setSpan(
+                    new ForegroundColorSpan(Color.parseColor("#4CAF50")),
+                    displayName.length(),
+                    spannable.length(),
+                    SpannableString.SPAN_EXCLUSIVE_EXCLUSIVE
+            );
+            holder.tv.setText(spannable);
+        } else {
+            holder.tv.setText(displayName);
+        }
+        
         ImageView checkbox = holder.itemView.findViewById(R.id.iv_checkbox);
         AvatarUtils.loadAvatar(holder.iv, f.getAvatar(), f.getName());
         if (mode.equals(LIST_MODE_SELECT_MEMBER)) {
@@ -131,6 +181,11 @@ public class UserListAdapter extends RecyclerView.Adapter<UserListAdapter.VH> {
         else {
             checkbox.setVisibility(View.GONE);
             holder.itemView.setOnClickListener(v -> {
+                // 如果是自己，不做任何操作
+                if (f.isCurrentUser()) {
+                    return;
+                }
+                // 否则发起对话
                 Conversation convo = new Conversation(Conversation.ConversationType.PRIVATE, f.getUserId());
                 JIM.getInstance().getConversationManager().clearUnreadCount(convo, null);
                 Intent intent = ConversationActivity.intentFor(v.getContext(), f.getUserId(), false, f.getName());

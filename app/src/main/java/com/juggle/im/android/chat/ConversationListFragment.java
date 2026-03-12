@@ -23,8 +23,15 @@ import android.graphics.Color;
 
 import com.juggle.im.JIM;
 import com.juggle.im.android.R;
+import com.juggle.im.android.core.JIMChatCore;
+import com.juggle.im.android.event.ConversationIdDeletedEvent;
 import com.juggle.im.android.model.UiConversation;
 import com.juggle.im.model.Conversation;
+import com.juggle.im.model.ConversationInfo;
+
+import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
+import org.greenrobot.eventbus.ThreadMode;
 
 import java.util.List;
 
@@ -54,7 +61,10 @@ public class ConversationListFragment extends Fragment implements ConversationLi
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        
+        // 注册 EventBus，用于接收主动删除会话的事件（例如退出群聊）
+        if (!EventBus.getDefault().isRegistered(this)) {
+            EventBus.getDefault().register(this);
+        }
         conversationListView = view.findViewById(R.id.rv_conversation_list);
         conversationListAdapter = new ConversationListAdapter();
         conversationListAdapter.setOnConversationClickListener(this);
@@ -121,6 +131,27 @@ public class ConversationListFragment extends Fragment implements ConversationLi
                 }
             }
         });
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        // 每次进入消息页从本地 DB 拉取会话列表，避免因事件早于 Fragment 就绪而列表为空
+        new Thread(() -> {
+            try {
+                JIMChatCore.getInstance().syncConversationList();
+            } catch (Exception e) {
+                Log.e(TAG, "syncConversationList onResume failed", e);
+            }
+        }, "conv-sync").start();
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        if (EventBus.getDefault().isRegistered(this)) {
+            EventBus.getDefault().unregister(this);
+        }
     }
 
     /**
@@ -203,6 +234,17 @@ public class ConversationListFragment extends Fragment implements ConversationLi
 
     public void upsertConversations(List<UiConversation> dataSet) {
         conversationListAdapter.upsertConversations(dataSet);
+    }
+
+    /**
+     * 处理基于会话 ID 的删除事件，确保 UI 一定移除该会话
+     */
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onConversationIdDeleted(ConversationIdDeletedEvent event) {
+        if (event == null || event.getConversationId() == null || conversationListAdapter == null) {
+            return;
+        }
+        conversationListAdapter.removeConversationById(event.getConversationId());
     }
 
     @Override

@@ -22,6 +22,7 @@ public class UiMessage {
     private final String senderId;
     private String senderName;
     private String messageSummary;
+    private int senderRole = 0;  // 0=成员, 1=群主, 2=管理员
 
     private UiMessage(Message message, String messageId, long timestamp, Message.MessageDirection direction, String senderId) {
         this.message = message;
@@ -83,6 +84,14 @@ public class UiMessage {
 
     public void setMessageSummary(String messageSummary) {
         this.messageSummary = messageSummary;
+    }
+
+    public int getSenderRole() {
+        return senderRole;
+    }
+
+    public void setSenderRole(int senderRole) {
+        this.senderRole = senderRole;
     }
 
     @Override

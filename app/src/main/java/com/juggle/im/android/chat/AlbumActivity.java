@@ -264,7 +264,7 @@ public class AlbumActivity extends AppCompatActivity {
                     public void run() {
                         mAdapter.setImages(images);
                         if (images.isEmpty()) {
-                            Toast.makeText(AlbumActivity.this, "No images found", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(AlbumActivity.this, "未找到图片", Toast.LENGTH_SHORT).show();
                         }
                     }
                 });

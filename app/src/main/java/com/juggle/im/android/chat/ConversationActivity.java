@@ -26,6 +26,7 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.juggle.im.JIM;
 import com.juggle.im.android.R;
@@ -42,6 +43,7 @@ import com.juggle.im.android.chat.view.ChatInputActionBar;
 import com.juggle.im.android.event.MessageReadUpdatedEvent;
 import com.juggle.im.android.event.MessageTopEvent;
 import com.juggle.im.android.event.MessageUpdatedEvent;
+import com.juggle.im.android.events.GroupNameUpdatedEvent;
 import com.juggle.im.android.model.UiMessage;
 import com.juggle.im.interfaces.IMessageManager;
 import com.juggle.im.model.Conversation;
@@ -143,6 +145,18 @@ public class ConversationActivity extends AppCompatActivity {
             conversation = new Conversation(
                     isGroup ? Conversation.ConversationType.GROUP : Conversation.ConversationType.PRIVATE,
                     conversationId);
+            
+            // 如果是群组，检查当前用户是否是群组成员
+            if (isGroup) {
+                com.juggle.im.model.GroupInfo groupInfo = JIM.getInstance().getUserInfoManager().getGroupInfo(conversationId);
+                if (groupInfo == null) {
+                    // 群组不存在或用户不是成员
+                    Toast.makeText(this, "你不是该群组的成员", Toast.LENGTH_SHORT).show();
+                    finish();
+                    return;
+                }
+            }
+            
             MessageListFragment frag = MessageListFragment.newInstance(conversationId, isGroup, unreadCount, isMention);
             getSupportFragmentManager()
                     .beginTransaction()
@@ -392,6 +406,17 @@ public class ConversationActivity extends AppCompatActivity {
             List<Message> messages = JIM.getInstance().getMessageManager()
                     .getMessagesByMessageIds(event.getMessageIds());
             frag.onUpdateMessage(messages);
+        }
+    }
+
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void GroupNameUpdatedEvent(GroupNameUpdatedEvent event) {
+        // Update title if this is the group being viewed
+        if (isGroup && event.getGroupId().equals(conversationId)) {
+            TextView tvTitle = findViewById(R.id.tv_title);
+            if (tvTitle != null) {
+                tvTitle.setText(event.getNewGroupName());
+            }
         }
     }
 
