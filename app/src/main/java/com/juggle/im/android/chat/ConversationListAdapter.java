@@ -494,4 +494,41 @@ public class ConversationListAdapter extends RecyclerView.Adapter<ConversationLi
         }
         return uiConversations.get(uiConversations.size() - 1).getSortTime();
     }
+
+    /**
+     * 更新指定会话的展示名称和头像
+     */
+    public void updateDisplayInfo(String conversationId, String name, String avatar) {
+        if (conversationId == null) {
+            android.util.Log.d("ConversationListAdapter", "updateDisplayInfo: conversationId is null, return");
+            return;
+        }
+        android.util.Log.d("ConversationListAdapter", "updateDisplayInfo: conversationId=" + conversationId + ", name=" + name + ", avatar=" + avatar + ", list size=" + uiConversations.size());
+        
+        boolean found = false;
+        for (int i = 0; i < uiConversations.size(); i++) {
+            UiConversation ui = uiConversations.get(i);
+            String uiId = null;
+            try {
+                uiId = ui.getId();
+            } catch (Exception e) {
+                android.util.Log.e("ConversationListAdapter", "Error getting ui.getId() at position " + i, e);
+                continue;
+            }
+            android.util.Log.d("ConversationListAdapter", "  [" + i + "] comparing: uiId=" + uiId + " vs conversationId=" + conversationId);
+            
+            if (conversationId.equals(uiId)) {
+                android.util.Log.d("ConversationListAdapter", "  FOUND! Updating item at position " + i);
+                if (name != null) ui.setName(name);
+                if (avatar != null) ui.setAvatar(avatar);
+                notifyItemChanged(i);
+                found = true;
+                break;
+            }
+        }
+        
+        if (!found) {
+            android.util.Log.w("ConversationListAdapter", "updateDisplayInfo: 未找到匹配的会话 conversationId=" + conversationId);
+        }
+    }
 }

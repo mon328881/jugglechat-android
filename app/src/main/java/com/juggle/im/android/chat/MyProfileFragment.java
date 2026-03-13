@@ -113,6 +113,10 @@ public class MyProfileFragment extends Fragment {
             tvUserId.setText("加载中…");
             return;
         }
+        
+        // 先显示本地缓存的用户信息，避免网络延迟导致界面空白
+        showCachedUserInfo();
+        
         ServiceManager.getUserService().getUserInfo(userId, new ApiCallback<UserInfoBean>() {
             @Override
             public void onSuccess(UserInfoBean data) {
@@ -128,11 +132,30 @@ public class MyProfileFragment extends Fragment {
             public void onError(int errorCode, String errorMsg) {
                 if (getActivity() == null) return;
                 
-                getActivity().runOnUiThread(() -> 
-                    Toast.makeText(getContext(), "获取用户信息失败: " + errorMsg, Toast.LENGTH_SHORT).show()
-                );
+                getActivity().runOnUiThread(() -> {
+                    // 网络请求失败时，如果本地有缓存则不显示错误提示
+                    if (currentUserInfo == null) {
+                        Toast.makeText(getContext(), "获取用户信息失败: " + errorMsg, Toast.LENGTH_SHORT).show();
+                    }
+                });
             }
         });
+    }
+
+    private void showCachedUserInfo() {
+        // 使用 ConfigUtils 中缓存的用户信息作为兜底
+        if (!TextUtils.isEmpty(ConfigUtils.myName)) {
+            tvNickname.setText(ConfigUtils.myName);
+        }
+        if (!TextUtils.isEmpty(ConfigUtils.myAvatarUrl)) {
+            AvatarUtils.loadAvatar(ivAvatar, ConfigUtils.myAvatarUrl, ConfigUtils.myName);
+        } else if (!TextUtils.isEmpty(ConfigUtils.myName)) {
+            // 如果没有头像 URL，则根据昵称生成首字母头像
+            AvatarUtils.loadAvatar(ivAvatar, null, ConfigUtils.myName);
+        }
+        if (!TextUtils.isEmpty(ConfigUtils.currentUserId)) {
+            tvUserId.setText(ConfigUtils.currentUserId);
+        }
     }
 
     private void updateUI() {

@@ -24,7 +24,7 @@ public class RecallPlugin extends MorePlugin {
 
     @Override
     public int getIconRes() {
-        return R.drawable.ic_recall;
+        return R.drawable.ic_recall_with_bg;
     }
 
     @Override

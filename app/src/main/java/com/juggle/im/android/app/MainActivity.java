@@ -38,6 +38,9 @@ import com.juggle.im.android.event.MessageReadUpdatedEvent;
 import com.juggle.im.android.event.UnreadMessageCountEvent;
 import com.juggle.im.android.model.ConfigUtils;
 import com.juggle.im.android.model.UiConversation;
+import com.juggle.im.android.server.beans.UserInfoBean;
+import com.juggle.im.android.server.http.ApiCallback;
+import com.juggle.im.android.server.http.ServiceManager;
 import com.juggle.im.android.utils.NetworkStateManager;
 import com.juggle.im.call.CallConst;
 import com.juggle.im.model.Conversation;
@@ -53,7 +56,9 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class MainActivity extends AppCompatActivity {
@@ -193,6 +198,9 @@ public class MainActivity extends AppCompatActivity {
                             return true;
                         } else if (id == R.id.menu_create_group) {
                             startActivity(new android.content.Intent(MainActivity.this, CreateGroupActivity.class));
+                            return true;
+                        } else if (id == R.id.menu_scan) {
+                            startActivity(new android.content.Intent(MainActivity.this, com.juggle.im.android.chat.ScanActivity.class));
                             return true;
                         }
                         return false;
@@ -466,6 +474,8 @@ public class MainActivity extends AppCompatActivity {
         if (infoList == null || infoList.isEmpty()) return;
 
         List<UiConversation> uiList = new ArrayList<>();
+        Set<String> privateIdsWithoutUserInfo = new HashSet<>();
+        
         for (ConversationInfo info : infoList) {
             UiConversation ui = UiConversation.fromConversationInfo(info);
             //不显示系统消息
@@ -490,6 +500,9 @@ public class MainActivity extends AppCompatActivity {
                     ui.setName(userInfo.getUserName());
                     ui.setAvatar(userInfo.getPortrait());
                     ui.setLastMessageUserName(userInfo.getUserName());
+                } else {
+                    // 本地无用户信息，记录下来稍后从服务器拉取
+                    privateIdsWithoutUserInfo.add(ui.getConversationInfo().getConversation().getConversationId());
                 }
             }
             uiList.add(ui);
@@ -497,7 +510,38 @@ public class MainActivity extends AppCompatActivity {
         ConversationListFragment frag = (ConversationListFragment) getSupportFragmentManager().findFragmentByTag("conversations");
         if (frag != null) {
             runOnUiThread(() -> frag.upsertConversations(uiList));
+            // 从服务器拉取本地无用户信息的私聊会话的用户信息
+            for (String userId : privateIdsWithoutUserInfo) {
+                fetchAndUpdateConversationDisplay(frag, userId);
+            }
         }
+    }
+
+    /**
+     * 私聊会话在本地无用户资料时，从业务服务器拉取昵称/头像并更新该条会话的展示。
+     */
+    private void fetchAndUpdateConversationDisplay(ConversationListFragment frag, String userId) {
+        if (frag == null || userId == null) return;
+        ServiceManager.getUserService().getUserInfo(userId, new ApiCallback<UserInfoBean>() {
+            @Override
+            public void onSuccess(UserInfoBean data) {
+                if (data == null) return;
+                runOnUiThread(() -> {
+                    String name = data.getNickname();
+                    String avatar = data.getAvatar();
+                    if (name != null || avatar != null) {
+                        frag.updateConversationDisplayInfo(userId,
+                                name != null ? name : userId,
+                                avatar);
+                    }
+                });
+            }
+
+            @Override
+            public void onError(int code, String message) {
+                // 忽略，列表继续显示 ID
+            }
+        });
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
@@ -573,12 +617,16 @@ public class MainActivity extends AppCompatActivity {
     // 重试获取用户信息，最多重试3次，每次间隔1秒
     private void retryFetchUserInfo(ImageView ivUserAvatar, TextView tvUserName, TextView tvUserId, String userId, int retryCount) {
         if (retryCount >= 3) {
+            // 本地重试3次都失败，尝试从服务器拉取
+            Log.d("MainActivity", "retryFetchUserInfo: 本地重试3次失败，开始从服务器拉取用户信息 userId=" + userId);
+            fetchUserInfoFromServer(ivUserAvatar, tvUserName, tvUserId, userId);
             return;
         }
         
         UserInfo userInfo = JIM.getInstance().getUserInfoManager().getUserInfo(userId);
         if (userInfo != null) {
             // 成功获取用户信息，更新UI
+            Log.d("MainActivity", "retryFetchUserInfo: 成功获取用户信息 userId=" + userId + ", name=" + userInfo.getUserName());
             tvUserName.setText(userInfo.getUserName());
             tvUserId.setText("@" + userInfo.getUserId());
             com.juggle.im.android.utils.AvatarUtils.loadAvatar(ivUserAvatar, ConfigUtils.myAvatarUrl, userInfo.getUserName());
@@ -587,10 +635,41 @@ public class MainActivity extends AppCompatActivity {
             ConfigUtils.myName = userInfo.getUserName();
         } else {
             // 继续重试
+            Log.d("MainActivity", "retryFetchUserInfo: 本地未找到用户信息，继续重试 retryCount=" + retryCount);
             ivUserAvatar.postDelayed(() -> {
                 retryFetchUserInfo(ivUserAvatar, tvUserName, tvUserId, userId, retryCount + 1);
             }, 1000);
         }
+    }
+    
+    // 从服务器拉取用户信息
+    private void fetchUserInfoFromServer(ImageView ivUserAvatar, TextView tvUserName, TextView tvUserId, String userId) {
+        Log.d("MainActivity", "fetchUserInfoFromServer: 开始从服务器拉取用户信息 userId=" + userId);
+        ServiceManager.getUserService().getUserInfo(userId, new ApiCallback<UserInfoBean>() {
+            @Override
+            public void onSuccess(UserInfoBean data) {
+                Log.d("MainActivity", "fetchUserInfoFromServer onSuccess: data=" + (data != null ? data.toString() : "null"));
+                if (data == null) return;
+                runOnUiThread(() -> {
+                    String name = data.getNickname();
+                    String avatar = data.getAvatar();
+                    Log.d("MainActivity", "fetchUserInfoFromServer updating UI: name=" + name + ", avatar=" + avatar);
+                    if (name != null && !name.isEmpty()) {
+                        tvUserName.setText(name);
+                        ConfigUtils.myName = name;
+                    }
+                    if (avatar != null && !avatar.isEmpty()) {
+                        ConfigUtils.myAvatarUrl = avatar;
+                    }
+                    com.juggle.im.android.utils.AvatarUtils.loadAvatar(ivUserAvatar, ConfigUtils.myAvatarUrl, name != null ? name : "用户");
+                });
+            }
+
+            @Override
+            public void onError(int code, String message) {
+                Log.d("MainActivity", "fetchUserInfoFromServer onError: code=" + code + ", message=" + message);
+            }
+        });
     }
     
     

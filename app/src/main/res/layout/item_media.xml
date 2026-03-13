@@ -11,6 +11,24 @@
         android:scaleType="centerCrop"
         android:background="#f0f0f0" />
 
+    <!-- 覆盖在图片上的播放图标，仅在视频时显示 -->
+    <ImageView
+        android:id="@+id/iv_video_play"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:layout_gravity="center"
+        android:src="@drawable/ic_play"
+        android:visibility="gone" />
+
+    <!-- 上传进度，视频上传时显示在中间 -->
+    <ProgressBar
+        android:id="@+id/progress_upload"
+        style="?android:attr/progressBarStyleLarge"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_gravity="center"
+        android:visibility="gone" />
+
     <ImageView
         android:id="@+id/btn_add"
         android:layout_width="match_parent"

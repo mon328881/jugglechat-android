@@ -2,7 +2,10 @@ package com.juggle.im.android.chat;
 
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.media.ThumbnailUtils;
 import android.os.Bundle;
+import android.provider.MediaStore;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.Menu;
@@ -12,6 +15,7 @@ import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
@@ -46,7 +50,10 @@ public class CreatePostActivity extends AppCompatActivity {
     private MediaAdapter mMediaAdapter;
     private LinkedHashMap<String, String> mImageUrls = new LinkedHashMap<>();
     private String mVideoUrl = null;
+    private Bitmap mVideoThumbnail = null;
+    private boolean mIsUploadingVideo = false;
     private static final int REQUEST_CODE_PICK_IMAGES = 1001;
+    private static final int REQUEST_CODE_PICK_VIDEO = 1002;
     private int uploadingCount = 0; // 记录正在上传的图片数量
     private boolean isSubmitting = false; // 标记是否正在提交
 
@@ -166,6 +173,11 @@ public class CreatePostActivity extends AppCompatActivity {
                 }
                 mMediaAdapter.notifyDataSetChanged();
             }
+        } else if (requestCode == REQUEST_CODE_PICK_VIDEO && resultCode == RESULT_OK && data != null) {
+            android.net.Uri videoUri = data.getData();
+            if (videoUri != null) {
+                handlePickedVideo(videoUri);
+            }
         }
     }
 
@@ -269,30 +281,57 @@ public class CreatePostActivity extends AppCompatActivity {
                 holder.btnAdd.setVisibility(View.VISIBLE);
                 holder.ivMedia.setVisibility(View.GONE);
                 holder.btnDelete.setVisibility(View.GONE);
+                holder.ivVideoPlay.setVisibility(View.GONE);
+                holder.progressUpload.setVisibility(View.GONE);
 
                 holder.btnAdd.setOnClickListener(v -> {
-                    // 跳转到相册选择图片
-                    Intent intent = new Intent(CreatePostActivity.this, AlbumActivity.class);
-                    startActivityForResult(intent, REQUEST_CODE_PICK_IMAGES);
+                    // 显示选择菜单：图片或视频
+                    showMediaPickerMenu();
                 });
-            } else {
+            } else if (position < mImageUrls.size()) {
+                // 显示已选择的图片
                 holder.btnAdd.setVisibility(View.GONE);
                 holder.ivMedia.setVisibility(View.VISIBLE);
                 holder.btnDelete.setVisibility(View.VISIBLE);
+                holder.ivVideoPlay.setVisibility(View.GONE);
+                holder.progressUpload.setVisibility(View.GONE);
 
-                // 显示图片
                 final String imageUrl = new ArrayList<>(mImageUrls.keySet()).get(position);
                 AvatarUtils.loadImage(holder.ivMedia, imageUrl);
 
-                // 删除按钮点击事件
                 holder.btnDelete.setOnClickListener(v -> {
                     mImageUrls.remove(imageUrl);
                     notifyItemRemoved(position);
                 });
 
-                // 图片点击事件
                 holder.ivMedia.setOnClickListener(v -> {
                     // 可以添加预览功能
+                });
+            } else if (!TextUtils.isEmpty(mVideoUrl)) {
+                // 显示视频
+                holder.btnAdd.setVisibility(View.GONE);
+                holder.ivMedia.setVisibility(View.VISIBLE);
+                holder.btnDelete.setVisibility(View.VISIBLE);
+                holder.ivVideoPlay.setVisibility(View.VISIBLE);
+                
+                // 显示上传进度或视频缩略图
+                if (mIsUploadingVideo) {
+                    holder.progressUpload.setVisibility(View.VISIBLE);
+                    holder.ivMedia.setImageBitmap(mVideoThumbnail);
+                } else {
+                    holder.progressUpload.setVisibility(View.GONE);
+                    if (mVideoThumbnail != null) {
+                        holder.ivMedia.setImageBitmap(mVideoThumbnail);
+                    } else {
+                        holder.ivMedia.setImageResource(R.drawable.ic_input_img);
+                    }
+                }
+
+                holder.btnDelete.setOnClickListener(v -> {
+                    mVideoUrl = null;
+                    mVideoThumbnail = null;
+                    mIsUploadingVideo = false;
+                    notifyDataSetChanged();
                 });
             }
         }
@@ -301,6 +340,9 @@ public class CreatePostActivity extends AppCompatActivity {
         public int getItemCount() {
             // 如果没有视频且图片数量小于9，则多显示一个添加按钮
             if (TextUtils.isEmpty(mVideoUrl) && mImageUrls.size() < 9) {
+                return mImageUrls.size() + 1;
+            } else if (!TextUtils.isEmpty(mVideoUrl)) {
+                // 有视频时，显示所有图片 + 视频
                 return mImageUrls.size() + 1;
             } else {
                 return mImageUrls.size();
@@ -311,13 +353,87 @@ public class CreatePostActivity extends AppCompatActivity {
             ImageView ivMedia;
             ImageView btnAdd;
             ImageView btnDelete;
+            ImageView ivVideoPlay;
+            ProgressBar progressUpload;
 
             MediaViewHolder(View itemView) {
                 super(itemView);
                 ivMedia = itemView.findViewById(R.id.iv_media);
                 btnAdd = itemView.findViewById(R.id.btn_add);
                 btnDelete = itemView.findViewById(R.id.btn_delete);
+                ivVideoPlay = itemView.findViewById(R.id.iv_video_play);
+                progressUpload = itemView.findViewById(R.id.progress_upload);
             }
         }
+    }
+
+    // 显示媒体选择菜单
+    private void showMediaPickerMenu() {
+        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
+        builder.setTitle("选择媒体类型");
+        builder.setItems(new String[]{"图片", "视频"}, (dialog, which) -> {
+            if (which == 0) {
+                // 选择图片
+                Intent intent = new Intent(CreatePostActivity.this, AlbumActivity.class);
+                startActivityForResult(intent, REQUEST_CODE_PICK_IMAGES);
+            } else {
+                // 选择视频
+                pickVideoFromGallery();
+            }
+        });
+        builder.show();
+    }
+
+    // 选择视频
+    private void pickVideoFromGallery() {
+        Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Video.Media.EXTERNAL_CONTENT_URI);
+        intent.setType("video/*");
+        startActivityForResult(intent, REQUEST_CODE_PICK_VIDEO);
+    }
+
+    private void handlePickedVideo(android.net.Uri uri) {
+        // 将 content Uri 转为实际文件路径，并使用视频后缀，方便服务端按类型处理
+        String localPath = FileUtils.convertContentUriToFile(getApplicationContext(), uri.toString(), "temp_video.mp4");
+        if (TextUtils.isEmpty(localPath)) {
+            Toast.makeText(this, "无法读取视频文件", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // 生成本地视频缩略图，优先用于展示
+        try {
+            Bitmap thumb = ThumbnailUtils.createVideoThumbnail(localPath, MediaStore.Images.Thumbnails.MINI_KIND);
+            mVideoThumbnail = thumb;
+        } catch (Exception e) {
+            Log.e("createpost", "generate video thumbnail error", e);
+            mVideoThumbnail = null;
+        }
+
+        // 进入"视频上传中"状态，让列表中展示视频缩略图 + loading
+        mIsUploadingVideo = true;
+        mVideoUrl = null;
+        mMediaAdapter.notifyDataSetChanged();
+
+        // 使用业务服务的文件上传接口，通过 /jim/file_cred + 预签名 URL 上传视频文件
+        // FileType: 3 表示视频，参见 jugglechat-server/apis/models/file.go
+        ServiceManager.getFileService().uploadFile(3, localPath, "mp4", new ApiCallback<String>() {
+            @Override
+            public void onSuccess(String url) {
+                mVideoUrl = url;
+                mIsUploadingVideo = false;
+                // 有视频时清空图片列表，确保一条动态只有一种媒体类型
+                mImageUrls.clear();
+                mMediaAdapter.notifyDataSetChanged();
+                Toast.makeText(CreatePostActivity.this, "视频上传成功", Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void onError(int code, String message) {
+                mIsUploadingVideo = false;
+                mVideoUrl = null;
+                mVideoThumbnail = null;
+                mMediaAdapter.notifyDataSetChanged();
+                Toast.makeText(CreatePostActivity.this, "视频上传失败: " + message, Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 }

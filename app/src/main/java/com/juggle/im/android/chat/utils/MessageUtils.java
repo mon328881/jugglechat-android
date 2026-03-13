@@ -37,6 +37,8 @@ import com.juggle.im.model.messages.TextMessage;
 import com.juggle.im.model.messages.UnknownMessage;
 import com.juggle.im.model.messages.VoiceMessage;
 
+import com.juggle.im.android.chat.utils.LocationMessageHelper;
+
 import java.lang.reflect.Constructor;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -217,7 +219,17 @@ public class MessageUtils {
         String content = message.getConversation().getConversationType().equals(Conversation.ConversationType.PRIVATE) ?
                 "%s" : senderName + ": %s";
         if (message.getContent() instanceof TextMessage) {
-            return String.format(content, ((TextMessage) message.getContent()).getContent());
+            String text = ((TextMessage) message.getContent()).getContent();
+            // 检查是否是位置消息
+            if (LocationMessageHelper.isLocationContent(text)) {
+                String address = LocationMessageHelper.parseAddress(text);
+                if (address != null && !address.isEmpty()) {
+                    return String.format(content, "📍 " + address);
+                } else {
+                    return String.format(content, view.getResources().getString(R.string.msg_location));
+                }
+            }
+            return String.format(content, text);
         } else if (message.getContent() instanceof ImageMessage) {
             return String.format(content, view.getResources().getString(R.string.msg_image));
         } else if (message.getContent() instanceof VoiceMessage) {
@@ -264,7 +276,17 @@ public class MessageUtils {
 
     public static String getMessageSummary(Context view, Message message) {
         if (message.getContent() instanceof TextMessage) {
-            return ((TextMessage) message.getContent()).getContent();
+            String text = ((TextMessage) message.getContent()).getContent();
+            // 检查是否是位置消息
+            boolean isLocation = LocationMessageHelper.isLocationContent(text);
+            android.util.Log.d("MessageUtils", "getMessageSummary: text=" + text.substring(0, Math.min(50, text.length())) + 
+                    ", isLocation=" + isLocation);
+            if (isLocation) {
+                String summary = view.getResources().getString(R.string.msg_location);
+                android.util.Log.d("MessageUtils", "Returning location summary: " + summary);
+                return summary;
+            }
+            return text;
         } else if (message.getContent() instanceof ImageMessage) {
             return view.getResources().getString(R.string.msg_image);
         } else if (message.getContent() instanceof VoiceMessage) {

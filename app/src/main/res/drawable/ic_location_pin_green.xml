@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 绿色水滴形选点标记，中心白圆 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="32dp"
+    android:height="44dp"
+    android:viewportWidth="32"
+    android:viewportHeight="44">
+    <path
+        android:fillColor="#09B83E"
+        android:pathData="M16,0C7.16,0 0,7.16 0,16c0,12 16,28 16,28s16,-16 16,-28C32,7.16 24.84,0 16,0z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M16,10m-4,0a4,4 0,1 1,8 0a4,4 0,1 1,-8 0" />
+</vector>

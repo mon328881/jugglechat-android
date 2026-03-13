@@ -373,4 +373,13 @@ public class ConversationListFragment extends Fragment implements ConversationLi
         int idx = conversationListAdapter.getPosition(uiConversation);
         conversationListAdapter.notifyItemChanged(idx);
     }
+
+    /**
+     * 更新指定会话的展示名称和头像（用于从业务服务器拉取到用户资料后刷新单条，避免只显示 ID）。
+     */
+    public void updateConversationDisplayInfo(String conversationId, String name, String avatar) {
+        if (conversationListAdapter != null) {
+            conversationListAdapter.updateDisplayInfo(conversationId, name, avatar);
+        }
+    }
 }

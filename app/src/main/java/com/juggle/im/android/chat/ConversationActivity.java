@@ -11,7 +11,12 @@ import static com.juggle.im.android.chat.SelectMemberActivity.SELECTED_MEMBERS_N
 
 import android.content.Context;
 import android.content.Intent;
+import android.database.Cursor;
+import android.net.Uri;
 import android.os.Bundle;
+import android.provider.MediaStore;
+import android.provider.OpenableColumns;
+import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -39,11 +44,14 @@ import com.juggle.im.android.chat.plugin.FilePlugin;
 import com.juggle.im.android.chat.plugin.ImagePlugin;
 import com.juggle.im.android.chat.utils.FileUtils;
 import com.juggle.im.android.chat.utils.MessageUtils;
+
+import java.io.File;
 import com.juggle.im.android.chat.view.ChatInputActionBar;
 import com.juggle.im.android.event.MessageReadUpdatedEvent;
 import com.juggle.im.android.event.MessageTopEvent;
 import com.juggle.im.android.event.MessageUpdatedEvent;
 import com.juggle.im.android.events.GroupNameUpdatedEvent;
+import com.juggle.im.android.model.FavoriteItem;
 import com.juggle.im.android.model.UiMessage;
 import com.juggle.im.interfaces.IMessageManager;
 import com.juggle.im.model.Conversation;
@@ -78,6 +86,7 @@ public class ConversationActivity extends AppCompatActivity {
     public static final String EXTRA_UNREAD_COUNT = "extra_unread_count";
     public static final int REQ_FORWARD = 2001;
     public static final int REQ_MENTION = 2002;
+    public static final int REQ_LOCATION_PICKER = 2005;
     private boolean isGroup;
     private String conversationId;
     private Conversation conversation;
@@ -204,7 +213,31 @@ public class ConversationActivity extends AppCompatActivity {
 
                 @Override
                 public void onFinishRecord(String voiceUrl, long duration) {
-                    Log.i("TAG", "onFinishVoiceRecord");
+                    Log.i("TAG", "onFinishVoiceRecord: voiceUrl=" + voiceUrl + ", duration=" + duration);
+                    
+                    // Validate voice file path
+                    if (voiceUrl == null || voiceUrl.isEmpty()) {
+                        Log.e("TAG", "ERROR: voiceUrl is null or empty");
+                        Toast.makeText(ConversationActivity.this, "语音文件路径无效", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    
+                    File voiceFile = new File(voiceUrl);
+                    if (!voiceFile.exists()) {
+                        Log.e("TAG", "ERROR: Voice file does not exist at: " + voiceUrl);
+                        Toast.makeText(ConversationActivity.this, "语音文件不存在", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    
+                    long fileSize = voiceFile.length();
+                    if (fileSize == 0) {
+                        Log.e("TAG", "ERROR: Voice file is empty at: " + voiceUrl);
+                        Toast.makeText(ConversationActivity.this, "语音文件为空", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    
+                    Log.i("TAG", "Voice file validated: size=" + fileSize + " bytes");
+                    
                     VoiceMessage voice = new VoiceMessage();
                     voice.setLocalPath(voiceUrl);
                     voice.setDuration((int) duration);
@@ -292,6 +325,9 @@ public class ConversationActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+        android.util.Log.d("ConversationActivity", "onActivityResult: requestCode=" + requestCode + 
+                ", resultCode=" + resultCode + ", data=" + (data != null ? "not null" : "null"));
+        
         ChatInputActionBar inputBar = findViewById(R.id.input_bar);
         boolean handled = false;
         if (inputBar != null) {
@@ -345,6 +381,24 @@ public class ConversationActivity extends AppCompatActivity {
                 frag.insertMention(newIds, newNames);
             } else {
                 frag.showKeyboardIfNeed();
+            }
+        } else if (requestCode == REQ_LOCATION_PICKER && resultCode == RESULT_OK && data != null) {
+            double lat = data.getDoubleExtra(LocationPickerActivity.EXTRA_LAT, 0);
+            double lng = data.getDoubleExtra(LocationPickerActivity.EXTRA_LNG, 0);
+            String address = data.getStringExtra(LocationPickerActivity.EXTRA_ADDRESS);
+            if (address == null) address = "";
+            
+            // 发送为文本消息，格式 [LOCATION]lat,lng|address
+            String content = com.juggle.im.android.chat.utils.LocationMessageHelper.buildContent(lat, lng, address);
+            Log.d("LocationMessage", "Sending location: " + content + ", conversation: " + (conversation != null ? conversation.getConversationId() : "null"));
+            TextMessage msg = new TextMessage(content);
+            sendTextMessage(msg, null, conversation);
+            
+            // 自动滚动到底部
+            MessageListFragment frag = (MessageListFragment) getSupportFragmentManager()
+                    .findFragmentById(R.id.fragment_messages_container);
+            if (frag != null && frag.getView() != null) {
+                frag.getView().postDelayed(() -> frag.scrollToBottomIfNeeded(), 350);
             }
         }
         // 移除了通话相关的 ActivityResult 处理
@@ -440,17 +494,128 @@ public class ConversationActivity extends AppCompatActivity {
             image.setThumbnailLocalPath(fileUrl);
             sendImageMessage(image, null, conversation);
         } else if (pluginId.equals("location")) {
+            Intent it = new Intent(this, LocationPickerActivity.class);
+            startActivityForResult(it, REQ_LOCATION_PICKER);
         } else if (pluginId.equals("contact")) {
 
         } else if (pluginId.equals(FilePlugin.ID)) {
-            String fileUrl = FileUtils.convertContentUriToFile(this, data.toString());
+            // 通过 Uri 读取原始文件名（包含正确的视频/文件后缀）
+            Uri uri = null;
+            if (data instanceof Uri) {
+                uri = (Uri) data;
+            } else if (data != null) {
+                uri = Uri.parse(data.toString());
+            }
+            if (uri == null) {
+                Log.w("ConversationActivity", "FilePlugin data is null, ignore.");
+                return;
+            }
+
+            String originalName = getDisplayNameFromUri(this, uri);
+
+            // 为临时文件选择合适的后缀，保证本地路径也带正确扩展名（如 .mp4）
+            String ext = "";
+            if (!TextUtils.isEmpty(originalName)) {
+                int dotIndex = originalName.lastIndexOf(".");
+                if (dotIndex > 0 && dotIndex < originalName.length() - 1) {
+                    ext = originalName.substring(dotIndex); // 包含点，例如 ".mp4"
+                }
+            }
+            String suffix = TextUtils.isEmpty(ext) ? "temp_file" : ext;
+
+            String fileUrl = FileUtils.convertContentUriToFile(this, uri.toString(), suffix);
             FileMessage fileMessage = new FileMessage();
             File f = new File(fileUrl);
             fileMessage.setLocalPath(fileUrl);
-            fileMessage.setName(f.getName().length() > 10 ? f.getName().substring(0, 10) : f.getName());
+
+            // 使用原始文件名作为消息展示名称，必要时做截断，但始终保留后缀
+            String finalName = !TextUtils.isEmpty(originalName) ? originalName : f.getName();
+            String baseName = finalName;
+            String displayExt = "";
+            int dotIndex = finalName.lastIndexOf(".");
+            if (dotIndex > 0 && dotIndex < finalName.length() - 1) {
+                baseName = finalName.substring(0, dotIndex);
+                displayExt = finalName.substring(dotIndex); // 包含点，例如 ".mp4"
+            }
+            // 仅截断主文件名部分，避免丢失扩展名
+            if (baseName.length() > 30) {
+                baseName = baseName.substring(0, 30);
+            }
+            finalName = TextUtils.isEmpty(displayExt) ? baseName : (baseName + displayExt);
+
+            fileMessage.setName(finalName);
             long size = f.length();
             fileMessage.setSize(size);
             sendFileMessage(fileMessage, conversation);
+        } else if (pluginId.equals("favorite")) {
+            @SuppressWarnings("unchecked")
+            ArrayList<FavoriteItem> selected = (ArrayList<FavoriteItem>) data;
+            if (selected == null || selected.isEmpty()) return;
+            for (FavoriteItem item : selected) {
+                if (FavoriteItem.TYPE_TEXT.equals(item.getType())) {
+                    TextMessage tm = new TextMessage(item.getContent() != null ? item.getContent() : "");
+                    sendTextMessage(tm, null, conversation);
+                } else if (FavoriteItem.TYPE_IMAGE.equals(item.getType())) {
+                    ImageMessage image = new ImageMessage();
+                    image.setHeight(600);
+                    image.setWidth(800);
+                    
+                    // 优先使用服务器 URL，其次使用本地路径
+                    String url = item.getUrl();
+                    String localPath = item.getLocalPath();
+                    
+                    if (url != null && !url.isEmpty()) {
+                        // 使用服务器 URL
+                        image.setUrl(url);
+                        image.setThumbnailUrl(item.getThumbnailUrl());
+                    } else if (localPath != null && !localPath.isEmpty()) {
+                        // 使用本地路径
+                        File imgFile = new File(localPath);
+                        if (imgFile.exists()) {
+                            image.setLocalPath(localPath);
+                            image.setThumbnailLocalPath(localPath);
+                        } else {
+                            continue;
+                        }
+                    } else {
+                        continue;
+                    }
+                    
+                    sendImageMessage(image, null, conversation);
+                } else if (FavoriteItem.TYPE_FILE.equals(item.getType())) {
+                    FileMessage fileMessage = new FileMessage();
+                    
+                    // 优先使用服务器 URL，其次使用本地路径
+                    String url = item.getUrl();
+                    String localPath = item.getLocalPath();
+                    
+                    if (url != null && !url.isEmpty()) {
+                        // 使用服务器 URL
+                        fileMessage.setUrl(url);
+                    } else if (localPath != null && !localPath.isEmpty()) {
+                        // 使用本地路径
+                        File fileFile = new File(localPath);
+                        if (fileFile.exists()) {
+                            fileMessage.setLocalPath(localPath);
+                        } else {
+                            continue;
+                        }
+                    } else {
+                        continue;
+                    }
+                    
+                    fileMessage.setName(item.getName());
+                    fileMessage.setSize(item.getSize());
+                    sendFileMessage(fileMessage, conversation);
+                }
+            }
+        } else if (pluginId.equals("scan")) {
+            // 处理扫一扫结果
+            String scanResult = (String) data;
+            if (scanResult != null && !scanResult.isEmpty()) {
+                TextMessage tm = new TextMessage(scanResult);
+                sendTextMessage(tm, null, conversation);
+            }
         }
         // 移除了通话插件的处理逻辑
     }
@@ -571,34 +736,48 @@ public class ConversationActivity extends AppCompatActivity {
     }
 
     private void sendVoiceMessage(VoiceMessage voice, Conversation conversation) {
+        Log.i("TAG", "sendVoiceMessage: localPath=" + voice.getLocalPath() + ", duration=" + voice.getDuration());
+        
         MessageListFragment frag = (MessageListFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.fragment_messages_container);
+        
+        if (frag == null) {
+            Log.e("TAG", "ERROR: MessageListFragment is null");
+            return;
+        }
+        
         IMessageManager.ISendMediaMessageCallback callback = new IMessageManager.ISendMediaMessageCallback() {
             @Override
             public void onProgress(int progress, Message message) {
-                Log.i("TAG", "onProgress");
+                Log.i("TAG", "onProgress: " + progress + "%");
             }
 
             @Override
             public void onSuccess(Message message) {
-                Log.i("TAG", "send message success");
+                Log.i("TAG", "send message success: msgId=" + message.getMessageId());
                 frag.onUpdateMessage(Arrays.asList(message));
             }
 
             @Override
             public void onError(Message message, int errorCode) {
-                Log.i("TAG", "send message error: " + errorCode);
+                Log.e("TAG", "send message error: errorCode=" + errorCode + ", msgId=" + message.getMessageId());
                 frag.onUpdateMessage(Arrays.asList(message));
             }
 
             @Override
             public void onCancel(Message message) {
-                Log.i("TAG", "onCancel");
+                Log.i("TAG", "send message cancelled: msgId=" + message.getMessageId());
             }
         };
-        Message message = JIM.getInstance().getMessageManager().sendMediaMessage(voice, conversation, callback);
-        Log.i("TAG", "after send, clientMsgNo is " + message.getClientMsgNo());
-        frag.onNewMessage(message);
+        
+        try {
+            Message message = JIM.getInstance().getMessageManager().sendMediaMessage(voice, conversation, callback);
+            Log.i("TAG", "after send, clientMsgNo=" + message.getClientMsgNo() + ", msgId=" + message.getMessageId());
+            frag.onNewMessage(message);
+        } catch (Exception e) {
+            Log.e("TAG", "sendMediaMessage exception", e);
+            Toast.makeText(this, "发送语音失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
     }
 
     public void sendMergeMessage(List<UiMessage> forwardMsg, Conversation targetConv, String targetName) {
@@ -670,5 +849,44 @@ public class ConversationActivity extends AppCompatActivity {
             inputBar.hideKeyboard();
         }
         super.finish();
+    }
+
+    /**
+     * 从 content Uri 中读取展示用文件名（DISPLAY_NAME），用于保留真实后缀（如 .mp4）
+     */
+    private String getDisplayNameFromUri(Context context, Uri uri) {
+        String result = null;
+        if (uri == null) return null;
+
+        if ("content".equals(uri.getScheme())) {
+            Cursor cursor = null;
+            try {
+                cursor = context.getContentResolver().query(uri, null, null, null, null);
+                if (cursor != null && cursor.moveToFirst()) {
+                    int index = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME);
+                    if (index != -1) {
+                        result = cursor.getString(index);
+                    }
+                }
+            } catch (Exception e) {
+                Log.w("ConversationActivity", "query display name error", e);
+            } finally {
+                if (cursor != null) {
+                    cursor.close();
+                }
+            }
+        }
+
+        if (TextUtils.isEmpty(result)) {
+            String path = uri.getPath();
+            if (!TextUtils.isEmpty(path)) {
+                int cut = path.lastIndexOf('/');
+                if (cut != -1) {
+                    result = path.substring(cut + 1);
+                }
+            }
+        }
+
+        return result;
     }
 }

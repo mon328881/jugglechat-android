@@ -11,6 +11,8 @@
     <string name="camera">相机</string>
     <string name="location">位置</string>
     <string name="favorite">我的收藏</string>
+    <string name="my_favorites">我的收藏</string>
+    <string name="favorites_empty">暂无收藏</string>
     <string name="quick_recall">一键撤回</string>
     <string name="contact">联系人</string>
     <string name="emoji_history">最近使用</string>
@@ -127,6 +129,28 @@
     <string name="qrcode_share_hint_web">非APP扫码将跳转至下载页</string>
     <string name="cd_qrcode_share">二维码分享</string>
 
+    <!-- 地图 / 位置相关 -->
+    <string name="location_send">发送当前位置</string>
+    <string name="location_send_btn">发送</string>
+    <string name="location_search_placeholder">搜索地点</string>
+    <string name="location_hint_tap_map">点击地图选择位置，再点下方按钮发送</string>
+    <string name="location_prefix">位置：%1$s (%2$.6f,%3$.6f)</string>
+    <string name="location_toast_select_first">请先在地图上点击选择位置</string>
+    <string name="location_click_hint">点击查看地图 · 导航</string>
+    <string name="location_open_in_map">在腾讯地图中打开</string>
+    <string name="location_navigate">导航</string>
+    <string name="location_btn_open_map">在腾讯地图中打开</string>
+    <string name="location_btn_navigate">导航</string>
+    <string name="location_search_hint">搜索地点、地址</string>
+    <string name="location_btn_relocate">定位到我的位置</string>
+    <string name="location_address_unknown">未知位置</string>
+    <string name="location_distance_m">约 %1$d 米</string>
+    <string name="location_distance_km">约 %1$.1f 公里</string>
+    <string name="location_loading">解析中…</string>
+    <string name="location_toast_search_empty">请输入要搜索的地址或关键词</string>
+    <string name="location_toast_search_failed">搜索失败，请重试</string>
+    <string name="location_toast_no_result">未找到相关地点</string>
+
     <!-- 隐私协议 -->
     <string name="privacy_policy_full">
 1. 我们收集的信息\n\n
@@ -169,4 +193,9 @@
     <string name="status_online">在线</string>
     <string name="status_offline">离线</string>
     <string name="status_unstable">网络波动</string>
+
+    <!-- 扫一扫 -->
+    <string name="scan">扫一扫</string>
+    <string name="scan_tip">将二维码放入框内，自动扫描</string>
+    <string name="camera_permission_denied">需要相机权限才能使用扫一扫功能</string>
 </resources>

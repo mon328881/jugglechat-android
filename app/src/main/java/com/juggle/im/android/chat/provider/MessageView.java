@@ -16,6 +16,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.juggle.im.JIM;
 import com.juggle.im.android.R;
 import com.juggle.im.android.chat.utils.MessageUtils;
+import com.juggle.im.android.model.ConfigUtils;
 import com.juggle.im.android.model.UiMessage;
 import com.juggle.im.android.utils.AvatarUtils;
 import com.juggle.im.model.Message;
@@ -24,6 +25,7 @@ import com.juggle.im.model.UserInfo;
 import android.graphics.Color;
 import android.text.SpannableString;
 import android.text.style.ForegroundColorSpan;
+import android.text.TextUtils;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -55,41 +57,71 @@ public abstract class MessageView<T extends UiMessage, K> extends RecyclerView.V
      */
     final public void bind(T message, K content, boolean isGroup, View itemView) {
         ImageView ivAvatar = itemView.findViewById(R.id.image_avatar);
-        UserInfo sendUser = JIM.getInstance().getUserInfoManager().getUserInfo(message.getSenderId());
-        if (sendUser != null && ivAvatar != null) {
-            String name = sendUser.getUserName();
-            message.setSenderName(name);
-            AvatarUtils.loadAvatar(ivAvatar, sendUser.getPortrait(), name);
-            TextView txSender = itemView.findViewById(R.id.text_sender_name);
-            if (txSender != null) {
-                if (isGroup && message.getDirection() != com.juggle.im.model.Message.MessageDirection.SEND) {
-                    txSender.setVisibility(VISIBLE);
-                    String displayName = sendUser.getUserName();
-                    String roleText = "";
-                    
-                    // 获取发送者的角色
-                    int role = message.getSenderRole();
-                    if (role == 1) {
-                        roleText = " (群主)";
-                    } else if (role == 2) {
-                        roleText = " (管理员)";
-                    }
-                    
-                    // 使用 SpannableString 为角色文本设置绿色
-                    if (!roleText.isEmpty()) {
-                        SpannableString spannable = new SpannableString(displayName + roleText);
-                        spannable.setSpan(
-                                new ForegroundColorSpan(Color.parseColor("#4CAF50")),
-                                displayName.length(),
-                                spannable.length(),
-                                SpannableString.SPAN_EXCLUSIVE_EXCLUSIVE
-                        );
-                        txSender.setText(spannable);
+        if (ivAvatar != null) {
+            UserInfo sendUser = JIM.getInstance().getUserInfoManager().getUserInfo(message.getSenderId());
+            if (sendUser != null) {
+                // 优先使用 IM 返回的用户资料
+                String name = sendUser.getUserName();
+                message.setSenderName(name);
+                AvatarUtils.loadAvatar(ivAvatar, sendUser.getPortrait(), name);
+                TextView txSender = itemView.findViewById(R.id.text_sender_name);
+                if (txSender != null) {
+                    if (isGroup && message.getDirection() != com.juggle.im.model.Message.MessageDirection.SEND) {
+                        txSender.setVisibility(VISIBLE);
+                        String displayName = sendUser.getUserName();
+                        String roleText = "";
+                        
+                        // 获取发送者的角色
+                        int role = message.getSenderRole();
+                        if (role == 1) {
+                            roleText = " (群主)";
+                        } else if (role == 2) {
+                            roleText = " (管理员)";
+                        }
+                        
+                        // 使用 SpannableString 为角色文本设置绿色
+                        if (!roleText.isEmpty()) {
+                            SpannableString spannable = new SpannableString(displayName + roleText);
+                            spannable.setSpan(
+                                    new ForegroundColorSpan(Color.parseColor("#4CAF50")),
+                                    displayName.length(),
+                                    spannable.length(),
+                                    SpannableString.SPAN_EXCLUSIVE_EXCLUSIVE
+                            );
+                            txSender.setText(spannable);
+                        } else {
+                            txSender.setText(displayName);
+                        }
                     } else {
-                        txSender.setText(displayName);
+                        txSender.setVisibility(GONE);
                     }
+                }
+            } else {
+                // 兜底：IM 本地暂时没有该用户资料时，使用本地缓存的昵称 / senderId 生成首字母头像
+                String nameFallback;
+                String urlFallback = null;
+                if (message.getDirection() == com.juggle.im.model.Message.MessageDirection.SEND) {
+                    // 自己发送的消息：优先使用 Login 时缓存的昵称和头像
+                    nameFallback = !TextUtils.isEmpty(ConfigUtils.myName)
+                            ? ConfigUtils.myName
+                            : message.getSenderId();
+                    urlFallback = ConfigUtils.myAvatarUrl;
                 } else {
-                    txSender.setVisibility(GONE);
+                    // 对端用户：至少用 senderId 做一个首字母头像，避免一直是系统默认图标
+                    nameFallback = !TextUtils.isEmpty(message.getSenderName())
+                            ? message.getSenderName()
+                            : message.getSenderId();
+                }
+                AvatarUtils.loadAvatar(ivAvatar, urlFallback, nameFallback);
+
+                TextView txSender = itemView.findViewById(R.id.text_sender_name);
+                if (txSender != null) {
+                    if (isGroup && message.getDirection() != com.juggle.im.model.Message.MessageDirection.SEND) {
+                        txSender.setVisibility(VISIBLE);
+                        txSender.setText(nameFallback);
+                    } else {
+                        txSender.setVisibility(GONE);
+                    }
                 }
             }
         }

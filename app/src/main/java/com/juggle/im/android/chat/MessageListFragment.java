@@ -28,12 +28,17 @@ import com.juggle.im.android.R;
 import com.juggle.im.android.chat.utils.MessageUtils;
 import com.juggle.im.android.chat.view.ChatInputActionBar;
 import com.juggle.im.android.core.JIMChatCore;
+import com.juggle.im.android.model.FavoriteItem;
+import com.juggle.im.android.model.FavoritesRepository;
 import com.juggle.im.android.model.UiMessage;
+import com.juggle.im.android.chat.utils.LocationMessageHelper;
 import com.juggle.im.interfaces.IMessageManager;
 import com.juggle.im.model.Conversation;
 import com.juggle.im.model.Message;
 import com.juggle.im.model.MessageContent;
 import com.juggle.im.model.messages.TextMessage;
+import com.juggle.im.model.messages.ImageMessage;
+import com.juggle.im.model.messages.FileMessage;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -805,6 +810,9 @@ public class MessageListFragment extends Fragment {
                 }
                 this.deleteMessages(Arrays.asList(message), current);
                 break;
+            case MessageListAdapter.Action.COLLECT:
+                collectMessage(message);
+                break;
             default:
                 break;
         }
@@ -847,4 +855,84 @@ public class MessageListFragment extends Fragment {
                     }
                 });
     }
+
+    private void collectMessage(UiMessage message) {
+        if (message == null || message.getMessage() == null) return;
+        
+        MessageContent content = message.getMessage().getContent();
+        FavoriteItem item = new FavoriteItem();
+        
+        try {
+            if (content instanceof TextMessage) {
+                String text = ((TextMessage) content).getContent();
+                item.setType(FavoriteItem.TYPE_TEXT);
+                item.setContent(text);
+            } else if (content instanceof ImageMessage) {
+                ImageMessage imgMsg = (ImageMessage) content;
+                
+                // 优先使用服务器 URL，其次使用缩略图 URL，最后使用本地路径
+                String url = imgMsg.getUrl();
+                String thumbnailUrl = imgMsg.getThumbnailUrl();
+                String localPath = imgMsg.getLocalPath();
+                
+                if (url == null || url.isEmpty()) {
+                    url = thumbnailUrl;
+                }
+                
+                if ((url == null || url.isEmpty()) && (localPath == null || localPath.isEmpty())) {
+                    Toast.makeText(requireContext(), "图片路径无效，无法收藏", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                
+                item.setType(FavoriteItem.TYPE_IMAGE);
+                item.setUrl(url);
+                item.setThumbnailUrl(thumbnailUrl);
+                item.setLocalPath(localPath);
+                item.setContent("图片");
+            } else if (content instanceof FileMessage) {
+                FileMessage fileMsg = (FileMessage) content;
+                
+                // 优先使用服务器 URL，其次使用本地路径
+                String url = fileMsg.getUrl();
+                String localPath = fileMsg.getLocalPath();
+                
+                if ((url == null || url.isEmpty()) && (localPath == null || localPath.isEmpty())) {
+                    Toast.makeText(requireContext(), "文件路径无效，无法收藏", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                
+                item.setType(FavoriteItem.TYPE_FILE);
+                item.setUrl(url);
+                item.setLocalPath(localPath);
+                item.setName(fileMsg.getName());
+                item.setSize(fileMsg.getSize());
+                item.setContent(fileMsg.getName());
+            } else if (content instanceof TextMessage) {
+                // 检查是否是位置消息
+                TextMessage textMsg = (TextMessage) content;
+                String text = textMsg.getContent();
+                
+                if (LocationMessageHelper.isLocationContent(text)) {
+                    item.setType(FavoriteItem.TYPE_TEXT);
+                    item.setContent(text);
+                } else {
+                    Toast.makeText(requireContext(), "暂不支持收藏此类型消息", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+            } else {
+                // 其他类型的消息暂不支持收藏
+                Toast.makeText(requireContext(), "暂不支持收藏此类型消息", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            
+            // 保存到收藏库
+            FavoritesRepository repo = new FavoritesRepository(requireContext());
+            repo.add(item);
+            Toast.makeText(requireContext(), "已收藏", Toast.LENGTH_SHORT).show();
+        } catch (Exception e) {
+            Log.e("MessageListFragment", "Error collecting message", e);
+            Toast.makeText(requireContext(), "收藏失败", Toast.LENGTH_SHORT).show();
+        }
+    }
 }
+

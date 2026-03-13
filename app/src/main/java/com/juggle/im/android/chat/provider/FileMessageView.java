@@ -4,9 +4,13 @@ import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.ColorStateList;
+import android.graphics.Bitmap;
 import android.graphics.Color;
+import android.media.ThumbnailUtils;
 import android.net.Uri;
 import android.os.Environment;
+import android.provider.MediaStore;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
@@ -53,21 +57,104 @@ public class FileMessageView extends MessageView<UiMessage, FileMessage> {
         TextView tvName = this.itemView.findViewById(R.id.text_file_name);
         ImageView btnDownload = this.itemView.findViewById(R.id.button_download_file);
         
-        // 设置文件图标
-        setFileIconByExtension(ivIcon, f.getName());
-        
         String name = f.getName();
         String url = f.getUrl();
+
+        // 判断是否为视频文件（根据扩展名，必要时从 URL 补充）
+        String extension = "";
+        if (!TextUtils.isEmpty(name)) {
+            extension = getFileExtension(name).toLowerCase(Locale.getDefault());
+        }
+        if (TextUtils.isEmpty(extension) && !TextUtils.isEmpty(url)) {
+            extension = getFileExtension(url).toLowerCase(Locale.getDefault());
+        }
+        boolean isVideo = extension.equals("mp4")
+                || extension.equals("mov")
+                || extension.equals("3gp")
+                || extension.equals("mkv")
+                || extension.equals("flv")
+                || extension.equals("avi")
+                || extension.equals("webm");
+
+        // 默认文件图标
+        if (!isVideo) {
+            setFileIconByExtension(ivIcon, name);
+        }
+
+        // 视频缩略图：优先使用本地路径生成一帧作为封面
+        if (isVideo && ivIcon != null) {
+            Bitmap thumb = null;
+            try {
+                String localPath = null;
+                try {
+                    localPath = f.getLocalPath();
+                } catch (Throwable ignore) {
+                }
+
+                String thumbSource = null;
+                if (!TextUtils.isEmpty(localPath)) {
+                    thumbSource = localPath;
+                } else if (!TextUtils.isEmpty(url) && url.startsWith("file://")) {
+                    thumbSource = Uri.parse(url).getPath();
+                }
+
+                if (!TextUtils.isEmpty(thumbSource)) {
+                    thumb = ThumbnailUtils.createVideoThumbnail(thumbSource,
+                            MediaStore.Images.Thumbnails.MINI_KIND);
+                }
+            } catch (Throwable e) {
+                Log.w(TAG, "generate video thumbnail error", e);
+            }
+
+            if (thumb != null) {
+                ivIcon.setImageBitmap(thumb);
+            } else {
+                // 生成缩略图失败时，回退为通用文件图标
+                setFileIconByExtension(ivIcon, name);
+            }
+        }
+
         if (tvName != null) tvName.setText(name);
-        if (btnDownload != null) {
-            btnDownload.setOnClickListener(v -> {
+
+        // 统一点击行为：整条消息 / 图标 / 按钮 / 文件名 都可点击
+        View.OnClickListener clickListener;
+        if (isVideo) {
+            // 视频文件：下载到本地后用播放器打开
+            clickListener = v -> {
+                if (url != null && !url.isEmpty()) {
+                    downloadAndOpenFile(v.getContext(), url, name);
+                } else {
+                    Toast.makeText(v.getContext(), "视频链接无效", Toast.LENGTH_SHORT).show();
+                }
+            };
+        } else {
+            // 普通文件：下载到本地后用合适 App 打开
+            clickListener = v -> {
                 if (url != null && !url.isEmpty()) {
                     downloadAndOpenFile(v.getContext(), url, name);
                 } else {
                     Toast.makeText(v.getContext(), "文件链接无效", Toast.LENGTH_SHORT).show();
                 }
-            });
+            };
         }
+
+        if (btnDownload != null) {
+            if (isVideo) {
+                // 视频只在右侧按钮展示播放图标，避免左右各一个播放按钮
+                btnDownload.setImageResource(R.drawable.ic_play);
+            } else {
+                btnDownload.setImageResource(R.drawable.ic_download);
+            }
+            btnDownload.setOnClickListener(clickListener);
+        }
+        if (ivIcon != null) {
+            ivIcon.setOnClickListener(clickListener);
+        }
+        if (tvName != null) {
+            tvName.setOnClickListener(clickListener);
+        }
+        this.itemView.setOnClickListener(clickListener);
+        
         if (tvName != null) {
             if (m.getMessage().getDirection() == Message.MessageDirection.SEND) {
                 tvName.setTextColor(ColorStateList.valueOf(Color.WHITE));
@@ -215,13 +302,26 @@ public class FileMessageView extends MessageView<UiMessage, FileMessage> {
      */
     private void openFile(Context context, File file) {
         try {
+            String extension = getFileExtension(file.getName()).toLowerCase(Locale.getDefault());
+            
+            // 视频文件特殊处理
+            if (extension.equals("mp4") || extension.equals("mov") || extension.equals("3gp") 
+                    || extension.equals("mkv") || extension.equals("flv") || extension.equals("avi") 
+                    || extension.equals("webm")) {
+                Uri fileUri = FileProvider.getUriForFile(context, context.getPackageName() + ".fileprovider", file);
+                Intent videoIntent = new Intent(Intent.ACTION_VIEW);
+                videoIntent.setDataAndType(fileUri, "video/*");
+                videoIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                context.startActivity(Intent.createChooser(videoIntent, "播放视频"));
+                return;
+            }
+
+            // 其他文件类型
             Uri fileUri = FileProvider.getUriForFile(context, context.getPackageName() + ".fileprovider", file);
             
             Intent intent = new Intent(Intent.ACTION_VIEW);
             intent.setDataAndType(fileUri, getMimeType(file.getAbsolutePath()));
             intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-            
-            String extension = getFileExtension(file.getName()).toLowerCase(Locale.getDefault());
             
             // 根据文件类型进行特殊处理
             switch (extension) {

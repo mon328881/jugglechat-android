@@ -30,6 +30,30 @@
 
         </FrameLayout>
 
+        <!-- Recording time display -->
+        <TextView
+            android:id="@+id/voice_recording_time"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:textColor="#FFFFFF"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:text="00:00"
+            android:visibility="gone" />
+
+        <!-- Recording status text -->
+        <TextView
+            android:id="@+id/voice_recording_status"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:textColor="#FFFFFF"
+            android:textSize="14sp"
+            android:text="正在录音..."
+            android:visibility="gone" />
+
+        <!-- Hint text -->
         <TextView
             android:id="@+id/voice_hint"
             android:layout_width="wrap_content"

@@ -104,7 +104,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/recall"
-            android:textColor="#333333"
+            android:textColor="#000000"
             android:textSize="16sp" />
 
         <ImageView
@@ -113,7 +113,7 @@
             android:layout_marginStart="36dp"
             android:src="@drawable/ic_recall"
             android:contentDescription="@string/recall"
-            android:tint="#333333" />
+            android:tint="#000000" />
     </LinearLayout>
 
     <!-- 分隔线 -->

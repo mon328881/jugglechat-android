@@ -346,8 +346,7 @@ public class MessageListAdapter extends ListAdapter<UiMessage, RecyclerView.View
             });
             vCollect.setOnClickListener(v -> {
                 pw.dismiss();
-                // 收藏功能暂未实现，可以在这里添加
-                android.widget.Toast.makeText(anchor.getContext(), "收藏功能开发中", android.widget.Toast.LENGTH_SHORT).show();
+                actionListener.onMessageAction(ui, Action.COLLECT);
             });
         }
     }
@@ -364,6 +363,7 @@ public class MessageListAdapter extends ListAdapter<UiMessage, RecyclerView.View
         public static final String FORWARD = "forward";
         public static final String REPLY = "relay";
         public static final String DELETE = "delete";
+        public static final String COLLECT = "collect";
     }
 
 

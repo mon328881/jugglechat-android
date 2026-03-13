@@ -56,10 +56,29 @@ public class VoiceInputAction extends FrameLayout {
     private View overlayView; // activity provided overlay (preferred)
     private View rippleCenter; // the view in the overlay that shows ripple
     private TextView hintText;
+    private TextView recordingTimeText; // Display recording duration
+    private TextView recordingStatusText; // Display recording status
 
     private Handler uiHandler = new Handler(Looper.getMainLooper());
     // simple animator state
     private boolean rippleActive = false;
+    
+    // Recording time update
+    private final Runnable recordingTimeUpdateRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (recording && startTimeMs > 0) {
+                long elapsedMs = System.currentTimeMillis() - startTimeMs;
+                int seconds = (int) (elapsedMs / 1000);
+                int minutes = seconds / 60;
+                seconds = seconds % 60;
+                if (recordingTimeText != null) {
+                    recordingTimeText.setText(String.format("%02d:%02d", minutes, seconds));
+                }
+                uiHandler.postDelayed(this, 500);
+            }
+        }
+    };
 
     public VoiceInputAction(@NonNull Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -82,6 +101,8 @@ public class VoiceInputAction extends FrameLayout {
         if (overlayView != null) {
             // find children inside provided overlay
             rippleCenter = overlayView.findViewById(R.id.voice_ripple_center);
+            recordingTimeText = overlayView.findViewById(R.id.voice_recording_time);
+            recordingStatusText = overlayView.findViewById(R.id.voice_recording_status);
         } else {
             // inflate fallback overlay from resources and add to this view so
             // VoiceInputAction still works even if activity hasn't provided one.
@@ -91,6 +112,8 @@ public class VoiceInputAction extends FrameLayout {
             overlayView.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
             root.addView(overlayView);
             rippleCenter = overlayView.findViewById(R.id.voice_ripple_center);
+            recordingTimeText = overlayView.findViewById(R.id.voice_recording_time);
+            recordingStatusText = overlayView.findViewById(R.id.voice_recording_status);
         }
         overlayView.setVisibility(GONE);
         setClickable(true);
@@ -174,13 +197,35 @@ public class VoiceInputAction extends FrameLayout {
             recording = true;
             startTimeMs = System.currentTimeMillis();
             startRipple();
+            
+            // Update UI to show recording status
+            if (recordingStatusText != null) {
+                recordingStatusText.setText("正在录音...");
+                recordingStatusText.setVisibility(View.VISIBLE);
+            }
+            if (recordingTimeText != null) {
+                recordingTimeText.setText("00:00");
+                recordingTimeText.setVisibility(View.VISIBLE);
+            }
+            
             if (callback != null) callback.onStart();
+            
             // poll amplitude
             uiHandler.postDelayed(amplitudePollRunnable, 120);
+            // update recording time display
+            uiHandler.postDelayed(recordingTimeUpdateRunnable, 500);
+            
+            Log.d(TAG, "Recording started successfully");
         } catch (IOException | RuntimeException e) {
             Log.w(TAG, "startRecording failed", e);
             recording = false;
             stopRipple();
+            
+            // Show error message
+            if (recordingStatusText != null) {
+                recordingStatusText.setText("录音失败: " + e.getMessage());
+                recordingStatusText.setVisibility(View.VISIBLE);
+            }
         }
     }
 
@@ -215,15 +260,64 @@ public class VoiceInputAction extends FrameLayout {
         if (slideToCancel) {
             // delete file
             if (outFile != null && outFile.exists()) outFile.delete();
+            if (recordingStatusText != null) {
+                recordingStatusText.setText("已取消");
+            }
+            Log.d(TAG, "Recording cancelled by user");
             if (callback != null) callback.onCancel();
         } else {
             if (duration < 800) {
                 // too short
                 if (outFile != null && outFile.exists()) outFile.delete();
+                if (recordingStatusText != null) {
+                    recordingStatusText.setText("录音太短，请重试");
+                }
+                Log.d(TAG, "Recording too short: " + duration + "ms");
                 if (callback != null) callback.onTooShort();
             } else {
-                if (callback != null)
-                    callback.onFinish(outFile != null ? outFile.toString() : null, duration);
+                if (recordingStatusText != null) {
+                    recordingStatusText.setText("录音完成");
+                }
+                
+                // Verify file exists and has content before sending
+                String filePath = null;
+                if (outFile != null) {
+                    filePath = outFile.getAbsolutePath();
+                    boolean fileExists = outFile.exists();
+                    long fileSize = fileExists ? outFile.length() : 0;
+                    Log.d(TAG, "Recording completed: duration=" + duration + "ms, file=" + filePath + 
+                          ", exists=" + fileExists + ", size=" + fileSize + " bytes");
+                    
+                    if (!fileExists) {
+                        Log.e(TAG, "ERROR: Voice file does not exist at: " + filePath);
+                        if (recordingStatusText != null) {
+                            recordingStatusText.setText("录音文件保存失败");
+                        }
+                        if (callback != null) callback.onCancel();
+                        return;
+                    }
+                    
+                    if (fileSize == 0) {
+                        Log.e(TAG, "ERROR: Voice file is empty at: " + filePath);
+                        outFile.delete();
+                        if (recordingStatusText != null) {
+                            recordingStatusText.setText("录音文件为空");
+                        }
+                        if (callback != null) callback.onCancel();
+                        return;
+                    }
+                } else {
+                    Log.e(TAG, "ERROR: outFile is null");
+                    if (recordingStatusText != null) {
+                        recordingStatusText.setText("录音文件创建失败");
+                    }
+                    if (callback != null) callback.onCancel();
+                    return;
+                }
+                
+                if (callback != null) {
+                    callback.onFinish(filePath, duration);
+                }
             }
         }
     }
@@ -231,6 +325,7 @@ public class VoiceInputAction extends FrameLayout {
     private void stopRecording() {
         try {
             uiHandler.removeCallbacks(amplitudePollRunnable);
+            uiHandler.removeCallbacks(recordingTimeUpdateRunnable);
             if (recorder != null) {
                 try {
                     recorder.stop();
