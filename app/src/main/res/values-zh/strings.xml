@@ -75,4 +75,17 @@
     <string name="msg_edit">编辑</string>
     <string name="new_friends">新朋友</string>
 
+    <!-- 新朋友页面 -->
+    <string name="friend_app_you_applied">你申请了</string>
+    <string name="friend_app_applied_to_add_you">申请添加你</string>
+    <string name="friend_app_status_added">已添加</string>
+    <string name="friend_app_status_rejected">已拒绝</string>
+    <string name="friend_app_status_expired">已过期</string>
+    <string name="friend_app_status_applying">申请中</string>
+    <string name="friend_app_btn_accept">接受</string>
+    <string name="friend_app_btn_reject">拒绝</string>
+    <string name="friend_app_operation_success">操作成功</string>
+    <string name="friend_app_operation_failed">操作失败: %s</string>
+    <string name="friend_app_load_failed">加载失败: %s</string>
+
 </resources>

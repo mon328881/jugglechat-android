@@ -62,4 +62,43 @@
         android:textColor="@android:color/darker_gray"
         android:textSize="14sp" />
 
+    <!-- Action Buttons Container (default gone) -->
+    <LinearLayout
+        android:id="@+id/ll_actions"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentEnd="true"
+        android:layout_centerVertical="true"
+        android:orientation="horizontal"
+        android:gravity="end|center_vertical"
+        android:visibility="gone">
+
+        <!-- Reject Button -->
+        <android.widget.Button
+            android:id="@+id/btn_reject"
+            android:layout_width="70dp"
+            android:layout_height="32dp"
+            android:background="@drawable/btn_friend_action_outline"
+            android:text="@string/friend_app_btn_reject"
+            android:textColor="@color/primary_bg_light"
+            android:textSize="13sp"
+            android:minWidth="0dp"
+            android:paddingLeft="8dp"
+            android:paddingRight="8dp" />
+
+        <!-- Accept Button -->
+        <android.widget.Button
+            android:id="@+id/btn_accept"
+            android:layout_width="70dp"
+            android:layout_height="32dp"
+            android:layout_marginStart="8dp"
+            android:background="@drawable/bg_primary_button"
+            android:text="@string/friend_app_btn_accept"
+            android:textColor="@android:color/white"
+            android:textSize="13sp"
+            android:minWidth="0dp"
+            android:paddingLeft="8dp"
+            android:paddingRight="8dp" />
+    </LinearLayout>
+
 </RelativeLayout>
