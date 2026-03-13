@@ -15,6 +15,7 @@ public class PostBean {
     private List<TopCommentBean> top_comments;
     private long created_time;
     private long updated_time;
+    private CommunityInfoBean community_info;
 
     public String getPost_id() {
         return post_id;
@@ -70,5 +71,13 @@ public class PostBean {
 
     public void setUpdated_time(long updated_time) {
         this.updated_time = updated_time;
+    }
+
+    public CommunityInfoBean getCommunity_info() {
+        return community_info;
+    }
+
+    public void setCommunity_info(CommunityInfoBean community_info) {
+        this.community_info = community_info;
     }
 }

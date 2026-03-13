@@ -64,4 +64,9 @@ public interface MomentService {
      * 删除评论
      */
     void deleteComment(List<String> commentIds, ApiCallback<Void> callback);
+
+    /**
+     * 获取社区标签列表
+     */
+    void getCommunityTags(ApiCallback<List<String>> callback);
 }

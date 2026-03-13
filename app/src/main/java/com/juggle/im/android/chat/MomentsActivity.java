@@ -7,6 +7,7 @@ import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
@@ -19,6 +20,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
+import android.widget.FrameLayout;
+import android.widget.HorizontalScrollView;
 import android.widget.ImageView;
 import android.widget.PopupWindow;
 import android.widget.TextView;
@@ -90,6 +93,9 @@ public class MomentsActivity extends AppCompatActivity {
     private Uri photoUri;
     private int currentPaddingBottom;
 
+    // 标签切换相关变量
+    private String mCurrentPage = "moments"; // "moments" 或 "community"
+
     protected static class CommentDetail {
         String content;
         String type; //jm:text
@@ -123,6 +129,18 @@ public class MomentsActivity extends AppCompatActivity {
             getSupportActionBar().setTitle(""); // 移除顶部标题
         }
         toolbar.setNavigationOnClickListener(v -> finish());
+
+        // 初始化标签切换
+        TextView tabMoments = findViewById(R.id.tab_moments);
+        TextView tabCommunity = findViewById(R.id.tab_community);
+
+        if (tabMoments != null && tabCommunity != null) {
+            // 设置朋友圈标签点击事件
+            tabMoments.setOnClickListener(v -> switchToMoments(tabMoments, tabCommunity));
+
+            // 设置社区标签点击事件
+            tabCommunity.setOnClickListener(v -> switchToCommunity(tabMoments, tabCommunity));
+        }
 
         appBarLayout = findViewById(R.id.appbar);
         recyclerView = findViewById(R.id.rv_moments);
@@ -184,6 +202,7 @@ public class MomentsActivity extends AppCompatActivity {
         });
         findViewById(R.id.btn_camera).setOnLongClickListener(l -> {
             Intent it = new Intent(MomentsActivity.this, CreatePostActivity.class);
+            it.putExtra("current_page", mCurrentPage);
             startActivityForResult(it, 100);
             return true;
         });
@@ -603,12 +622,15 @@ public class MomentsActivity extends AppCompatActivity {
                     isLoading = false;
 
                     if (data != null && data.getItems() != null) {
+                        // Filter posts based on current page (moments vs community)
+                        List<PostBean> filteredItems = filterPostsByMode(data.getItems());
+                        
                         if (currentPage == 0) {
                             // 下拉刷新，替换所有数据
-                            adapter.setItems(data.getItems());
+                            adapter.setItems(filteredItems);
                         } else {
                             // 上拉加载更多，追加数据
-                            adapter.addItems(data.getItems());
+                            adapter.addItems(filteredItems);
                         }
 
                         // 更新分页参数
@@ -637,8 +659,220 @@ public class MomentsActivity extends AppCompatActivity {
         });
     }
 
+    /**
+     * Filter posts based on current mode (moments vs community)
+     * - moments mode: show only posts WITHOUT community_info (or with null community_info)
+     * - community mode: show only posts WITH community_info
+     */
+    private List<PostBean> filterPostsByMode(List<PostBean> allPosts) {
+        List<PostBean> filtered = new ArrayList<>();
+        
+        for (PostBean post : allPosts) {
+            boolean hasCommunityInfo = post.getCommunity_info() != null;
+            
+            if ("community".equals(mCurrentPage)) {
+                // Community mode: show only posts with community_info
+                if (hasCommunityInfo) {
+                    filtered.add(post);
+                }
+            } else {
+                // Moments mode: show only posts without community_info
+                if (!hasCommunityInfo) {
+                    filtered.add(post);
+                }
+            }
+        }
+        
+        return filtered;
+    }
+
     private int dpToPx(Context context, int dp) {
         return (int) (dp * context.getResources().getDisplayMetrics().density);
+    }
+
+    // 切换到朋友圈模式
+    private void switchToMoments(TextView tabMoments, TextView tabCommunity) {
+        if ("moments".equals(mCurrentPage)) {
+            return; // 已经在朋友圈模式
+        }
+
+        mCurrentPage = "moments";
+        
+        // 更新标签样式
+        tabMoments.setTypeface(null, android.graphics.Typeface.BOLD);
+        tabMoments.setAlpha(1.0f);
+        tabCommunity.setTypeface(null, android.graphics.Typeface.NORMAL);
+        tabCommunity.setAlpha(0.6f);
+
+        // 更新红线指示器
+        View underlineMoments = findViewById(R.id.underline_moments);
+        View underlineCommunity = findViewById(R.id.underline_community);
+        if (underlineMoments != null) {
+            underlineMoments.setVisibility(View.VISIBLE);
+        }
+        if (underlineCommunity != null) {
+            underlineCommunity.setVisibility(View.GONE);
+        }
+
+        // 隐藏社区标签栏
+        HorizontalScrollView communityTagsScroll = findViewById(R.id.community_tags_scroll);
+        if (communityTagsScroll != null) {
+            communityTagsScroll.setVisibility(View.GONE);
+        }
+
+        // 刷新数据（加载朋友圈内容）
+        refreshMoments();
+    }
+
+    // 切换到社区模式
+    private void switchToCommunity(TextView tabMoments, TextView tabCommunity) {
+        if ("community".equals(mCurrentPage)) {
+            return; // 已经在社区模式
+        }
+
+        mCurrentPage = "community";
+        
+        // 更新标签样式
+        tabMoments.setTypeface(null, android.graphics.Typeface.NORMAL);
+        tabMoments.setAlpha(0.6f);
+        tabCommunity.setTypeface(null, android.graphics.Typeface.BOLD);
+        tabCommunity.setAlpha(1.0f);
+
+        // 更新红线指示器
+        View underlineMoments = findViewById(R.id.underline_moments);
+        View underlineCommunity = findViewById(R.id.underline_community);
+        if (underlineMoments != null) {
+            underlineMoments.setVisibility(View.GONE);
+        }
+        if (underlineCommunity != null) {
+            underlineCommunity.setVisibility(View.VISIBLE);
+        }
+
+        // 显示社区标签栏
+        HorizontalScrollView communityTagsScroll = findViewById(R.id.community_tags_scroll);
+        if (communityTagsScroll != null) {
+            communityTagsScroll.setVisibility(View.VISIBLE);
+            generateCommunityTags();
+        }
+
+        // 刷新数据（加载社区内容）
+        refreshMoments();
+    }
+
+    /**
+     * 生成社区标签
+     */
+    private void generateCommunityTags() {
+        LinearLayout tagsContainer = findViewById(R.id.community_tags_container);
+        if (tagsContainer == null) return;
+
+        // 清空之前的标签
+        tagsContainer.removeAllViews();
+
+        // 从后端获取社区标签列表
+        ServiceManager.getMomentService().getCommunityTags(new ApiCallback<List<String>>() {
+            @Override
+            public void onSuccess(List<String> tagList) {
+                runOnUiThread(() -> {
+                    if (tagList != null && !tagList.isEmpty()) {
+                        String[] tags = tagList.toArray(new String[0]);
+                        createTagViews(tagsContainer, tags);
+                    } else {
+                        // 如果后端返回空列表，使用默认标签
+                        String[] defaultTags = {"推荐", "直播", "短剧", "美食", "穿搭", "旅行"};
+                        createTagViews(tagsContainer, defaultTags);
+                    }
+                });
+            }
+
+            @Override
+            public void onError(int code, String message) {
+                Log.e("MomentsActivity", "获取社区标签失败: " + message);
+                runOnUiThread(() -> {
+                    // 获取失败时使用默认标签
+                    String[] defaultTags = {"推荐", "直播", "短剧", "美食", "穿搭", "旅行"};
+                    createTagViews(tagsContainer, defaultTags);
+                });
+            }
+        });
+    }
+
+    /**
+     * 创建标签视图
+     */
+    private void createTagViews(LinearLayout tagsContainer, String[] tags) {
+        for (String tag : tags) {
+            // 创建标签容器
+            FrameLayout tagContainer = new FrameLayout(this);
+            FrameLayout.LayoutParams containerParams = new FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.WRAP_CONTENT,
+                    FrameLayout.LayoutParams.MATCH_PARENT
+            );
+            containerParams.setMargins(12, 0, 12, 0);
+            tagContainer.setLayoutParams(containerParams);
+
+            // 创建标签文本
+            TextView tagText = new TextView(this);
+            tagText.setText(tag);
+            tagText.setTextSize(14);
+            tagText.setTextColor(Color.WHITE);
+            tagText.setAlpha(0.6f);
+            tagText.setGravity(Gravity.CENTER);
+            FrameLayout.LayoutParams textParams = new FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.WRAP_CONTENT,
+                    FrameLayout.LayoutParams.MATCH_PARENT
+            );
+            textParams.gravity = Gravity.CENTER;
+            tagText.setLayoutParams(textParams);
+
+            // 创建下划线
+            View underline = new View(this);
+            underline.setBackgroundColor(Color.WHITE);
+            underline.setAlpha(0.8f);
+            FrameLayout.LayoutParams underlineParams = new FrameLayout.LayoutParams(40, 2);
+            underlineParams.gravity = Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM;
+            underlineParams.bottomMargin = 6;
+            underline.setLayoutParams(underlineParams);
+            underline.setVisibility(View.GONE);
+
+            // 添加到容器
+            tagContainer.addView(tagText);
+            tagContainer.addView(underline);
+
+            // 设置点击事件
+            tagContainer.setOnClickListener(v -> {
+                // 更新所有标签的样式
+                for (int i = 0; i < tagsContainer.getChildCount(); i++) {
+                    FrameLayout container = (FrameLayout) tagsContainer.getChildAt(i);
+                    TextView text = (TextView) container.getChildAt(0);
+                    View line = container.getChildAt(1);
+                    
+                    if (container == tagContainer) {
+                        text.setAlpha(1.0f);
+                        text.setTypeface(null, android.graphics.Typeface.BOLD);
+                        line.setVisibility(View.VISIBLE);
+                    } else {
+                        text.setAlpha(0.6f);
+                        text.setTypeface(null, android.graphics.Typeface.NORMAL);
+                        line.setVisibility(View.GONE);
+                    }
+                }
+                // 刷新数据
+                refreshMoments();
+            });
+
+            tagsContainer.addView(tagContainer);
+        }
+
+        // 设置第一个标签为选中状态
+        if (tagsContainer.getChildCount() > 0) {
+            FrameLayout firstContainer = (FrameLayout) tagsContainer.getChildAt(0);
+            TextView firstText = (TextView) firstContainer.getChildAt(0);
+            View firstLine = firstContainer.getChildAt(1);
+            firstText.setAlpha(1.0f);
+            firstText.setTypeface(null, android.graphics.Typeface.BOLD);
+            firstLine.setVisibility(View.VISIBLE);
+        }
     }
 
     interface Listener {

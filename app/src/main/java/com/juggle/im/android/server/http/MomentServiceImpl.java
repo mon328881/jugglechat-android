@@ -1,22 +1,34 @@
 package com.juggle.im.android.server.http;
 
+import android.os.Handler;
+import android.os.Looper;
+
+import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import com.juggle.im.android.server.beans.CommunityTagsResponse;
+import com.juggle.im.android.server.beans.ListResult;
 import com.juggle.im.android.server.beans.PostBean;
 import com.juggle.im.android.server.beans.PostsListData;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
 import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 
 /**
  * 朋友圈服务实现类
  * 使用OkHttp执行网络请求
  */
 public class MomentServiceImpl extends BaseService implements MomentService {
+    private String baseUrl;
+    
     public MomentServiceImpl(OkHttpClient client, String baseUrl) {
         super(client, baseUrl);
+        this.baseUrl = baseUrl;
     }
 
     @Override
@@ -91,5 +103,63 @@ public class MomentServiceImpl extends BaseService implements MomentService {
         JsonObject body = new JsonObject();
         body.add("post_ids", ids);
         enqueueJson(url, body, Void.class, callback);
+    }
+
+    @Override
+    public void getCommunityTags(ApiCallback<List<String>> callback) {
+        String url = "/jim/community/tags";
+        Runnable r = () -> {
+            try {
+                String fullUrl = baseUrl + url;
+                Request request = new Request.Builder().url(fullUrl).get().build();
+                Response resp = getClient().newCall(request).execute();
+                if (!resp.isSuccessful()) {
+                    postError(callback, -1, "网络错误: " + resp.code());
+                    return;
+                }
+                String respBody = resp.body() != null ? resp.body().string() : null;
+                if (respBody == null) {
+                    postError(callback, -1, "响应为空");
+                    return;
+                }
+                
+                // 解析响应 JSON
+                Gson gson = new Gson();
+                JsonObject jo = gson.fromJson(respBody, JsonObject.class);
+                
+                // 检查响应状态
+                if (jo.has("code")) {
+                    int code = jo.get("code").getAsInt();
+                    if (code != 0) {
+                        String msg = jo.has("msg") ? jo.get("msg").getAsString() : "未知错误";
+                        postError(callback, code, msg);
+                        return;
+                    }
+                }
+                
+                // 解析数据字段
+                if (jo.has("data")) {
+                    JsonArray dataArray = null;
+                    if (jo.get("data").isJsonArray()) {
+                        dataArray = jo.getAsJsonArray("data");
+                    }
+                    
+                    if (dataArray != null) {
+                        List<String> tags = new ArrayList<>();
+                        for (int i = 0; i < dataArray.size(); i++) {
+                            tags.add(dataArray.get(i).getAsString());
+                        }
+                        postSuccess(callback, tags);
+                    } else {
+                        postError(callback, -1, "数据格式错误");
+                    }
+                } else {
+                    postError(callback, -1, "响应中缺少data字段");
+                }
+            } catch (Exception e) {
+                postError(callback, -1, "解析错误: " + e.getMessage());
+            }
+        };
+        new Thread(r, "BaseService-network").start();
     }
 }

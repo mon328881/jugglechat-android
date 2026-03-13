@@ -15,6 +15,7 @@ import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
@@ -22,12 +23,14 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.juggle.im.JIM;
 import com.juggle.im.JIMConst;
 import com.juggle.im.android.R;
 import com.juggle.im.android.chat.utils.FileUtils;
+import com.juggle.im.android.server.beans.CommunityInfoBean;
 import com.juggle.im.android.server.beans.ContentBean;
 import com.juggle.im.android.server.beans.ImageBean;
 import com.juggle.im.android.server.beans.PostBean;
@@ -39,26 +42,40 @@ import com.qiniu.android.utils.StringUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 
 public class CreatePostActivity extends AppCompatActivity {
     private EditText editPostContent;
     private RecyclerView mImageRecyclerView;
+    private RecyclerView mCommunityTagsRecyclerView;
+    private LinearLayout mCommunityTagSection;
     private MediaAdapter mMediaAdapter;
+    private CommunityTagAdapter mCommunityTagAdapter;
     private LinkedHashMap<String, String> mImageUrls = new LinkedHashMap<>();
     private String mVideoUrl = null;
     private Bitmap mVideoThumbnail = null;
     private boolean mIsUploadingVideo = false;
     private static final int REQUEST_CODE_PICK_IMAGES = 1001;
     private static final int REQUEST_CODE_PICK_VIDEO = 1002;
-    private int uploadingCount = 0; // 记录正在上传的图片数量
-    private boolean isSubmitting = false; // 标记是否正在提交
+    private int uploadingCount = 0;
+    private boolean isSubmitting = false;
+    
+    private String mCurrentPage = "moments";
+    private List<String> mAvailableCommunityTags = new ArrayList<>();
+    private Set<String> mSelectedCommunityTags = new HashSet<>();
+    
+    private static final String[] DEFAULT_TAGS = {"推荐", "直播", "短剧", "美食", "穿搭", "旅行"};
 
     public static void start(Context context) {
+        start(context, "moments");
+    }
+
+    public static void start(Context context, String currentPage) {
         Intent intent = new Intent(context, CreatePostActivity.class);
+        intent.putExtra("current_page", currentPage);
         context.startActivity(intent);
     }
 
@@ -66,6 +83,14 @@ public class CreatePostActivity extends AppCompatActivity {
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_create_post);
+
+        Intent intent = getIntent();
+        if (intent != null) {
+            mCurrentPage = intent.getStringExtra("current_page");
+            if (TextUtils.isEmpty(mCurrentPage)) {
+                mCurrentPage = "moments";
+            }
+        }
 
         Toolbar toolbar = findViewById(R.id.toolbar_create_post);
         setSupportActionBar(toolbar);
@@ -83,14 +108,25 @@ public class CreatePostActivity extends AppCompatActivity {
 
         editPostContent = findViewById(R.id.edit_post_content);
         mImageRecyclerView = findViewById(R.id.rv_images);
+        mCommunityTagSection = findViewById(R.id.community_tag_section);
+        mCommunityTagsRecyclerView = findViewById(R.id.rv_community_tags);
 
-        // 初始化RecyclerView
         mImageRecyclerView.setLayoutManager(new GridLayoutManager(this, 3));
         mMediaAdapter = new MediaAdapter(this, mImageUrls);
         mImageRecyclerView.setAdapter(mMediaAdapter);
 
-        // 处理从其他页面传递过来的图片URL
-        Intent intent = getIntent();
+        mCommunityTagsRecyclerView.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
+        mCommunityTagAdapter = new CommunityTagAdapter(this, mAvailableCommunityTags, mSelectedCommunityTags);
+        mCommunityTagsRecyclerView.setAdapter(mCommunityTagAdapter);
+
+        if ("community".equals(mCurrentPage)) {
+            mCommunityTagSection.setVisibility(View.VISIBLE);
+            // 从后端获取社区标签
+            loadCommunityTags();
+        } else {
+            mCommunityTagSection.setVisibility(View.GONE);
+        }
+
         if (intent != null) {
             ArrayList<String> imageUrls = intent.getStringArrayListExtra("image_urls");
             if (imageUrls != null && !imageUrls.isEmpty()) {
@@ -103,7 +139,6 @@ public class CreatePostActivity extends AppCompatActivity {
                         public void onSuccess(String s) {
                             mImageUrls.put(path, s);
                             uploadingCount--;
-                            // 如果所有图片都上传完成且用户已点击发布，则自动提交
                             if (uploadingCount == 0 && isSubmitting) {
                                 doSubmitPost();
                             }
@@ -144,7 +179,6 @@ public class CreatePostActivity extends AppCompatActivity {
         if (requestCode == REQUEST_CODE_PICK_IMAGES && resultCode == RESULT_OK && data != null) {
             ArrayList<String> selectedImages = data.getStringArrayListExtra("selected_images");
             if (selectedImages != null && !selectedImages.isEmpty()) {
-                // 添加新选择的图片，最多9张
                 for (String imagePath : selectedImages) {
                     if (mImageUrls.size() < 9) {
                         mImageUrls.put(imagePath, "");
@@ -155,7 +189,6 @@ public class CreatePostActivity extends AppCompatActivity {
                             public void onSuccess(String s) {
                                 mImageUrls.put(imagePath, s);
                                 uploadingCount--;
-                                // 如果所有图片都上传完成且用户已点击发布，则自动提交
                                 if (uploadingCount == 0 && isSubmitting) {
                                     doSubmitPost();
                                 }
@@ -188,7 +221,11 @@ public class CreatePostActivity extends AppCompatActivity {
             return;
         }
 
-        // 检查是否所有图片都已上传完成
+        if ("community".equals(mCurrentPage) && mSelectedCommunityTags.isEmpty()) {
+            Toast.makeText(this, "请选择至少一个社区标签", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         boolean allImagesUploaded = true;
         for (String url : mImageUrls.values()) {
             if (StringUtils.isBlank(url)) {
@@ -198,13 +235,11 @@ public class CreatePostActivity extends AppCompatActivity {
         }
 
         if (!allImagesUploaded) {
-            // 如果还有图片在上传，标记为待提交状态
             isSubmitting = true;
             Toast.makeText(this, "图片上传中，请稍候...", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        // 所有图片都已上传，执行提交
         doSubmitPost();
     }
 
@@ -237,6 +272,12 @@ public class CreatePostActivity extends AppCompatActivity {
         PostBean post = new PostBean();
         post.setContent(postContent);
 
+        if ("community".equals(mCurrentPage) && !mSelectedCommunityTags.isEmpty()) {
+            CommunityInfoBean communityInfo = new CommunityInfoBean();
+            communityInfo.setTags(new ArrayList<>(mSelectedCommunityTags));
+            post.setCommunity_info(communityInfo);
+        }
+
         ServiceManager.getMomentService().addPost(post, new ApiCallback<Void>() {
             @Override
             public void onSuccess(Void data) {
@@ -258,10 +299,9 @@ public class CreatePostActivity extends AppCompatActivity {
         });
     }
 
-    // 媒体适配器内部类
     private class MediaAdapter extends RecyclerView.Adapter<MediaAdapter.MediaViewHolder> {
         private Context mContext;
-        private LinkedHashMap<String, String> mImageUrls ;
+        private LinkedHashMap<String, String> mImageUrls;
 
         public MediaAdapter(Context context, LinkedHashMap<String, String> imageUrls) {
             this.mContext = context;
@@ -276,7 +316,6 @@ public class CreatePostActivity extends AppCompatActivity {
 
         @Override
         public void onBindViewHolder(MediaViewHolder holder, int position) {
-            // 如果是最后一个位置且图片数量小于9并且没有视频，则显示添加按钮
             if (position == mImageUrls.size() && mImageUrls.size() < 9 && TextUtils.isEmpty(mVideoUrl)) {
                 holder.btnAdd.setVisibility(View.VISIBLE);
                 holder.ivMedia.setVisibility(View.GONE);
@@ -284,12 +323,8 @@ public class CreatePostActivity extends AppCompatActivity {
                 holder.ivVideoPlay.setVisibility(View.GONE);
                 holder.progressUpload.setVisibility(View.GONE);
 
-                holder.btnAdd.setOnClickListener(v -> {
-                    // 显示选择菜单：图片或视频
-                    showMediaPickerMenu();
-                });
+                holder.btnAdd.setOnClickListener(v -> showMediaPickerMenu());
             } else if (position < mImageUrls.size()) {
-                // 显示已选择的图片
                 holder.btnAdd.setVisibility(View.GONE);
                 holder.ivMedia.setVisibility(View.VISIBLE);
                 holder.btnDelete.setVisibility(View.VISIBLE);
@@ -303,18 +338,12 @@ public class CreatePostActivity extends AppCompatActivity {
                     mImageUrls.remove(imageUrl);
                     notifyItemRemoved(position);
                 });
-
-                holder.ivMedia.setOnClickListener(v -> {
-                    // 可以添加预览功能
-                });
             } else if (!TextUtils.isEmpty(mVideoUrl)) {
-                // 显示视频
                 holder.btnAdd.setVisibility(View.GONE);
                 holder.ivMedia.setVisibility(View.VISIBLE);
                 holder.btnDelete.setVisibility(View.VISIBLE);
                 holder.ivVideoPlay.setVisibility(View.VISIBLE);
                 
-                // 显示上传进度或视频缩略图
                 if (mIsUploadingVideo) {
                     holder.progressUpload.setVisibility(View.VISIBLE);
                     holder.ivMedia.setImageBitmap(mVideoThumbnail);
@@ -338,11 +367,9 @@ public class CreatePostActivity extends AppCompatActivity {
 
         @Override
         public int getItemCount() {
-            // 如果没有视频且图片数量小于9，则多显示一个添加按钮
             if (TextUtils.isEmpty(mVideoUrl) && mImageUrls.size() < 9) {
                 return mImageUrls.size() + 1;
             } else if (!TextUtils.isEmpty(mVideoUrl)) {
-                // 有视频时，显示所有图片 + 视频
                 return mImageUrls.size() + 1;
             } else {
                 return mImageUrls.size();
@@ -367,24 +394,96 @@ public class CreatePostActivity extends AppCompatActivity {
         }
     }
 
-    // 显示媒体选择菜单
+    private class CommunityTagAdapter extends RecyclerView.Adapter<CommunityTagAdapter.TagViewHolder> {
+        private Context mContext;
+        private List<String> mTags;
+        private Set<String> mSelectedTags;
+
+        public CommunityTagAdapter(Context context, List<String> tags, Set<String> selectedTags) {
+            this.mContext = context;
+            this.mTags = tags;
+            this.mSelectedTags = selectedTags;
+        }
+
+        @Override
+        public TagViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+            View view = getLayoutInflater().inflate(R.layout.item_community_tag, parent, false);
+            return new TagViewHolder(view);
+        }
+
+        @Override
+        public void onBindViewHolder(TagViewHolder holder, int position) {
+            String tag = mTags.get(position);
+            holder.chip.setText(tag);
+            holder.chip.setChecked(mSelectedTags.contains(tag));
+            holder.chip.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                if (isChecked) {
+                    mSelectedTags.add(tag);
+                } else {
+                    mSelectedTags.remove(tag);
+                }
+            });
+        }
+
+        @Override
+        public int getItemCount() {
+            return mTags.size();
+        }
+
+        class TagViewHolder extends RecyclerView.ViewHolder {
+            com.google.android.material.chip.Chip chip;
+
+            TagViewHolder(View itemView) {
+                super(itemView);
+                chip = itemView.findViewById(R.id.chip_tag);
+            }
+        }
+    }
+
     private void showMediaPickerMenu() {
         android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
         builder.setTitle("选择媒体类型");
         builder.setItems(new String[]{"图片", "视频"}, (dialog, which) -> {
             if (which == 0) {
-                // 选择图片
                 Intent intent = new Intent(CreatePostActivity.this, AlbumActivity.class);
                 startActivityForResult(intent, REQUEST_CODE_PICK_IMAGES);
             } else {
-                // 选择视频
                 pickVideoFromGallery();
             }
         });
         builder.show();
     }
 
-    // 选择视频
+    private void loadCommunityTags() {
+        ServiceManager.getMomentService().getCommunityTags(new ApiCallback<List<String>>() {
+            @Override
+            public void onSuccess(List<String> tagList) {
+                runOnUiThread(() -> {
+                    if (tagList != null && !tagList.isEmpty()) {
+                        mAvailableCommunityTags.clear();
+                        mAvailableCommunityTags.addAll(tagList);
+                    } else {
+                        // 如果后端返回空列表，使用默认标签
+                        mAvailableCommunityTags.clear();
+                        mAvailableCommunityTags.addAll(Arrays.asList(DEFAULT_TAGS));
+                    }
+                    mCommunityTagAdapter.notifyDataSetChanged();
+                });
+            }
+
+            @Override
+            public void onError(int code, String message) {
+                Log.e("CreatePostActivity", "获取社区标签失败: " + message);
+                runOnUiThread(() -> {
+                    // 获取失败时使用默认标签
+                    mAvailableCommunityTags.clear();
+                    mAvailableCommunityTags.addAll(Arrays.asList(DEFAULT_TAGS));
+                    mCommunityTagAdapter.notifyDataSetChanged();
+                });
+            }
+        });
+    }
+
     private void pickVideoFromGallery() {
         Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Video.Media.EXTERNAL_CONTENT_URI);
         intent.setType("video/*");
@@ -392,14 +491,12 @@ public class CreatePostActivity extends AppCompatActivity {
     }
 
     private void handlePickedVideo(android.net.Uri uri) {
-        // 将 content Uri 转为实际文件路径，并使用视频后缀，方便服务端按类型处理
         String localPath = FileUtils.convertContentUriToFile(getApplicationContext(), uri.toString(), "temp_video.mp4");
         if (TextUtils.isEmpty(localPath)) {
             Toast.makeText(this, "无法读取视频文件", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        // 生成本地视频缩略图，优先用于展示
         try {
             Bitmap thumb = ThumbnailUtils.createVideoThumbnail(localPath, MediaStore.Images.Thumbnails.MINI_KIND);
             mVideoThumbnail = thumb;
@@ -408,19 +505,15 @@ public class CreatePostActivity extends AppCompatActivity {
             mVideoThumbnail = null;
         }
 
-        // 进入"视频上传中"状态，让列表中展示视频缩略图 + loading
         mIsUploadingVideo = true;
         mVideoUrl = null;
         mMediaAdapter.notifyDataSetChanged();
 
-        // 使用业务服务的文件上传接口，通过 /jim/file_cred + 预签名 URL 上传视频文件
-        // FileType: 3 表示视频，参见 jugglechat-server/apis/models/file.go
         ServiceManager.getFileService().uploadFile(3, localPath, "mp4", new ApiCallback<String>() {
             @Override
             public void onSuccess(String url) {
                 mVideoUrl = url;
                 mIsUploadingVideo = false;
-                // 有视频时清空图片列表，确保一条动态只有一种媒体类型
                 mImageUrls.clear();
                 mMediaAdapter.notifyDataSetChanged();
                 Toast.makeText(CreatePostActivity.this, "视频上传成功", Toast.LENGTH_SHORT).show();
