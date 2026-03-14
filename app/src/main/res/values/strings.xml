@@ -90,7 +90,10 @@
     <string name="send_error">发送失败</string>
     <string name="message_status">消息状态</string>
     <string name="mute">静音</string>
+<<<<<<< Updated upstream
     <string name="top">置顶</string>
+=======
+>>>>>>> Stashed changes
     <string name="txt_register_new">没有账号？立即注册</string>
     <string name="more">更多</string>
     <string name="like">点赞</string>
@@ -98,6 +101,7 @@
     <string name="share">分享</string>
     <string name="edit">编辑</string>
     <string name="about">关于</string>
+<<<<<<< Updated upstream
 
     <!-- 我的页面 -->
     <string name="profile_personal_settings">修改昵称</string>
@@ -211,4 +215,6 @@
     <string name="friend_app_operation_success">操作成功</string>
     <string name="friend_app_operation_failed">操作失败: %s</string>
     <string name="friend_app_load_failed">加载失败: %s</string>
+=======
+>>>>>>> Stashed changes
 </resources>

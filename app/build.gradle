@@ -122,6 +122,9 @@ dependencies {
     implementation 'cn.jiguang.sdk:jpush:6.0.1'
     // JuggleIM 极光推送插件（请将 JGPlugin.aar 放到 app/libs 目录）
     implementation files('libs/JGPlugin-release.aar')
+<<<<<<< Updated upstream
 
     implementation 'com.belerweb:pinyin4j:2.5.1'
+=======
+>>>>>>> Stashed changes
 }

@@ -7,12 +7,20 @@
 
     <!-- 功能选项区域 -->
     <LinearLayout
+<<<<<<< Updated upstream
+=======
+        android:background="?attr/colorSurface"
+>>>>>>> Stashed changes
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:background="@color/white">
 
+<<<<<<< Updated upstream
         <!-- 群组 -->
+=======
+        <!-- 搜索朋友 -->
+>>>>>>> Stashed changes
         <RelativeLayout
             android:id="@+id/groups_item"
             android:layout_width="match_parent"
@@ -29,15 +37,27 @@
                 android:layout_height="24dp"
                 android:layout_alignParentStart="true"
                 android:layout_centerVertical="true"
+<<<<<<< Updated upstream
                 android:src="@drawable/ic_group_blue"
                 android:contentDescription="群组"/>
+=======
+                android:padding="10dp"
+                android:src="@drawable/ic_find"
+                android:contentDescription="搜索"
+                android:tint="?attr/colorOnSurface"/>
+>>>>>>> Stashed changes
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+<<<<<<< Updated upstream
                 android:layout_toEndOf="@id/groups_icon"
                 android:layout_marginStart="12dp"
                 android:textColor="#1E90FF"
+=======
+                android:layout_toEndOf="@id/search_friends_icon"
+                android:textColor="?attr/colorOnSurface"
+>>>>>>> Stashed changes
                 android:layout_centerVertical="true"
                 android:textSize="16sp"
                 android:text="群组"/>
@@ -54,10 +74,16 @@
         <View
             android:layout_width="match_parent"
             android:layout_height="0.5dp"
+<<<<<<< Updated upstream
             android:layout_marginStart="52dp"
             android:background="#E0E0E0"/>
 
         <!-- 新朋友 -->
+=======
+            android:background="?attr/colorSurfaceVariant"/>
+
+        <!-- 新的朋友 -->
+>>>>>>> Stashed changes
         <RelativeLayout
             android:id="@+id/new_friends_item"
             android:layout_width="match_parent"
@@ -74,15 +100,27 @@
                 android:layout_height="24dp"
                 android:layout_alignParentStart="true"
                 android:layout_centerVertical="true"
+<<<<<<< Updated upstream
                 android:src="@drawable/ic_new_friend_blue"
                 android:contentDescription="新朋友"/>
+=======
+                android:padding="10dp"
+                android:src="@drawable/add_friend"
+                android:contentDescription="添加朋友"
+                android:tint="?attr/colorOnSurface"/>
+>>>>>>> Stashed changes
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+<<<<<<< Updated upstream
                 android:layout_toEndOf="@id/new_friend_icon"
                 android:layout_marginStart="12dp"
                 android:textColor="#1E90FF"
+=======
+                android:layout_toEndOf="@id/new_friend"
+                android:textColor="?attr/colorOnSurface"
+>>>>>>> Stashed changes
                 android:layout_centerVertical="true"
                 android:textSize="16sp"
                 android:text="新朋友"/>
@@ -103,9 +141,14 @@
                 android:layout_width="20dp"
                 android:layout_height="20dp"
                 android:layout_alignParentEnd="true"
+<<<<<<< Updated upstream
                 android:layout_centerVertical="true"
                 android:src="@drawable/ic_arrow_right"
                 android:contentDescription="进入" />
+=======
+                android:src="@drawable/red_circle_bg"
+                android:contentDescription="新朋友提示"/>
+>>>>>>> Stashed changes
         </RelativeLayout>
     </LinearLayout>
 

@@ -1,9 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
+<<<<<<< Updated upstream
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+=======
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+>>>>>>> Stashed changes
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+<<<<<<< Updated upstream
     android:orientation="vertical"
     android:background="@android:color/white"
     android:paddingHorizontal="16dp"
@@ -123,10 +128,160 @@
             android:background="#E8E8E8" />
 
         <!-- 评论容器 -->
+=======
+    android:layout_marginHorizontal="8dp"
+    android:layout_marginVertical="8dp"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="2dp"
+    app:cardBackgroundColor="?attr/colorSurface">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="12dp">
+
+        <!-- 头部：头像 + 名称 + 更多 -->
         <LinearLayout
-            android:id="@+id/comments_container"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="12dp">
+
+            <!-- 头像 -->
+            <FrameLayout
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginEnd="12dp">
+
+                <ImageView
+                    android:id="@+id/iv_avatar"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:adjustViewBounds="true"
+                    android:contentDescription="@string/avatar"
+                    android:scaleType="centerCrop"
+                    android:background="?attr/colorSurfaceVariant"
+                    android:clipToOutline="true"
+                    android:src="@android:drawable/sym_def_app_icon" />
+            </FrameLayout>
+
+            <!-- 名称和时间 -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/tv_name"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="?attr/colorOnSurface"
+                    android:textSize="15sp"
+                    android:textStyle="bold"
+                    tools:text="用户名" />
+
+                <TextView
+                    android:id="@+id/tv_time"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    android:textSize="12sp"
+                    tools:text="2小时前" />
+            </LinearLayout>
+
+            <!-- 更多按钮 -->
+            <ImageButton
+                android:id="@+id/btn_more"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/more"
+                android:scaleType="centerInside"
+                android:src="@drawable/ic_more"
+                android:tint="?attr/colorOnSurfaceVariant" />
+        </LinearLayout>
+
+        <!-- 内容文本 -->
+        <TextView
+            android:id="@+id/tv_content"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:textColor="?attr/colorOnSurface"
+            android:textSize="14sp"
+            tools:text="这是一条动态内容" />
+
+        <!-- 媒体容器（图片/视频） -->
+        <GridLayout
+            android:id="@+id/media_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:orientation="horizontal" />
+
+        <!-- 互动区域 -->
+        <LinearLayout
+            android:id="@+id/block_likes_comments"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="?attr/colorSurfaceVariant"
+            android:padding="8dp"
+            android:visibility="gone">
+
+            <!-- 点赞容器 -->
+            <LinearLayout
+                android:id="@+id/likes_container"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <ImageView
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:layout_marginEnd="6dp"
+                    android:src="@drawable/ic_like"
+                    android:contentDescription="@string/like"
+                    android:tint="?attr/colorPrimary" />
+
+                <TextView
+                    android:id="@+id/tv_likes"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    android:textSize="13sp"
+                    tools:text="张三、李四、王五 赞了" />
+            </LinearLayout>
+
+            <!-- 分隔线 -->
+            <View
+                android:id="@+id/divider_likes"
+                android:layout_width="match_parent"
+                android:layout_height="0.5dp"
+                android:layout_marginTop="6dp"
+                android:layout_marginBottom="6dp"
+                android:background="?attr/colorSurfaceVariant" />
+
+            <!-- 评论容器 -->
+            <LinearLayout
+                android:id="@+id/comments_container"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
+        </LinearLayout>
+
+        <!-- 操作按钮行 -->
+>>>>>>> Stashed changes
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+<<<<<<< Updated upstream
             android:orientation="vertical" />
     </LinearLayout>
 
@@ -175,3 +330,121 @@
         android:background="#F0F0F0" />
 
 </LinearLayout>
+=======
+            android:orientation="horizontal"
+            android:layout_marginTop="8dp">
+
+            <!-- 点赞按钮 -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="36dp"
+                android:layout_weight="1"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:background="?attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true">
+
+                <ImageView
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:layout_marginEnd="4dp"
+                    android:src="@drawable/ic_like"
+                    android:contentDescription="@string/like"
+                    android:tint="?attr/colorOnSurfaceVariant" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="点赞"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    android:textSize="13sp" />
+            </LinearLayout>
+
+            <!-- 评论按钮 -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="36dp"
+                android:layout_weight="1"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:background="?attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true">
+
+                <ImageView
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:layout_marginEnd="4dp"
+                    android:src="@drawable/ic_comment"
+                    android:contentDescription="@string/comment"
+                    android:tint="?attr/colorOnSurfaceVariant" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="评论"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    android:textSize="13sp" />
+            </LinearLayout>
+
+            <!-- 分享按钮 -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="36dp"
+                android:layout_weight="1"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:background="?attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true">
+
+                <ImageView
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:layout_marginEnd="4dp"
+                    android:src="@drawable/ic_share"
+                    android:contentDescription="@string/share"
+                    android:tint="?attr/colorOnSurfaceVariant" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="分享"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    android:textSize="13sp" />
+            </LinearLayout>
+
+            <!-- 删除按钮 -->
+            <LinearLayout
+                android:id="@+id/delete_moment"
+                android:layout_width="0dp"
+                android:layout_height="36dp"
+                android:layout_weight="1"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:background="?attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true">
+
+                <ImageView
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:layout_marginEnd="4dp"
+                    android:src="@drawable/ic_delete"
+                    android:contentDescription="@string/delete"
+                    android:tint="?attr/colorError" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="删除"
+                    android:textColor="?attr/colorError"
+                    android:textSize="13sp" />
+            </LinearLayout>
+        </LinearLayout>
+
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>
+>>>>>>> Stashed changes

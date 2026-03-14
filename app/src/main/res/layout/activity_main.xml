@@ -23,10 +23,19 @@
             android:id="@+id/user_info_container"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
+<<<<<<< Updated upstream
             android:layout_weight="1"
             android:orientation="horizontal"
             android:gravity="center_vertical"
             android:visibility="visible">
+=======
+            android:layout_gravity="center"
+            android:gravity="center"
+            android:text="@string/main_title"
+            android:textColor="?attr/colorOnPrimary"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+>>>>>>> Stashed changes
 
             <!-- 用户头像 -->
             <ImageView
