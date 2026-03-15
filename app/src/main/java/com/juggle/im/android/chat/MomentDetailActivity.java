@@ -114,6 +114,7 @@ public class MomentDetailActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+            // 默认标题，详情拉取成功后会替换为帖子标题/摘要
             getSupportActionBar().setTitle("动态详情");
         }
         toolbar.setNavigationOnClickListener(v -> finish());
@@ -180,6 +181,14 @@ public class MomentDetailActivity extends AppCompatActivity {
     }
 
     private void bindPost(PostBean post) {
+        // 标题栏：用帖子的“标题/摘要”替换默认“动态详情”
+        String title = buildTitleFromPost(post);
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setTitle(title);
+        } else {
+            setTitle(title);
+        }
+
         // avatar & name
         String authorId = null;
         if (post.getUser_info() != null) {
@@ -294,6 +303,26 @@ public class MomentDetailActivity extends AppCompatActivity {
         } else {
             commentsContainer.setVisibility(View.GONE);
         }
+    }
+
+    private String buildTitleFromPost(PostBean post) {
+        if (post == null) return "动态详情";
+        String text = (post.getContent() != null) ? post.getContent().getText() : null;
+        if (TextUtils.isEmpty(text)) return "动态详情";
+
+        // 取首行作为“标题”，并压缩空白
+        String t = text.replace('\r', '\n');
+        int idx = t.indexOf('\n');
+        if (idx >= 0) t = t.substring(0, idx);
+        t = t.trim().replaceAll("\\s+", " ");
+
+        if (TextUtils.isEmpty(t)) return "动态详情";
+
+        final int maxLen = 14;
+        if (t.length() > maxLen) {
+            t = t.substring(0, maxLen) + "…";
+        }
+        return t;
     }
 
     private static SharedPreferences getPendingFriendPrefs(Context context) {

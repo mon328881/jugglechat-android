@@ -18,6 +18,7 @@ import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.resource.bitmap.CircleCrop;
 import com.juggle.im.android.R;
 
+import java.lang.ref.WeakReference;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -104,31 +105,43 @@ public final class AvatarUtils {
         }
         iv.setTag(TAG_VIDEO_COVER, videoUrl);
         iv.setImageResource(R.drawable.default_image);
+
+        final WeakReference<ImageView> ivRef = new WeakReference<>(iv);
+        final String expectedVideoUrl = videoUrl;
         videoCoverExecutor.execute(() -> {
             Bitmap frame = null;
+            MediaMetadataRetriever retriever = null;
             try {
-                MediaMetadataRetriever retriever = new MediaMetadataRetriever();
-                retriever.setDataSource(videoUrl);
+                retriever = new MediaMetadataRetriever();
+                retriever.setDataSource(expectedVideoUrl);
                 frame = retriever.getFrameAtTime(0, MediaMetadataRetriever.OPTION_CLOSEST_SYNC);
-                retriever.release();
             } catch (Throwable ignored) {
+            } finally {
+                if (retriever != null) {
+                    try {
+                        retriever.release();
+                    } catch (Throwable ignored) {
+                    }
+                }
             }
             Bitmap finalFrame = frame;
             mainHandler.post(() -> {
-                if (iv == null) return;
-                Object tag = iv.getTag(TAG_VIDEO_COVER);
-                if (!videoUrl.equals(tag)) return;
+                ImageView iv2 = ivRef.get();
+                if (iv2 == null) return;
+
+                Object tag = iv2.getTag(TAG_VIDEO_COVER);
+                if (!expectedVideoUrl.equals(tag)) return;
                 // 若 Context 为 Activity 且已销毁/finishing，不再更新，避免泄漏与异常
-                android.content.Context ctx = iv.getContext();
+                android.content.Context ctx = iv2.getContext();
                 if (ctx instanceof android.app.Activity) {
                     android.app.Activity act = (android.app.Activity) ctx;
                     if (act.isFinishing() || (android.os.Build.VERSION.SDK_INT >= 17 && act.isDestroyed())) return;
                 }
                 if (finalFrame != null) {
-                    iv.setImageBitmap(finalFrame);
-                    iv.setScaleType(ImageView.ScaleType.CENTER_CROP);
+                    iv2.setImageBitmap(finalFrame);
+                    iv2.setScaleType(ImageView.ScaleType.CENTER_CROP);
                 } else {
-                    iv.setImageResource(R.drawable.default_image);
+                    iv2.setImageResource(R.drawable.default_image);
                 }
             });
         });
