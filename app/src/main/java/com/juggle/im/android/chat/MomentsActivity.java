@@ -1471,7 +1471,7 @@ public class MomentsActivity extends AppCompatActivity {
                 tvName = itemView.findViewById(R.id.tv_name);
                 tvContent = itemView.findViewById(R.id.tv_content);
                 mediaContainer = itemView.findViewById(R.id.media_container);
-                tvTime = itemView.findViewById(R.id.tv_time);
+                tvTime = itemView.findViewById(R.id.tv_time_bottom);
                 btnMore = itemView.findViewById(R.id.btn_more);
                 blockLikesComments = itemView.findViewById(R.id.block_likes_comments);
                 tvLikes = itemView.findViewById(R.id.tv_likes);
