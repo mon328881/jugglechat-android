@@ -28,39 +28,13 @@ public class Application extends MultiDexApplication {
 
 =======
         
-<<<<<<< Updated upstream
-<<<<<<< HEAD
->>>>>>> c403ce15fa0088025ee02734a798ba9c97c3ab8c
-=======
->>>>>>> c403ce15fa0088025ee02734a798ba9c97c3ab8c
         // 腾讯地图隐私协议同意（必须在地图初始化之前调用）
         try {
             TencentMapInitializer.setAgreePrivacy(true);
         } catch (Throwable ignored) {
             // 如果地图SDK类不可用，不要崩溃应用启动
         }
-<<<<<<< HEAD
-
-        // 恢复上次登录态：避免进程被系统回收后，静态变量丢失导致接口请求 17005（not logged in）
-        try {
-            android.content.SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-            String appToken = prefs.getString(KEY_APP_TOKEN, null);
-            String imToken = prefs.getString(KEY_IM_TOKEN, null);
-            long expireTime = prefs.getLong(KEY_EXPIRE_TIME, 0L);
-            if (appToken != null && !appToken.isEmpty() && expireTime > System.currentTimeMillis()) {
-                ConfigUtils.appToken = appToken;
-            }
-            if (imToken != null && !imToken.isEmpty() && expireTime > System.currentTimeMillis()) {
-                ConfigUtils.imToken = imToken;
-            }
-        } catch (Throwable ignored) {
-            // ignore any unexpected prefs errors
-        }
-
-=======
         
-=======
->>>>>>> Stashed changes
         // 主题通过 AndroidManifest.xml 中的 android:theme 属性应用
 >>>>>>> c403ce15fa0088025ee02734a798ba9c97c3ab8c
         JIMChatCore.getInstance().init(this, Collections.singletonList(ConfigUtils.imServer), ConfigUtils.appKey);
