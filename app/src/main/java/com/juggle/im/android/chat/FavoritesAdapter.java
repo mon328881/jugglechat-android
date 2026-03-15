@@ -14,7 +14,6 @@ import com.bumptech.glide.load.resource.bitmap.RoundedCorners;
 import com.juggle.im.android.R;
 import com.juggle.im.android.model.FavoriteItem;
 
-import java.io.File;
 import java.util.List;
 import java.util.Set;
 
@@ -51,16 +50,14 @@ public class FavoritesAdapter extends RecyclerView.Adapter<FavoritesAdapter.VH> 
         if (FavoriteItem.TYPE_IMAGE.equals(item.getType())) {
             holder.ivThumb.setVisibility(View.VISIBLE);
             String path = item.getLocalPath();
-            if (path != null && new File(path).exists()) {
-                Glide.with(holder.itemView)
-                        .load(path)
-                        .placeholder(R.drawable.ic_default_img)
-                        .centerCrop()
-                        .transform(new RoundedCorners(8))
-                        .into(holder.ivThumb);
-            } else {
-                holder.ivThumb.setImageResource(R.drawable.ic_default_img);
-            }
+            // 不在此处调用 File.exists()，避免主线程 DiskReadViolation；由 Glide 异步加载，失败时显示 placeholder
+            Glide.with(holder.itemView)
+                    .load(path != null ? path : "")
+                    .placeholder(R.drawable.ic_default_img)
+                    .error(R.drawable.ic_default_img)
+                    .centerCrop()
+                    .transform(new RoundedCorners(8))
+                    .into(holder.ivThumb);
             holder.tvType.setText(holder.itemView.getContext().getString(R.string.msg_image));
         } else if (FavoriteItem.TYPE_FILE.equals(item.getType())) {
             holder.ivIcon.setVisibility(View.VISIBLE);

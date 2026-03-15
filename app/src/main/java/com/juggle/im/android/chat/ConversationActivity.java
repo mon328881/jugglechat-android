@@ -499,7 +499,6 @@ public class ConversationActivity extends AppCompatActivity {
         } else if (pluginId.equals("contact")) {
 
         } else if (pluginId.equals(FilePlugin.ID)) {
-            // 通过 Uri 读取原始文件名（包含正确的视频/文件后缀）
             Uri uri = null;
             if (data instanceof Uri) {
                 uri = (Uri) data;
@@ -510,43 +509,43 @@ public class ConversationActivity extends AppCompatActivity {
                 LogUtil.w("ConversationActivity", "FilePlugin data is null, ignore.");
                 return;
             }
-
-            String originalName = getDisplayNameFromUri(this, uri);
-
-            // 为临时文件选择合适的后缀，保证本地路径也带正确扩展名（如 .mp4）
-            String ext = "";
-            if (!TextUtils.isEmpty(originalName)) {
-                int dotIndex = originalName.lastIndexOf(".");
-                if (dotIndex > 0 && dotIndex < originalName.length() - 1) {
-                    ext = originalName.substring(dotIndex); // 包含点，例如 ".mp4"
+            final Uri uriFinal = uri;
+            // ContentResolver.query 与文件 I/O 在子线程执行，避免主线程 DiskReadViolation
+            new Thread(() -> {
+                String originalName = getDisplayNameFromUri(ConversationActivity.this, uriFinal);
+                String ext = "";
+                if (!TextUtils.isEmpty(originalName)) {
+                    int dotIndex = originalName.lastIndexOf(".");
+                    if (dotIndex > 0 && dotIndex < originalName.length() - 1) {
+                        ext = originalName.substring(dotIndex);
+                    }
                 }
-            }
-            String suffix = TextUtils.isEmpty(ext) ? "temp_file" : ext;
-
-            String fileUrl = FileUtils.convertContentUriToFile(this, uri.toString(), suffix);
-            FileMessage fileMessage = new FileMessage();
-            File f = new File(fileUrl);
-            fileMessage.setLocalPath(fileUrl);
-
-            // 使用原始文件名作为消息展示名称，必要时做截断，但始终保留后缀
-            String finalName = !TextUtils.isEmpty(originalName) ? originalName : f.getName();
-            String baseName = finalName;
-            String displayExt = "";
-            int dotIndex = finalName.lastIndexOf(".");
-            if (dotIndex > 0 && dotIndex < finalName.length() - 1) {
-                baseName = finalName.substring(0, dotIndex);
-                displayExt = finalName.substring(dotIndex); // 包含点，例如 ".mp4"
-            }
-            // 仅截断主文件名部分，避免丢失扩展名
-            if (baseName.length() > 30) {
-                baseName = baseName.substring(0, 30);
-            }
-            finalName = TextUtils.isEmpty(displayExt) ? baseName : (baseName + displayExt);
-
-            fileMessage.setName(finalName);
-            long size = f.length();
-            fileMessage.setSize(size);
-            sendFileMessage(fileMessage, conversation);
+                String suffix = TextUtils.isEmpty(ext) ? "temp_file" : ext;
+                String fileUrl = FileUtils.convertContentUriToFile(ConversationActivity.this, uriFinal.toString(), suffix);
+                java.io.File f = new java.io.File(fileUrl);
+                long size = f.length();
+                String finalName = !TextUtils.isEmpty(originalName) ? originalName : f.getName();
+                String baseName = finalName;
+                String displayExt = "";
+                int dotIndex = finalName.lastIndexOf(".");
+                if (dotIndex > 0 && dotIndex < finalName.length() - 1) {
+                    baseName = finalName.substring(0, dotIndex);
+                    displayExt = finalName.substring(dotIndex);
+                }
+                if (baseName.length() > 30) {
+                    baseName = baseName.substring(0, 30);
+                }
+                finalName = TextUtils.isEmpty(displayExt) ? baseName : (baseName + displayExt);
+                final String nameToSet = finalName;
+                final long sizeToSet = size;
+                runOnUiThread(() -> {
+                    FileMessage fileMessage = new FileMessage();
+                    fileMessage.setLocalPath(fileUrl);
+                    fileMessage.setName(nameToSet);
+                    fileMessage.setSize(sizeToSet);
+                    sendFileMessage(fileMessage, conversation);
+                });
+            }).start();
         } else if (pluginId.equals("favorite")) {
             @SuppressWarnings("unchecked")
             ArrayList<FavoriteItem> selected = (ArrayList<FavoriteItem>) data;

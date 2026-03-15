@@ -198,7 +198,7 @@ public class MomentDetailActivity extends AppCompatActivity {
             btnFriendAction.setVisibility(View.VISIBLE);
             final String targetAuthorId = authorId;
             // 先与服务器同步待通过列表（对方拒绝/过期后移除），再刷新按钮状态
-            AddFriendActivity.syncPendingFriendRequestsFromServer(this, () -> runOnUiThread(() -> updateFriendStatus(targetAuthorId)));
+            AddFriendActivity.syncPendingFriendRequestsFromServer(this, (ignored) -> runOnUiThread(() -> updateFriendStatus(targetAuthorId)));
         } else {
             btnFriendAction.setVisibility(View.GONE);
         }
@@ -323,52 +323,55 @@ public class MomentDetailActivity extends AppCompatActivity {
     }
 
     private void updateFriendStatus(String userId) {
-        // 使用 getUserInfo，后端会返回 is_friend 字段，更可靠
         ServiceManager.getUserService().getUserInfo(userId,
                 new ApiCallback<com.juggle.im.android.server.beans.UserInfoBean>() {
                     @Override
                     public void onSuccess(com.juggle.im.android.server.beans.UserInfoBean data) {
-                        runOnUiThread(() -> {
-                            boolean friendFlag = data != null && data.isFriend();
-                            isFriend = friendFlag;
-                            if (isFriend) {
-                                removePendingFriendRequest(MomentDetailActivity.this, userId);
-                                btnFriendAction.setText("好友");
-                                btnFriendAction.setEnabled(false);
-                                btnFriendAction.setAlpha(0.7f);
-                                btnFriendAction.setOnClickListener(null);
-                            } else if (hasPendingFriendRequest(MomentDetailActivity.this, userId)) {
-                                // 已发送过申请，显示待通过，避免重复点击
-                                btnFriendAction.setText("待通过");
-                                btnFriendAction.setEnabled(false);
-                                btnFriendAction.setAlpha(0.7f);
-                                btnFriendAction.setOnClickListener(null);
-                            } else {
-                                btnFriendAction.setText("添加好友");
-                                btnFriendAction.setEnabled(true);
-                                btnFriendAction.setAlpha(1f);
-                                btnFriendAction.setOnClickListener(v -> applyFriend(userId));
-                            }
-                        });
+                        final boolean friendFlag = data != null && data.isFriend();
+                        new Thread(() -> {
+                            if (friendFlag) removePendingFriendRequest(MomentDetailActivity.this, userId);
+                            final boolean hasPending = hasPendingFriendRequest(MomentDetailActivity.this, userId);
+                            runOnUiThread(() -> {
+                                isFriend = friendFlag;
+                                if (isFriend) {
+                                    btnFriendAction.setText("好友");
+                                    btnFriendAction.setEnabled(false);
+                                    btnFriendAction.setAlpha(0.7f);
+                                    btnFriendAction.setOnClickListener(null);
+                                } else if (hasPending) {
+                                    btnFriendAction.setText("待通过");
+                                    btnFriendAction.setEnabled(false);
+                                    btnFriendAction.setAlpha(0.7f);
+                                    btnFriendAction.setOnClickListener(null);
+                                } else {
+                                    btnFriendAction.setText("添加好友");
+                                    btnFriendAction.setEnabled(true);
+                                    btnFriendAction.setAlpha(1f);
+                                    btnFriendAction.setOnClickListener(v -> applyFriend(userId));
+                                }
+                            });
+                        }).start();
                     }
 
                     @Override
                     public void onError(int code, String message) {
-                        // 查询失败时，若有本地「待通过」记录则显示待通过，否则显示添加好友
-                        runOnUiThread(() -> {
-                            isFriend = false;
-                            if (hasPendingFriendRequest(MomentDetailActivity.this, userId)) {
-                                btnFriendAction.setText("待通过");
-                                btnFriendAction.setEnabled(false);
-                                btnFriendAction.setAlpha(0.7f);
-                                btnFriendAction.setOnClickListener(null);
-                            } else {
-                                btnFriendAction.setText("添加好友");
-                                btnFriendAction.setEnabled(true);
-                                btnFriendAction.setAlpha(1f);
-                                btnFriendAction.setOnClickListener(v -> applyFriend(userId));
-                            }
-                        });
+                        new Thread(() -> {
+                            final boolean hasPending = hasPendingFriendRequest(MomentDetailActivity.this, userId);
+                            runOnUiThread(() -> {
+                                isFriend = false;
+                                if (hasPending) {
+                                    btnFriendAction.setText("待通过");
+                                    btnFriendAction.setEnabled(false);
+                                    btnFriendAction.setAlpha(0.7f);
+                                    btnFriendAction.setOnClickListener(null);
+                                } else {
+                                    btnFriendAction.setText("添加好友");
+                                    btnFriendAction.setEnabled(true);
+                                    btnFriendAction.setAlpha(1f);
+                                    btnFriendAction.setOnClickListener(v -> applyFriend(userId));
+                                }
+                            });
+                        }).start();
                     }
                 });
     }
@@ -377,10 +380,9 @@ public class MomentDetailActivity extends AppCompatActivity {
         ServiceManager.getUserService().applyFriend(userId, new ApiCallback<com.juggle.im.android.server.beans.FriendApplicationBean>() {
             @Override
             public void onSuccess(com.juggle.im.android.server.beans.FriendApplicationBean data) {
+                new Thread(() -> addPendingFriendRequest(MomentDetailActivity.this, userId)).start();
                 runOnUiThread(() -> {
-                    addPendingFriendRequest(MomentDetailActivity.this, userId);
                     Toast.makeText(MomentDetailActivity.this, "好友申请已发送", Toast.LENGTH_SHORT).show();
-                    // 改为「待通过」并禁用，重新进入详情页时也会显示待通过
                     btnFriendAction.setText("待通过");
                     btnFriendAction.setEnabled(false);
                     btnFriendAction.setAlpha(0.7f);
@@ -773,7 +775,7 @@ public class MomentDetailActivity extends AppCompatActivity {
             final String authorId = currentPost.getUser_info().getUserId();
             if (authorId != null && !authorId.equals(JIM.getInstance().getCurrentUserId())
                     && btnFriendAction != null && btnFriendAction.getVisibility() == View.VISIBLE) {
-                AddFriendActivity.syncPendingFriendRequestsFromServer(this, () -> runOnUiThread(() -> updateFriendStatus(authorId)));
+                AddFriendActivity.syncPendingFriendRequestsFromServer(this, (ignored) -> runOnUiThread(() -> updateFriendStatus(authorId)));
             }
         }
     }

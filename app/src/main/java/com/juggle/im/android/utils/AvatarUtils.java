@@ -56,6 +56,8 @@ public final class AvatarUtils {
                     .load(url)
                     .centerCrop()
                     .transform(new CircleCrop())
+                    .placeholder(R.drawable.ic_avatar_loading)
+                    .error(R.drawable.default_avatar)
                     .dontAnimate()
                     .into(iv);
             return;

@@ -1,6 +1,8 @@
 package com.juggle.im.android.core;
 
 import android.content.Context;
+import android.os.Handler;
+import android.os.Looper;
 import com.juggle.im.android.utils.LogUtil;
 import com.juggle.im.JIM;
 import com.juggle.im.JIMConst;
@@ -103,7 +105,8 @@ public class JIMChatCore {
             @Override
             public void onDbOpen() {
                 LogUtil.i(tag, "db open");
-                syncConversationList();
+                // 在子线程执行 DB 读取，避免主线程 StrictMode DiskReadViolation
+                new Thread(() -> syncConversationListOnBackground()).start();
             }
 
             @Override
@@ -121,11 +124,40 @@ public class JIMChatCore {
         JIM.getInstance().getConnectionManager().connect(token);
     }
 
+    private static final Handler sMainHandler = new Handler(Looper.getMainLooper());
+
     /**
-     * 同步会话列表
+     * 在子线程同步会话列表并 post 事件到主线程，供 onDbOpen 调用，避免主线程读 DB。
+     */
+    private void syncConversationListOnBackground() {
+        long cursor = -1;
+        for (;;) {
+            List<ConversationInfo> conversationInfoList = JIM.getInstance().getConversationManager().getConversationInfoList(20, cursor, JIMConst.PullDirection.NEWER);
+            if (conversationInfoList == null || conversationInfoList.isEmpty()) {
+                LogUtil.i(tag, "empty conversation");
+                break;
+            }
+            LogUtil.d(tag, "fetch conversation size: " + conversationInfoList.size());
+            final List<ConversationInfo> batch = conversationInfoList;
+            sMainHandler.post(() -> EventBus.getDefault().post(new ConversationUpdatedEvent(batch)));
+            ConversationInfo last = conversationInfoList.get(conversationInfoList.size() - 1);
+            cursor = last.getSortTime();
+            if (conversationInfoList.size() < 20) {
+                LogUtil.i(tag, "fetch conversation end");
+                break;
+            }
+        }
+        final int unreadCount = getChatUnreadCountExcludingSystem();
+        final int friendApplyBadge = getFriendApplyBadgeCount();
+        sMainHandler.post(() -> {
+            EventBus.getDefault().post(new UnreadMessageCountEvent(unreadCount));
+            EventBus.getDefault().post(new FriendApplicationUpdateEvent(friendApplyBadge));
+        });
+    }
+
+    /**
+     * 同步会话列表（可能在主线程调用，如手动刷新时）
      * 应用初次启动，先进行会话列表同步、更新
-     * 1、先用当前时间戳取第一屏会话
-     * 2、如果还有，用第一屏的最后一条会话的sortTime取第二屏会话，拉取 OLDER 会话数据
      */
     public void syncConversationList() {
         long cursor = -1;
@@ -136,14 +168,9 @@ public class JIMChatCore {
                 break;
             }
             LogUtil.d(tag, "fetch conversation size: " + conversationInfoList.size());
-
-            // Post conversation update event for this page
             EventBus.getDefault().post(new ConversationUpdatedEvent(conversationInfoList));
-
-            // prepare for next page: use the last item's sortTime as cursor
             ConversationInfo last = conversationInfoList.get(conversationInfoList.size() - 1);
             cursor = last.getSortTime();
-
             if (conversationInfoList.size() < 20) {
                 LogUtil.i(tag, "fetch conversation end");
                 break;
@@ -308,10 +335,16 @@ public class JIMChatCore {
 
     /**
      * 根据好友申请会话未读数发送 FriendApplicationUpdateEvent，用于通讯录 Tab 与新朋友红点。
-     * 服务端通过 SendPrivateMsg(SenderId=friend_apply) 推送，IM 可能存为 PRIVATE 会话，故同时查 SYSTEM 与 PRIVATE。
-     * 取两者最大值，避免同一逻辑会话被存成两种类型时重复计数导致红点一直增加。
      */
     private void postFriendApplyBadge() {
+        int pending = getFriendApplyBadgeCount();
+        EventBus.getDefault().post(new FriendApplicationUpdateEvent(pending));
+    }
+
+    /**
+     * 在子线程可调用的好友申请未读数（读 DB），供 syncConversationListOnBackground 使用。
+     */
+    private int getFriendApplyBadgeCount() {
         IConversationManager cm = JIM.getInstance().getConversationManager();
         Conversation sysConv = new Conversation(Conversation.ConversationType.SYSTEM, "friend_apply");
         Conversation privateConv = new Conversation(Conversation.ConversationType.PRIVATE, "friend_apply");
@@ -319,8 +352,7 @@ public class JIMChatCore {
         ConversationInfo infoPrv = cm.getConversationInfo(privateConv);
         int sysCount = infoSys != null ? infoSys.getUnreadCount() : 0;
         int prvCount = infoPrv != null ? infoPrv.getUnreadCount() : 0;
-        int pending = Math.max(sysCount, prvCount);
-        EventBus.getDefault().post(new FriendApplicationUpdateEvent(pending));
+        return Math.max(sysCount, prvCount);
     }
 
     /**

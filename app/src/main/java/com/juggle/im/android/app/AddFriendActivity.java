@@ -34,6 +34,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Consumer;
 
 public class AddFriendActivity extends AppCompatActivity {
     private static final String PREF_NAME_PENDING_FRIEND = "moment_detail_prefs";
@@ -71,14 +72,21 @@ public class AddFriendActivity extends AppCompatActivity {
 
         // 加载好友列表，用于搜索结果中区分「已添加」
         loadFriendIds();
-        // 加载已发送申请的用户 ID（与动态详情页共用存储）
-        pendingIds.addAll(getPendingFriendRequestIds(this));
-        // 与服务器同步：已拒绝/已过期的申请从本地移除，避免一直显示「申请中」
-        syncPendingFriendRequestsFromServer(this, () -> {
-            pendingIds.clear();
-            pendingIds.addAll(getPendingFriendRequestIds(AddFriendActivity.this));
-            if (adapter != null) adapter.notifyDataSetChanged();
-        });
+        // 在子线程读 SP，避免主线程 DiskReadViolation
+        new Thread(() -> {
+            final java.util.Set<String> ids = getPendingFriendRequestIds(AddFriendActivity.this);
+            runOnUiThread(() -> {
+                pendingIds.clear();
+                pendingIds.addAll(ids);
+                syncPendingFriendRequestsFromServer(AddFriendActivity.this, (updatedSet) -> {
+                    if (updatedSet != null) {
+                        pendingIds.clear();
+                        pendingIds.addAll(updatedSet);
+                    }
+                    if (adapter != null) adapter.notifyDataSetChanged();
+                });
+            });
+        }).start();
 
         edtSearch.setOnFocusChangeListener((v, hasFocus) -> {
             if (hasFocus) {
@@ -142,30 +150,30 @@ public class AddFriendActivity extends AppCompatActivity {
 
     private static void addPendingFriendRequest(Context context, String userId) {
         if (userId == null) return;
-        SharedPreferences prefs = getPendingFriendPrefs(context);
-        Set<String> set = new HashSet<>(prefs.getStringSet(PREF_KEY_PENDING_IDS, new HashSet<>()));
-        set.add(userId);
-        prefs.edit().putStringSet(PREF_KEY_PENDING_IDS, set).apply();
+        new Thread(() -> {
+            SharedPreferences prefs = getPendingFriendPrefs(context);
+            Set<String> set = new HashSet<>(prefs.getStringSet(PREF_KEY_PENDING_IDS, new HashSet<>()));
+            set.add(userId);
+            prefs.edit().putStringSet(PREF_KEY_PENDING_IDS, set).apply();
+        }).start();
     }
 
     /**
-     * 与服务器同步「我发出的」好友申请状态，将已拒绝(2)、已过期(3)从本地待通过列表中移除，
-     * 这样添加联系人页和动态详情页会正确显示「添加好友」而非一直「申请中」。
+     * 与服务器同步「我发出的」好友申请状态，将已拒绝(2)、已过期(3)从本地待通过列表中移除。
      * @param context 上下文
-     * @param onDone 同步完成回调（主线程）
+     * @param onDone 同步完成回调（主线程），参数为同步后的待通过 ID 集合；若未做移除操作则为 null
      */
-    public static void syncPendingFriendRequestsFromServer(Context context, Runnable onDone) {
+    public static void syncPendingFriendRequestsFromServer(Context context, Consumer<Set<String>> onDone) {
         ServiceManager.getUserService().getFriendApplications(0, 100, new ApiCallback<FriendApplicationsData>() {
             @Override
             public void onSuccess(FriendApplicationsData data) {
                 List<FriendApplicationBean> items = data != null ? data.getItems() : null;
                 if (items == null || items.isEmpty()) {
-                    if (onDone != null) runOnMain(onDone, context);
+                    if (onDone != null) runOnMain(() -> onDone.accept(null), context);
                     return;
                 }
                 Set<String> toRemove = new HashSet<>();
                 for (FriendApplicationBean app : items) {
-                    // 仅处理「我发起的」申请：已同意(1)、已拒绝(2)、已过期(3) 都从待通过列表移除
                     if (app.isSponsor() && app.getStatus() != 0) {
                         if (app.getUserInfo() != null && app.getUserInfo().getUser_id() != null) {
                             toRemove.add(app.getUserInfo().getUser_id());
@@ -173,17 +181,22 @@ public class AddFriendActivity extends AppCompatActivity {
                     }
                 }
                 if (!toRemove.isEmpty()) {
-                    SharedPreferences prefs = getPendingFriendPrefs(context);
-                    Set<String> set = new HashSet<>(prefs.getStringSet(PREF_KEY_PENDING_IDS, new HashSet<>()));
-                    set.removeAll(toRemove);
-                    prefs.edit().putStringSet(PREF_KEY_PENDING_IDS, set).apply();
+                    final Set<String> finalToRemove = toRemove;
+                    new Thread(() -> {
+                        SharedPreferences prefs = getPendingFriendPrefs(context);
+                        Set<String> set = new HashSet<>(prefs.getStringSet(PREF_KEY_PENDING_IDS, new HashSet<>()));
+                        set.removeAll(finalToRemove);
+                        prefs.edit().putStringSet(PREF_KEY_PENDING_IDS, set).apply();
+                        if (onDone != null) runOnMain(() -> onDone.accept(set), context);
+                    }).start();
+                    return;
                 }
-                if (onDone != null) runOnMain(onDone, context);
+                if (onDone != null) runOnMain(() -> onDone.accept(null), context);
             }
 
             @Override
             public void onError(int code, String message) {
-                if (onDone != null) runOnMain(onDone, context);
+                if (onDone != null) runOnMain(() -> onDone.accept(null), context);
             }
         });
     }
@@ -346,9 +359,11 @@ public class AddFriendActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         // 从其他页面返回时同步服务器状态，对方拒绝后这里会变为「添加好友」
-        syncPendingFriendRequestsFromServer(this, () -> {
-            pendingIds.clear();
-            pendingIds.addAll(getPendingFriendRequestIds(AddFriendActivity.this));
+        syncPendingFriendRequestsFromServer(this, (updatedSet) -> {
+            if (updatedSet != null) {
+                pendingIds.clear();
+                pendingIds.addAll(updatedSet);
+            }
             if (adapter != null) adapter.notifyDataSetChanged();
         });
     }

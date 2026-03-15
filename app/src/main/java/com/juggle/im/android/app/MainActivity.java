@@ -62,6 +62,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -73,6 +74,8 @@ public class MainActivity extends AppCompatActivity {
     // 自动重连配置
     private static final int MAX_RETRY_COUNT = 3;
     private static final int RETRY_DELAY_MS = 5000;
+    /** 先断开再重连时，等待 SDK 状态机切到 Idle 的延时，避免 "connection already exist" */
+    private static final int RECONNECT_AFTER_DISCONNECT_MS = 400;
 
     private ConversationListFragment conversationListFragment;
     private FriendsFragment friendsFragment; // kept for places that still use it
@@ -117,7 +120,14 @@ public class MainActivity extends AppCompatActivity {
 
             if (ConfigUtils.imToken != null && !ConfigUtils.imToken.isEmpty()) {
                 LogUtil.i("MainActivity", "try reconnect, attempt " + currentRetryCount);
-                JIMChatCore.getInstance().connect(ConfigUtils.imToken);
+                // 先断开再连：SDK 在 ConnConnectedState 时若收到同 token 的 connect 会直接忽略（connection already exist），
+                // 导致实际已断网但状态机仍认为已连接，重连无效。先 disconnect 让状态机回到 Idle，再延迟 connect。
+                JIM.getInstance().getConnectionManager().disconnect(false);
+                reconnectHandler.postDelayed(() -> {
+                    if (ConfigUtils.imToken != null && !ConfigUtils.imToken.isEmpty()) {
+                        JIMChatCore.getInstance().connect(ConfigUtils.imToken);
+                    }
+                }, RECONNECT_AFTER_DISCONNECT_MS);
             }
 
             reconnectHandler.postDelayed(this, RETRY_DELAY_MS);
@@ -131,6 +141,7 @@ public class MainActivity extends AppCompatActivity {
         JIMChatCore.getInstance().connect(ConfigUtils.imToken);
 
         setContentView(R.layout.activity_main);
+        com.juggle.im.android.utils.HiddenConversationStore.loadCacheAsync(this);
 
         Window window = getWindow();
         window.setNavigationBarColor(getColor(R.color.white));
@@ -495,61 +506,59 @@ public class MainActivity extends AppCompatActivity {
         LogUtil.i("MainActivity", "onConversationUpdated");
         List<ConversationInfo> infoList = event.getConversationInfoList();
         if (infoList == null || infoList.isEmpty()) return;
-
-        Map<String, UiConversation> byId = new LinkedHashMap<>();
-        Set<String> privateIdsWithoutUserInfo = new HashSet<>();
-
-        for (ConversationInfo info : infoList) {
-            Conversation conversation = info.getConversation();
-            if (conversation == null) continue;
-            String convId = conversation.getConversationId();
-            if (HiddenConversationStore.isHidden(this, convId)) continue;
-            Conversation.ConversationType type = conversation.getConversationType();
-            // 不显示系统会话（好友申请、朋友圈通知等）
-            if (type == Conversation.ConversationType.SYSTEM) continue;
-            if (type == Conversation.ConversationType.PRIVATE && convId != null && isSystemOrBroadcastConversationId(convId)) {
-                continue;
-            }
-            UiConversation ui = UiConversation.fromConversationInfo(info);
-            if (type == Conversation.ConversationType.GROUP) {
-                GroupInfo groupInfo = JIM.getInstance().getUserInfoManager().getGroupInfo(ui.getConversationInfo().getConversation().getConversationId());
-                if (groupInfo != null) {
-                    ui.setName(groupInfo.getGroupName());
-                    ui.setAvatar(groupInfo.getPortrait());
+        final android.content.Context appContext = getApplicationContext();
+        // isHidden / getGroupInfo / getUserInfo 会触发放盘或 DB，放到子线程，避免 StrictMode
+        new Thread(() -> {
+            Map<String, UiConversation> byId = new LinkedHashMap<>();
+            Set<String> privateIdsWithoutUserInfo = new HashSet<>();
+            for (ConversationInfo info : infoList) {
+                Conversation conversation = info.getConversation();
+                if (conversation == null) continue;
+                String convId = conversation.getConversationId();
+                if (HiddenConversationStore.isHidden(appContext, convId)) continue;
+                Conversation.ConversationType type = conversation.getConversationType();
+                if (type == Conversation.ConversationType.SYSTEM) continue;
+                if (type == Conversation.ConversationType.PRIVATE && convId != null && isSystemOrBroadcastConversationId(convId)) continue;
+                UiConversation ui = UiConversation.fromConversationInfo(info);
+                if (type == Conversation.ConversationType.GROUP) {
+                    GroupInfo groupInfo = JIM.getInstance().getUserInfoManager().getGroupInfo(ui.getConversationInfo().getConversation().getConversationId());
+                    if (groupInfo != null) {
+                        ui.setName(groupInfo.getGroupName());
+                        ui.setAvatar(groupInfo.getPortrait());
+                    }
+                    UserInfo userInfo = ui.getLastMessage() != null
+                            ? JIM.getInstance().getUserInfoManager().getUserInfo(ui.getLastMessage().getSenderUserId())
+                            : null;
+                    if (userInfo != null) ui.setLastMessageUserName(userInfo.getUserName());
+                } else if (type == Conversation.ConversationType.PRIVATE) {
+                    UserInfo userInfo = JIM.getInstance().getUserInfoManager().getUserInfo(ui.getConversationInfo().getConversation().getConversationId());
+                    if (userInfo != null) {
+                        ui.setName(userInfo.getUserName());
+                        ui.setAvatar(userInfo.getPortrait());
+                        ui.setLastMessageUserName(userInfo.getUserName());
+                    } else {
+                        privateIdsWithoutUserInfo.add(convId);
+                    }
                 }
-                UserInfo userInfo = ui.getLastMessage() != null
-                        ? JIM.getInstance().getUserInfoManager().getUserInfo(ui.getLastMessage().getSenderUserId())
-                        : null;
-                if (userInfo != null) {
-                    ui.setLastMessageUserName(userInfo.getUserName());
+                UiConversation existing = byId.get(convId);
+                if (existing == null || ui.getSortTime() > existing.getSortTime()) byId.put(convId, ui);
+            }
+            List<UiConversation> uiList = new ArrayList<>(byId.values());
+            uiList.sort((a, b) -> {
+                if (a.isTop() != b.isTop()) return a.isTop() ? -1 : 1;
+                return Long.compare(b.getSortTime(), a.getSortTime());
+            });
+            final List<UiConversation> finalList = uiList;
+            final Set<String> finalIdsWithoutUserInfo = new HashSet<>(privateIdsWithoutUserInfo);
+            runOnUiThread(() -> {
+                if (isFinishing()) return;
+                ConversationListFragment frag = (ConversationListFragment) getSupportFragmentManager().findFragmentByTag("conversations");
+                if (frag != null) {
+                    frag.upsertConversations(finalList);
+                    for (String userId : finalIdsWithoutUserInfo) fetchAndUpdateConversationDisplay(frag, userId);
                 }
-            } else if (type == Conversation.ConversationType.PRIVATE) {
-                UserInfo userInfo = JIM.getInstance().getUserInfoManager().getUserInfo(ui.getConversationInfo().getConversation().getConversationId());
-                if (userInfo != null) {
-                    ui.setName(userInfo.getUserName());
-                    ui.setAvatar(userInfo.getPortrait());
-                    ui.setLastMessageUserName(userInfo.getUserName());
-                } else {
-                    privateIdsWithoutUserInfo.add(convId);
-                }
-            }
-            UiConversation existing = byId.get(convId);
-            if (existing == null || ui.getSortTime() > existing.getSortTime()) {
-                byId.put(convId, ui);
-            }
-        }
-        List<UiConversation> uiList = new ArrayList<>(byId.values());
-        uiList.sort((a, b) -> {
-            if (a.isTop() != b.isTop()) return a.isTop() ? -1 : 1;
-            return Long.compare(b.getSortTime(), a.getSortTime());
-        });
-        ConversationListFragment frag = (ConversationListFragment) getSupportFragmentManager().findFragmentByTag("conversations");
-        if (frag != null) {
-            runOnUiThread(() -> frag.upsertConversations(uiList));
-            for (String userId : privateIdsWithoutUserInfo) {
-                fetchAndUpdateConversationDisplay(frag, userId);
-            }
-        }
+            });
+        }).start();
     }
 
     /**
@@ -639,6 +648,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     // 设置用户信息显示（公开方法，便于资料页更新头像后主动刷新顶部区域）
+    // 注意：getUserInfo 会读 SQLite，放在子线程执行避免 StrictMode DiskReadViolation
     public void setupUserInfo() {
         ImageView ivUserAvatar = findViewById(R.id.iv_user_avatar);
         TextView tvUserName = findViewById(R.id.tv_user_name);
@@ -646,97 +656,107 @@ public class MainActivity extends AppCompatActivity {
         View statusIndicator = findViewById(R.id.status_indicator);
         TextView tvStatus = findViewById(R.id.tv_status);
         
-        if (ivUserAvatar != null && tvUserName != null && tvUserId != null) {
-            // 从JIM SDK获取当前用户ID
-            final String userId = JIM.getInstance().getCurrentUserId();
-            String finalUserId = userId;
-            if (finalUserId == null || finalUserId.isEmpty()) {
-                // 如果JIM SDK还没有初始化，使用ConfigUtils中的缓存
-                finalUserId = ConfigUtils.currentUserId;
-            }
-            
-            final String currentUserId = finalUserId;
-            
-            if (currentUserId != null && !currentUserId.isEmpty()) {
-                // 获取当前登录用户信息
-                UserInfo userInfo = JIM.getInstance().getUserInfoManager().getUserInfo(currentUserId);
-                
-                if (userInfo != null) {
-                    // 昵称优先使用 ConfigUtils 中最新的缓存，头像优先使用本地缓存，其次回退到 SDK portrait
-                    String displayName = !TextUtils.isEmpty(ConfigUtils.myName)
-                            ? ConfigUtils.myName
-                            : userInfo.getUserName();
-                    String displayAvatar = !TextUtils.isEmpty(ConfigUtils.myAvatarUrl)
-                            ? ConfigUtils.myAvatarUrl
-                            : userInfo.getPortrait();
+        if (ivUserAvatar == null || tvUserName == null || tvUserId == null) return;
 
-                    tvUserName.setText(displayName);
-                    tvUserId.setText("@" + userInfo.getUserId());
-                    com.juggle.im.android.utils.AvatarUtils.loadAvatar(ivUserAvatar, displayAvatar, displayName);
-                } else {
-                    // 如果用户信息不存在，先使用ConfigUtils中的缓存数据
-                    if (ConfigUtils.myName != null && !ConfigUtils.myName.isEmpty()) {
-                        tvUserName.setText(ConfigUtils.myName);
-                    } else {
-                        tvUserName.setText("用户");
-                    }
-                    
-                    tvUserId.setText("@" + currentUserId);
-                    
-                    // 使用首字母生成头像
-                    String displayName = ConfigUtils.myName != null ? ConfigUtils.myName : "用户";
-                    com.juggle.im.android.utils.AvatarUtils.loadAvatar(ivUserAvatar, ConfigUtils.myAvatarUrl, displayName);
-                    
-                    // 延迟重试获取用户信息，因为APP重启后用户信息可能还没有加载
-                    ivUserAvatar.postDelayed(() -> {
-                        retryFetchUserInfo(ivUserAvatar, tvUserName, tvUserId, currentUserId, 0);
-                    }, 1000);
-                }
-            } else {
-                // 用户ID为空，显示默认信息
-                tvUserName.setText("用户");
-                tvUserId.setText("@未知");
-                com.juggle.im.android.utils.AvatarUtils.loadAvatar(ivUserAvatar, ConfigUtils.myAvatarUrl, "用户");
+        String userId = JIM.getInstance().getCurrentUserId();
+        if (userId == null || userId.isEmpty()) {
+            userId = ConfigUtils.currentUserId;
+        }
+        final String currentUserId = userId;
+
+        if (currentUserId == null || currentUserId.isEmpty()) {
+            tvUserName.setText("用户");
+            tvUserId.setText("@未知");
+            com.juggle.im.android.utils.AvatarUtils.loadAvatar(ivUserAvatar, ConfigUtils.myAvatarUrl, "用户");
+            if (statusIndicator != null && tvStatus != null) {
+                ivUserAvatar.postDelayed(() -> updateConnectionStatus(statusIndicator, tvStatus, null), 500);
             }
-            
-            // 延迟更新连接状态，确保连接状态已确定
-            ivUserAvatar.postDelayed(() -> {
+            return;
+        }
+
+        // 在子线程读取本地 DB，避免主线程磁盘读触发 StrictMode
+        new Thread(() -> {
+            final UserInfo userInfo = JIM.getInstance().getUserInfoManager().getUserInfo(currentUserId);
+            runOnUiThread(() -> {
+                if (isFinishing()) return;
+                applyUserInfoToViews(ivUserAvatar, tvUserName, tvUserId, currentUserId, userInfo);
                 if (statusIndicator != null && tvStatus != null) {
-                    updateConnectionStatus(statusIndicator, tvStatus, null);
+                    ivUserAvatar.postDelayed(() -> updateConnectionStatus(statusIndicator, tvStatus, null), 500);
                 }
-            }, 500);
+            });
+        }).start();
+    }
+
+    /** 在主线程执行：根据 UserInfo 或 ConfigUtils 更新顶部用户信息视图 */
+    private void applyUserInfoToViews(ImageView ivUserAvatar, TextView tvUserName, TextView tvUserId, String currentUserId, UserInfo userInfo) {
+        if (userInfo != null) {
+            String displayName = !TextUtils.isEmpty(ConfigUtils.myName) ? ConfigUtils.myName : userInfo.getUserName();
+            String displayAvatar = !TextUtils.isEmpty(ConfigUtils.myAvatarUrl) ? ConfigUtils.myAvatarUrl : userInfo.getPortrait();
+            tvUserName.setText(displayName);
+            tvUserId.setText("@" + userInfo.getUserId());
+            com.juggle.im.android.utils.AvatarUtils.loadAvatar(ivUserAvatar, displayAvatar, displayName);
+        } else {
+            if (ConfigUtils.myName != null && !ConfigUtils.myName.isEmpty()) {
+                tvUserName.setText(ConfigUtils.myName);
+            } else {
+                tvUserName.setText("用户");
+            }
+            tvUserId.setText("@" + currentUserId);
+            String displayName = ConfigUtils.myName != null ? ConfigUtils.myName : "用户";
+            com.juggle.im.android.utils.AvatarUtils.loadAvatar(ivUserAvatar, ConfigUtils.myAvatarUrl, displayName);
+            ivUserAvatar.postDelayed(() -> retryFetchUserInfo(ivUserAvatar, tvUserName, tvUserId, currentUserId, 0), 1000);
         }
     }
     
-    // 重试获取用户信息，最多重试3次，每次间隔1秒
+    // 重试获取用户信息，最多重试3次，每次间隔1秒（getUserInfo 在子线程执行，避免 StrictMode）
     private void retryFetchUserInfo(ImageView ivUserAvatar, TextView tvUserName, TextView tvUserId, String userId, int retryCount) {
         if (retryCount >= 3) {
-            // 本地重试3次都失败，尝试从服务器拉取
             LogUtil.d("MainActivity", "retryFetchUserInfo: 本地重试3次失败，开始从服务器拉取用户信息");
             fetchUserInfoFromServer(ivUserAvatar, tvUserName, tvUserId, userId);
             return;
         }
-        
-        UserInfo userInfo = JIM.getInstance().getUserInfoManager().getUserInfo(userId);
-        if (userInfo != null) {
-            // 成功获取用户信息，更新UI，并同步到 ConfigUtils 作为后续显示的首选来源
-            LogUtil.d("MainActivity", "retryFetchUserInfo: 成功获取用户信息");
-            String displayName = userInfo.getUserName();
-            tvUserName.setText(displayName);
-            tvUserId.setText("@" + userInfo.getUserId());
-            com.juggle.im.android.utils.AvatarUtils.loadAvatar(ivUserAvatar, ConfigUtils.myAvatarUrl, displayName);
-            
-            // 更新缓存
-            ConfigUtils.myName = displayName;
-        } else {
-            // 继续重试
-            LogUtil.d("MainActivity", "retryFetchUserInfo: 本地未找到用户信息，继续重试 retryCount=" + retryCount);
-            ivUserAvatar.postDelayed(() -> {
-                retryFetchUserInfo(ivUserAvatar, tvUserName, tvUserId, userId, retryCount + 1);
-            }, 1000);
-        }
+        new Thread(() -> {
+            final UserInfo userInfo = JIM.getInstance().getUserInfoManager().getUserInfo(userId);
+            runOnUiThread(() -> {
+                if (isFinishing()) return;
+                if (userInfo != null) {
+                    LogUtil.d("MainActivity", "retryFetchUserInfo: 成功获取用户信息");
+                    tvUserName.setText(userInfo.getUserName());
+                    tvUserId.setText("@" + userInfo.getUserId());
+                    com.juggle.im.android.utils.AvatarUtils.loadAvatar(ivUserAvatar, ConfigUtils.myAvatarUrl, userInfo.getUserName());
+                    ConfigUtils.myName = userInfo.getUserName();
+                } else {
+                    LogUtil.d("MainActivity", "retryFetchUserInfo: 本地未找到用户信息，继续重试 retryCount=" + retryCount);
+                    ivUserAvatar.postDelayed(() -> retryFetchUserInfo(ivUserAvatar, tvUserName, tvUserId, userId, retryCount + 1), 1000);
+                }
+            });
+        }).start();
     }
     
+    /**
+     * 将用户信息写入 SDK 本地缓存（优先 updateUserInfo，否则反射调用 insertUserInfoList），
+     * 避免后续 setupUserInfo 时“本地未找到用户信息”反复重试。
+     */
+    private void saveUserInfoToSdk(UserInfo userInfo) {
+        if (userInfo == null) return;
+        try {
+            Object manager = JIM.getInstance().getUserInfoManager();
+            if (manager == null) return;
+            // 优先调用 IUserInfoManager.updateUserInfo（需 SDK 包含该接口）
+            try {
+                java.lang.reflect.Method update = manager.getClass().getMethod("updateUserInfo", UserInfo.class);
+                update.invoke(manager, userInfo);
+                return;
+            } catch (NoSuchMethodException ignored) {
+                // 接口未提供 updateUserInfo，尝试内部实现 insertUserInfoList
+            }
+            java.lang.reflect.Method insert = manager.getClass().getMethod("insertUserInfoList", List.class);
+            insert.invoke(manager, Collections.singletonList(userInfo));
+        } catch (Exception e) {
+            LogUtil.d("MainActivity", "saveUserInfoToSdk: " + (e != null ? e.getMessage() : ""));
+        }
+    }
+
     // 从服务器拉取用户信息
     private void fetchUserInfoFromServer(ImageView ivUserAvatar, TextView tvUserName, TextView tvUserId, String userId) {
         LogUtil.d("MainActivity", "fetchUserInfoFromServer: 开始从服务器拉取用户信息");
@@ -757,6 +777,13 @@ public class MainActivity extends AppCompatActivity {
                         ConfigUtils.myAvatarUrl = avatar;
                     }
                     com.juggle.im.android.utils.AvatarUtils.loadAvatar(ivUserAvatar, ConfigUtils.myAvatarUrl, name != null ? name : "用户");
+                    // 回写 SDK 本地缓存，避免后续 setupUserInfo 时“本地未找到用户信息”反复重试
+                    UserInfo self = new UserInfo();
+                    self.setUserId(userId);
+                    self.setUserName(name != null ? name : "");
+                    self.setPortrait(avatar != null ? avatar : "");
+                    self.setUpdatedTime(System.currentTimeMillis());
+                    saveUserInfoToSdk(self);
                 });
             }
 
@@ -835,30 +862,29 @@ public class MainActivity extends AppCompatActivity {
      * 包括清除 token、用户信息等
      */
     private void clearLoginState() {
-        // 清除内存中的配置
         ConfigUtils.imToken = null;
         ConfigUtils.appToken = null;
         ConfigUtils.myName = null;
         ConfigUtils.myAvatarUrl = null;
         ConfigUtils.currentUserId = null;
-        
-        // 清除加密 Prefs 中的 token
-        SharedPreferences prefs = SecurePrefsHelper.getLoginPrefs(this);
-        if (prefs != null) {
-            SharedPreferences.Editor editor = prefs.edit();
-        editor.remove(LoginActivity.KEY_APP_TOKEN);
-        editor.remove(LoginActivity.KEY_IM_TOKEN);
-            editor.remove(LoginActivity.KEY_EXPIRE_TIME);
-            // 注意：不清除 KEY_REMEMBER_ACCOUNT 和 KEY_LAST_ACCOUNT，保留"记住账号"功能
-            editor.apply();
-        }
 
-        // 断开 IM 连接
-        try {
-            JIM.getInstance().getConnectionManager().disconnect(false);
-        } catch (Exception e) {
-            LogUtil.e("MainActivity", "断开连接失败", e);
-        }
+        new Thread(() -> {
+            SharedPreferences prefs = SecurePrefsHelper.getLoginPrefs(this);
+            if (prefs != null) {
+                prefs.edit()
+                        .remove(LoginActivity.KEY_APP_TOKEN)
+                        .remove(LoginActivity.KEY_IM_TOKEN)
+                        .remove(LoginActivity.KEY_EXPIRE_TIME)
+                        .apply();
+            }
+            runOnUiThread(() -> {
+                try {
+                    JIM.getInstance().getConnectionManager().disconnect(false);
+                } catch (Exception e) {
+                    LogUtil.e("MainActivity", "断开连接失败", e);
+                }
+            });
+        }).start();
     }
 
     @Override

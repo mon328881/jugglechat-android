@@ -24,7 +24,6 @@ import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
 import com.juggle.im.android.R;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,6 +31,7 @@ public class AlbumImageAdapter extends RecyclerView.Adapter<AlbumImageAdapter.Im
 
     private Context mContext;
     private List<String> mImagePaths;
+    private List<Uri> mImageUris; // 在子线程预解析，避免 onBindViewHolder 中 ContentResolver.query 触发主线程 DiskRead
     private List<String> mSelectedImages;
     private OnImageSelectedListener mListener;
     private LayoutInflater mInflater;
@@ -40,12 +40,19 @@ public class AlbumImageAdapter extends RecyclerView.Adapter<AlbumImageAdapter.Im
         this.mContext = context;
         this.mSelectedImages = selectedImages;
         this.mImagePaths = new ArrayList<>();
+        this.mImageUris = new ArrayList<>();
         this.mInflater = LayoutInflater.from(context);
     }
 
-    public void setImages(List<String> images) {
-        this.mImagePaths = images;
+    /** 设置图片列表，uris 需在子线程预解析（与 paths 一一对应），可为 null 则仅用 path 加载 */
+    public void setImages(List<String> paths, List<Uri> uris) {
+        this.mImagePaths = paths != null ? paths : new ArrayList<>();
+        this.mImageUris = uris != null ? uris : new ArrayList<>();
         notifyDataSetChanged();
+    }
+
+    public void setImages(List<String> images) {
+        setImages(images, null);
     }
 
     public void setOnImageSelectedListener(OnImageSelectedListener listener) {
@@ -62,24 +69,15 @@ public class AlbumImageAdapter extends RecyclerView.Adapter<AlbumImageAdapter.Im
     @Override
     public void onBindViewHolder(@NonNull ImageViewHolder holder, @SuppressLint("RecyclerView") int position) {
         String imagePath = mImagePaths.get(position);
-        
-        Log.d("AlbumImageAdapter", "Loading image from path: " + imagePath);
-        
-        // Get content URI for the image path
-        Uri imageUri = getImageContentUri(imagePath);
-        
-        if (imageUri != null) {
-            Glide.with(mContext)
-                    .load(imageUri)
-                    .placeholder(R.drawable.default_image)
-                    .error(R.drawable.default_image)
-                    .centerCrop()
-                    .transition(DrawableTransitionOptions.withCrossFade())
-                    .into(holder.imageView);
-        } else {
-            Log.e("AlbumImageAdapter", "Failed to get content URI for image: " + imagePath);
-            holder.imageView.setImageResource(R.drawable.default_image);
-        }
+        Uri imageUri = position < mImageUris.size() ? mImageUris.get(position) : null;
+        Object loadRef = imageUri != null ? imageUri : imagePath;
+        Glide.with(mContext)
+                .load(loadRef)
+                .placeholder(R.drawable.default_image)
+                .error(R.drawable.default_image)
+                .centerCrop()
+                .transition(DrawableTransitionOptions.withCrossFade())
+                .into(holder.imageView);
         
         holder.checkBox.setChecked(mSelectedImages.contains(imagePath));
         holder.checkBox.setOnCheckedChangeListener(null);
@@ -116,14 +114,15 @@ public class AlbumImageAdapter extends RecyclerView.Adapter<AlbumImageAdapter.Im
 
 
     /**
-     * Gets the content:// URI from the given file path
+     * 在子线程中根据 path 解析 content URI，避免主线程 ContentResolver.query。
+     * 供 AlbumActivity.loadImages 在后台线程调用。
      */
-    private Uri getImageContentUri(String imagePath) {
-        ContentResolver cr = mContext.getContentResolver();
+    public static Uri resolveContentUri(Context context, String imagePath) {
+        if (context == null || imagePath == null) return null;
+        ContentResolver cr = context.getContentResolver();
         String[] projection = {MediaStore.Images.Media._ID, MediaStore.Images.Media.DATA};
         String selection = MediaStore.Images.Media.DATA + "=?";
         String[] selectionArgs = {imagePath};
-
         Cursor cursor = null;
         try {
             cursor = cr.query(
@@ -133,7 +132,6 @@ public class AlbumImageAdapter extends RecyclerView.Adapter<AlbumImageAdapter.Im
                     selectionArgs,
                     null
             );
-
             if (cursor != null && cursor.moveToFirst()) {
                 int idColumn = cursor.getColumnIndex(MediaStore.Images.Media._ID);
                 if (idColumn != -1) {
@@ -145,11 +143,8 @@ public class AlbumImageAdapter extends RecyclerView.Adapter<AlbumImageAdapter.Im
         } catch (Exception e) {
             Log.e("AlbumImageAdapter", "Error querying content URI: " + e.getMessage());
         } finally {
-            if (cursor != null) {
-                cursor.close();
-            }
+            if (cursor != null) cursor.close();
         }
-        
         return null;
     }
 

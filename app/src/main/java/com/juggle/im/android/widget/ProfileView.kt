@@ -203,10 +203,12 @@ class ProfileView @JvmOverloads constructor(
      * 绑定个人资料数据
      */
     fun bindData(profile: ProfileData) {
-        // 加载头像
+        // 加载头像（占位图：加载中；失败时：默认头像）
         Glide.with(context)
             .load(profile.avatar)
             .circleCrop()
+            .placeholder(com.juggle.im.android.R.drawable.ic_avatar_loading)
+            .error(com.juggle.im.android.R.drawable.default_avatar)
             .into(avatarView)
         
         // 设置昵称

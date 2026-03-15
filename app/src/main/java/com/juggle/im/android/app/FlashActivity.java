@@ -35,11 +35,11 @@ public class FlashActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_flash);
 
-        if (hasValidToken()) {
-            handler.postDelayed(goToMainRunnable, 1200);
-        } else {
-            handler.postDelayed(goToLoginRunnable, 1500);
-        }
+        // 在子线程读 SP，避免主线程 DiskReadViolation
+        new Thread(() -> {
+            final boolean valid = hasValidToken();
+            handler.postDelayed(valid ? goToMainRunnable : goToLoginRunnable, valid ? 1200 : 1500);
+        }).start();
         Window window = getWindow();
         window.setNavigationBarColor(getColor(R.color.primary_bg_light));
     }

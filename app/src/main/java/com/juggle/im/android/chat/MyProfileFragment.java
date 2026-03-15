@@ -423,29 +423,27 @@ public class MyProfileFragment extends Fragment {
     }
 
     private void logout() {
-        // 清除用户信息
         ConfigUtils.appToken = null;
         ConfigUtils.imToken = null;
         ConfigUtils.myName = null;
         ConfigUtils.myAvatarUrl = null;
         ConfigUtils.currentUserId = null;
-        Context ctx = getActivity();
-        SharedPreferences prefs = ctx != null ? SecurePrefsHelper.getLoginPrefs(ctx) : null;
-        if (prefs != null) {
-            SharedPreferences.Editor editor = prefs.edit();
-            editor.remove(KEY_APP_TOKEN);
-            editor.remove(KEY_IM_TOKEN);
-            editor.remove(KEY_EXPIRE_TIME);
-            editor.apply();
-        }
-        JIM.getInstance().getConnectionManager().disconnect(false);
-
-        // 跳转到登录页面
-        Intent intent = new Intent(getActivity(), LoginActivity.class);
-        intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
-        startActivity(intent);
-        if (getActivity() != null) {
-            getActivity().finish();
-        }
+        final Context ctx = getActivity();
+        new Thread(() -> {
+            if (ctx != null) {
+                SharedPreferences prefs = SecurePrefsHelper.getLoginPrefs(ctx);
+                if (prefs != null) {
+                    prefs.edit().remove(KEY_APP_TOKEN).remove(KEY_IM_TOKEN).remove(KEY_EXPIRE_TIME).apply();
+                }
+            }
+            if (getActivity() == null) return;
+            getActivity().runOnUiThread(() -> {
+                JIM.getInstance().getConnectionManager().disconnect(false);
+                Intent intent = new Intent(getActivity(), LoginActivity.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(intent);
+                if (getActivity() != null) getActivity().finish();
+            });
+        }).start();
     }
 }

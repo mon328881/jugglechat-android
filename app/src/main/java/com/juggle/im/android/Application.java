@@ -49,23 +49,25 @@ public class Application extends MultiDexApplication {
             // 如果地图SDK类不可用，不要崩溃应用启动
         }
 
-        // 恢复上次登录态：使用加密 Prefs 读取 Token
-        try {
-            android.content.SharedPreferences prefs = SecurePrefsHelper.getLoginPrefs(this);
-            if (prefs != null) {
-                String appToken = prefs.getString(KEY_APP_TOKEN, null);
-                String imToken = prefs.getString(KEY_IM_TOKEN, null);
-                long expireTime = prefs.getLong(KEY_EXPIRE_TIME, 0L);
-                if (appToken != null && !appToken.isEmpty() && expireTime > System.currentTimeMillis()) {
-                    ConfigUtils.appToken = appToken;
+        // 恢复上次登录态：在子线程读 SP，避免主线程 DiskReadViolation
+        new Thread(() -> {
+            try {
+                android.content.SharedPreferences prefs = SecurePrefsHelper.getLoginPrefs(Application.this);
+                if (prefs != null) {
+                    String appToken = prefs.getString(KEY_APP_TOKEN, null);
+                    String imToken = prefs.getString(KEY_IM_TOKEN, null);
+                    long expireTime = prefs.getLong(KEY_EXPIRE_TIME, 0L);
+                    if (appToken != null && !appToken.isEmpty() && expireTime > System.currentTimeMillis()) {
+                        ConfigUtils.appToken = appToken;
+                    }
+                    if (imToken != null && !imToken.isEmpty() && expireTime > System.currentTimeMillis()) {
+                        ConfigUtils.imToken = imToken;
+                    }
                 }
-                if (imToken != null && !imToken.isEmpty() && expireTime > System.currentTimeMillis()) {
-                    ConfigUtils.imToken = imToken;
-                }
+            } catch (Throwable ignored) {
+                // ignore any unexpected prefs errors
             }
-        } catch (Throwable ignored) {
-            // ignore any unexpected prefs errors
-        }
+        }).start();
 
         JIMChatCore.getInstance().init(this, Collections.singletonList(ConfigUtils.imServer), ConfigUtils.appKey);
 
@@ -85,11 +87,14 @@ public class Application extends MultiDexApplication {
             String regId = JPushInterface.getRegistrationID(this);
             LogUtil.i(TAG, "JPush registrationId present: " + !TextUtils.isEmpty(regId));
             if (!TextUtils.isEmpty(regId)) {
-                android.content.SharedPreferences prefs = SecurePrefsHelper.getLoginPrefs(this);
-                if (prefs != null) {
-                    prefs.edit().putString(KEY_JPUSH_REG_ID, regId).apply();
-                }
                 ConfigUtils.jpushRegistrationId = regId;
+                final String id = regId;
+                new Thread(() -> {
+                    try {
+                        android.content.SharedPreferences prefs = SecurePrefsHelper.getLoginPrefs(Application.this);
+                        if (prefs != null) prefs.edit().putString(KEY_JPUSH_REG_ID, id).apply();
+                    } catch (Throwable ignored) { }
+                }).start();
             }
         } catch (Throwable ignored) {
             // 极光 SDK 初始化失败不影响主功能

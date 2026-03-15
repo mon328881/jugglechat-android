@@ -44,24 +44,29 @@ public class FavoritesPickerActivity extends AppCompatActivity {
 
         btnBack.setOnClickListener(v -> finish());
 
-        FavoritesRepository repo = new FavoritesRepository(this);
-        allItems = repo.getAll();
-
-        if (allItems.isEmpty()) {
-            rvFavorites.setVisibility(View.GONE);
-            tvEmpty.setVisibility(View.VISIBLE);
-            btnSend.setEnabled(false);
-        } else {
-            tvEmpty.setVisibility(View.GONE);
-            btnSend.setEnabled(false);
-            rvFavorites.setLayoutManager(new LinearLayoutManager(this));
-            adapter = new FavoritesAdapter(allItems, selectedIds, (item, selected) -> {
-                if (selected) selectedIds.add(item.getId());
-                else selectedIds.remove(item.getId());
-                btnSend.setEnabled(!selectedIds.isEmpty());
+        // 子线程读 SP，避免主线程 DiskReadViolation
+        new Thread(() -> {
+            FavoritesRepository repo = new FavoritesRepository(FavoritesPickerActivity.this);
+            final java.util.List<FavoriteItem> list = repo.getAll();
+            runOnUiThread(() -> {
+                allItems = list != null ? list : new ArrayList<>();
+                if (allItems.isEmpty()) {
+                    rvFavorites.setVisibility(View.GONE);
+                    tvEmpty.setVisibility(View.VISIBLE);
+                    btnSend.setEnabled(false);
+                } else {
+                    tvEmpty.setVisibility(View.GONE);
+                    btnSend.setEnabled(false);
+                    rvFavorites.setLayoutManager(new LinearLayoutManager(FavoritesPickerActivity.this));
+                    adapter = new FavoritesAdapter(allItems, selectedIds, (item, selected) -> {
+                        if (selected) selectedIds.add(item.getId());
+                        else selectedIds.remove(item.getId());
+                        btnSend.setEnabled(!selectedIds.isEmpty());
+                    });
+                    rvFavorites.setAdapter(adapter);
+                }
             });
-            rvFavorites.setAdapter(adapter);
-        }
+        }).start();
 
         btnSend.setOnClickListener(v -> {
             if (selectedIds.isEmpty()) {

@@ -4,6 +4,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import com.juggle.im.android.utils.LogUtil;
 import android.view.View;
 import android.widget.Button;
@@ -43,6 +45,7 @@ public class LoginActivity extends AppCompatActivity {
     public static final String KEY_LAST_ACCOUNT = "last_account";
     // 默认 token 有效期为 30 天（与后端保持一致）
     private static final long DEFAULT_TOKEN_VALIDITY_DURATION = 30 * 24 * 60 * 60 * 1000;
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -80,24 +83,21 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void loadRememberedAccount() {
-        SharedPreferences prefs = SecurePrefsHelper.getLoginPrefs(this);
-        if (prefs == null) return;
-        boolean remember = prefs.getBoolean(KEY_REMEMBER_ACCOUNT, false);
-        String lastAccount = prefs.getString(KEY_LAST_ACCOUNT, "");
-        
-        LogUtil.d("LoginActivity", "加载记住的账号 remember=" + remember);
-        
-        if (remember && !lastAccount.isEmpty()) {
-            phoneInput.setText(lastAccount);
-            if (rememberAccountCheckbox != null) {
-                rememberAccountCheckbox.setChecked(true);
-            }
-        } else {
-            phoneInput.setText("");
-            if (rememberAccountCheckbox != null) {
-                rememberAccountCheckbox.setChecked(false);
-            }
-        }
+        new Thread(() -> {
+            SharedPreferences prefs = SecurePrefsHelper.getLoginPrefs(LoginActivity.this);
+            final boolean remember = prefs != null && prefs.getBoolean(KEY_REMEMBER_ACCOUNT, false);
+            final String lastAccount = prefs != null ? prefs.getString(KEY_LAST_ACCOUNT, "") : "";
+            LogUtil.d("LoginActivity", "加载记住的账号 remember=" + remember);
+            mainHandler.post(() -> {
+                if (remember && lastAccount != null && !lastAccount.isEmpty()) {
+                    phoneInput.setText(lastAccount);
+                    if (rememberAccountCheckbox != null) rememberAccountCheckbox.setChecked(true);
+                } else {
+                    phoneInput.setText("");
+                    if (rememberAccountCheckbox != null) rememberAccountCheckbox.setChecked(false);
+                }
+            });
+        }).start();
     }
 
     private void handleLogin() {
@@ -133,18 +133,17 @@ public class LoginActivity extends AppCompatActivity {
                 ConfigUtils.myAvatarUrl = data.getAvatar();
                 ConfigUtils.currentUserId = data.getUser_id();
                 
-                // 保存token和过期时间
-                saveToken(data.getAuthorization(), data.getIm_token(), data.getExpires_in());
-                
-                // 根据勾选状态记住账号
-                boolean shouldRemember = rememberAccountCheckbox != null && rememberAccountCheckbox.isChecked();
+                final boolean shouldRemember = rememberAccountCheckbox != null && rememberAccountCheckbox.isChecked();
                 LogUtil.d("LoginActivity", "登录成功，准备保存账号 shouldRemember=" + shouldRemember);
-                saveAccount(account, shouldRemember);
-                
-                JIMChatCore.getInstance().connect(ConfigUtils.imToken);
-                // 隐藏loading状态
-                showLoading(false);
-                switchToConversationList();
+                new Thread(() -> {
+                    saveToken(data.getAuthorization(), data.getIm_token(), data.getExpires_in());
+                    saveAccount(account, shouldRemember);
+                    mainHandler.post(() -> {
+                        JIMChatCore.getInstance().connect(ConfigUtils.imToken);
+                        showLoading(false);
+                        switchToConversationList();
+                    });
+                }).start();
             }
 
             @Override
@@ -180,7 +179,7 @@ public class LoginActivity extends AppCompatActivity {
         }
         
         editor.putLong(KEY_EXPIRE_TIME, expireTime);
-        editor.commit(); // 使用 commit() 确保数据立即写入
+        editor.apply();
     }
 
     private void saveAccount(String account, boolean remember) {
@@ -199,7 +198,7 @@ public class LoginActivity extends AppCompatActivity {
             editor.remove(KEY_LAST_ACCOUNT);
             LogUtil.d("LoginActivity", "已清除SharedPreferences中的账号");
         }
-        editor.commit(); // 使用 commit() 确保数据立即写入
+        editor.apply();
     }
 
     private void showLoading(boolean show) {

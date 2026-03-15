@@ -926,10 +926,15 @@ public class MessageListFragment extends Fragment {
                 return;
             }
             
-            // 保存到收藏库
+            // 子线程写 SP，避免主线程 DiskWriteViolation
             FavoritesRepository repo = new FavoritesRepository(requireContext());
-            repo.add(item);
-            Toast.makeText(requireContext(), "已收藏", Toast.LENGTH_SHORT).show();
+            FavoriteItem itemToAdd = item;
+            new Thread(() -> {
+                repo.add(itemToAdd);
+                if (getContext() == null) return;
+                requireActivity().runOnUiThread(() ->
+                        Toast.makeText(requireContext(), "已收藏", Toast.LENGTH_SHORT).show());
+            }).start();
         } catch (Exception e) {
             LogUtil.e("MessageListFragment", "Error collecting message", e);
             Toast.makeText(requireContext(), "收藏失败", Toast.LENGTH_SHORT).show();

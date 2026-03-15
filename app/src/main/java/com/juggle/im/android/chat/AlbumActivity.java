@@ -257,12 +257,18 @@ public class AlbumActivity extends AppCompatActivity {
                         cursor.close();
                     }
                 }
-                
-                // Update UI on main thread
+                // 在子线程预解析 content URI，避免 Adapter.onBindViewHolder 中主线程 query
+                final List<Uri> uris = new ArrayList<>();
+                for (String path : images) {
+                    Uri u = AlbumImageAdapter.resolveContentUri(AlbumActivity.this, path);
+                    if (u != null) uris.add(u);
+                    else uris.add(null);
+                }
+                final List<String> finalImages = images;
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        mAdapter.setImages(images);
+                        mAdapter.setImages(finalImages, uris);
                         if (images.isEmpty()) {
                             Toast.makeText(AlbumActivity.this, "未找到图片", Toast.LENGTH_SHORT).show();
                         }
