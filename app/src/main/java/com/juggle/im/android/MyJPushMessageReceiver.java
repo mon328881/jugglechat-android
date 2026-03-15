@@ -9,6 +9,7 @@ import cn.jpush.android.service.JPushMessageReceiver;
 
 /**
  * 极光推送自定义消息接收器
+ * 必须在 AndroidManifest 中注册，否则 JPush SDK 会报 missing receiver。
  */
 public class MyJPushMessageReceiver extends JPushMessageReceiver {
 
