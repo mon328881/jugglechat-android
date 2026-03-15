@@ -1,14 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@android:color/black">
+    android:background="@android:color/black"
+    android:fitsSystemWindows="false">
 
-    <VideoView
-        android:id="@+id/video_view"
+    <!-- 1. 播放器（无内置控制条，由下方自绘控制条控制） -->
+    <com.google.android.exoplayer2.ui.PlayerView
+        android:id="@+id/player_view"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        android:layout_height="match_parent"
+        app:use_controller="false"
+        app:show_buffering="when_playing"
+        app:resize_mode="fit" />
 
+    <!-- 2. 加载中 -->
     <ProgressBar
         android:id="@+id/progress_bar"
         style="?android:attr/progressBarStyleLarge"
@@ -17,6 +24,7 @@
         android:layout_gravity="center"
         android:visibility="gone" />
 
+    <!-- 3. 错误提示 -->
     <LinearLayout
         android:id="@+id/error_layout"
         android:layout_width="match_parent"
@@ -41,5 +49,97 @@
             android:textSize="16sp" />
 
     </LinearLayout>
+
+    <!-- 4. 自绘控制条：底部留白（含导航栏高度）避免被遮挡 + 进度条 + 播放/暂停 + 时间 -->
+    <LinearLayout
+        android:id="@+id/control_bar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:orientation="vertical"
+        android:paddingBottom="56dp"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:paddingTop="12dp"
+        android:background="#DD000000"
+        android:elevation="6dp">
+
+        <SeekBar
+            android:id="@+id/seek_bar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:max="1000"
+            android:progress="0"
+            android:progressTint="#FF2196F3"
+            android:thumbTint="#FFFFFFFF" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <ImageButton
+                android:id="@+id/btn_play_pause"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="播放/暂停"
+                android:padding="8dp"
+                android:src="@drawable/ic_play"
+                android:tint="#FFFFFFFF" />
+
+            <TextView
+                android:id="@+id/tv_current_time"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:minWidth="40dp"
+                android:textColor="#FFFFFFFF"
+                android:textSize="12sp"
+                android:text="0:00" />
+
+            <View
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
+
+            <TextView
+                android:id="@+id/tv_duration"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minWidth="40dp"
+                android:gravity="end"
+                android:textColor="#FFFFFFFF"
+                android:textSize="12sp"
+                android:text="0:00" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- 5. 顶部栏：仅返回按钮（小尺寸、无文字） -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top"
+        android:background="@drawable/bg_video_top_bar"
+        android:elevation="8dp"
+        android:minHeight="48dp"
+        android:clickable="true"
+        android:focusable="true">
+
+        <ImageButton
+            android:id="@+id/btn_back"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_gravity="start|center_vertical"
+            android:layout_marginStart="8dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="返回"
+            android:padding="6dp"
+            android:src="@drawable/ic_back_white"
+            android:tint="#FFFFFFFF" />
+
+    </FrameLayout>
 
 </FrameLayout>
