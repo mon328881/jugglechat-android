@@ -115,12 +115,7 @@ public abstract class BaseService {
      */
     protected <T> HttpResult<T> parseHttpResult(String json, Class<T> dataClass) {
         try {
-<<<<<<< Updated upstream
-=======
             Log.d("BaseService", "解析响应 JSON: " + json);
-            // parse outer HttpResult while parsing data field into dataClass
-            // First parse generic map, then replace data
->>>>>>> Stashed changes
             HttpResult raw = gson.fromJson(json, HttpResult.class);
             com.google.gson.JsonObject jo = gson.fromJson(json, com.google.gson.JsonObject.class);
             if (jo.has("data") && !jo.get("data").isJsonNull()) {
@@ -129,11 +124,7 @@ public abstract class BaseService {
                     raw.setData(data);
                     Log.d("BaseService", "成功解析数据: " + dataClass.getSimpleName());
                 } catch (JsonSyntaxException e) {
-<<<<<<< Updated upstream
-=======
-                    // can't parse data into expected class
                     Log.e("BaseService", "数据解析失败: " + e.getMessage());
->>>>>>> Stashed changes
                     return null;
                 }
             } else {

@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-<<<<<<< Updated upstream
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -176,97 +175,10 @@
                     android:layout_height="24dp"
                     android:src="@android:drawable/ic_lock_idle_lock"
                     android:tint="#1E90FF" />
-=======
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:background="?attr/colorBackground">
-
-    <!-- 个人资料卡片 -->
-    <com.google.android.material.card.MaterialCardView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_margin="16dp"
-        app:cardCornerRadius="16dp"
-        app:cardElevation="4dp"
-        app:cardBackgroundColor="?attr/colorSurface">
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="16dp">
-
-            <!-- 头像 -->
-            <LinearLayout
-                android:id="@+id/ll_avatar_container"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:padding="12dp"
-                android:gravity="center_vertical"
-                android:background="?attr/selectableItemBackground"
-                android:clickable="true"
-                android:focusable="true">
 
                 <TextView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="头像"
-                    android:textSize="16sp"
-                    android:textColor="?attr/colorOnSurface"
-                    android:textStyle="bold" />
-
-                <FrameLayout
-                    android:layout_width="60dp"
-                    android:layout_height="60dp"
-                    android:layout_marginEnd="8dp">
-
-                    <ImageView
-                        android:id="@+id/iv_avatar"
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:src="@drawable/default_avatar"
-                        android:contentDescription="@string/avatar"
-                        android:scaleType="centerCrop"
-                        android:background="?attr/colorSurfaceVariant"
-                        android:clipToOutline="true" />
-                </FrameLayout>
-
-                <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:src="@drawable/ic_arrow_right"
-                    android:contentDescription="@string/edit"
-                    android:tint="?attr/colorOnSurfaceVariant" />
-            </LinearLayout>
-
-            <!-- 分隔线 -->
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="0.5dp"
-                android:background="?attr/colorSurfaceVariant"
-                android:layout_marginVertical="8dp" />
-
-            <!-- 昵称 -->
-            <LinearLayout
-                android:id="@+id/ll_nickname_container"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:padding="12dp"
-                android:gravity="center_vertical"
-                android:background="?attr/selectableItemBackground"
-                android:clickable="true"
-                android:focusable="true">
->>>>>>> Stashed changes
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-<<<<<<< Updated upstream
                     android:layout_marginStart="12dp"
                     android:layout_weight="1"
                     android:text="隐私协议"
@@ -336,55 +248,16 @@
                 android:paddingStart="16dp"
                 android:paddingEnd="16dp"
                 android:background="?android:attr/selectableItemBackground">
-=======
-                    android:layout_weight="1"
-                    android:text="昵称"
-                    android:textSize="16sp"
-                    android:textColor="?attr/colorOnSurface"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/tv_nickname"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="未设置"
-                    android:textSize="16sp"
-                    android:textColor="?attr/colorOnSurfaceVariant"
-                    android:layout_marginEnd="8dp" />
->>>>>>> Stashed changes
 
                 <ImageView
                     android:layout_width="24dp"
                     android:layout_height="24dp"
-<<<<<<< Updated upstream
                     android:src="@android:drawable/ic_popup_sync"
                     android:tint="#1E90FF" />
-=======
-                    android:src="@drawable/ic_arrow_right"
-                    android:contentDescription="@string/edit"
-                    android:tint="?attr/colorOnSurfaceVariant" />
-            </LinearLayout>
-
-            <!-- 分隔线 -->
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="0.5dp"
-                android:background="?attr/colorSurfaceVariant"
-                android:layout_marginVertical="8dp" />
-
-            <!-- 用户ID -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:padding="12dp"
-                android:gravity="center_vertical">
->>>>>>> Stashed changes
 
                 <TextView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-<<<<<<< Updated upstream
                     android:layout_marginStart="12dp"
                     android:layout_weight="1"
                     android:text="检查更新"
@@ -396,122 +269,10 @@
                     android:layout_height="18dp"
                     android:src="@drawable/ic_arrow_right"
                     android:tint="#999999" />
-=======
-                    android:layout_weight="1"
-                    android:text="用户ID"
-                    android:textSize="16sp"
-                    android:textColor="?attr/colorOnSurface"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/tv_user_id"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text=""
-                    android:textSize="16sp"
-                    android:textColor="?attr/colorOnSurfaceVariant" />
->>>>>>> Stashed changes
             </LinearLayout>
         </LinearLayout>
+    </LinearLayout>
 
-    </com.google.android.material.card.MaterialCardView>
-
-    <!-- 功能菜单 -->
-    <com.google.android.material.card.MaterialCardView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginHorizontal="16dp"
-        android:layout_marginTop="8dp"
-        app:cardCornerRadius="16dp"
-        app:cardElevation="4dp"
-        app:cardBackgroundColor="?attr/colorSurface">
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical">
-
-            <!-- 设置 -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:padding="16dp"
-                android:gravity="center_vertical"
-                android:background="?attr/selectableItemBackground"
-                android:clickable="true"
-                android:focusable="true">
-
-                <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:src="@drawable/ic_settings"
-                    android:contentDescription="@string/settings"
-                    android:tint="?attr/colorPrimary"
-                    android:layout_marginEnd="12dp" />
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="@string/settings"
-                    android:textSize="16sp"
-                    android:textColor="?attr/colorOnSurface" />
-
-                <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:src="@drawable/ic_arrow_right"
-                    android:contentDescription="@string/edit"
-                    android:tint="?attr/colorOnSurfaceVariant" />
-            </LinearLayout>
-
-            <!-- 分隔线 -->
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="0.5dp"
-                android:background="?attr/colorSurfaceVariant"
-                android:layout_marginHorizontal="16dp" />
-
-            <!-- 关于 -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:padding="16dp"
-                android:gravity="center_vertical"
-                android:background="?attr/selectableItemBackground"
-                android:clickable="true"
-                android:focusable="true">
-
-                <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:src="@drawable/ic_info"
-                    android:contentDescription="@string/about"
-                    android:tint="?attr/colorPrimary"
-                    android:layout_marginEnd="12dp" />
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="@string/about"
-                    android:textSize="16sp"
-                    android:textColor="?attr/colorOnSurface" />
-
-                <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:src="@drawable/ic_arrow_right"
-                    android:contentDescription="@string/edit"
-                    android:tint="?attr/colorOnSurfaceVariant" />
-            </LinearLayout>
-        </LinearLayout>
-
-    </com.google.android.material.card.MaterialCardView>
-
-<<<<<<< Updated upstream
     <!-- 底部退出登录按钮 -->
     <Button
         android:id="@+id/btn_logout"
@@ -520,19 +281,10 @@
         android:layout_marginTop="24dp"
         android:layout_marginStart="24dp"
         android:layout_marginEnd="24dp"
-=======
-    <!-- 退出登录按钮 -->
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btn_logout"
-        android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:layout_marginHorizontal="16dp"
-        android:layout_marginTop="32dp"
->>>>>>> Stashed changes
         android:text="退出登录"
         android:textSize="16sp"
-        android:textStyle="bold"
-        app:cornerRadius="8dp"
-        app:backgroundTint="?attr/colorError" />
+        android:textColor="@android:color/white"
+        android:background="@drawable/shape_logout_button"
+        android:textStyle="bold" />
 
 </LinearLayout>

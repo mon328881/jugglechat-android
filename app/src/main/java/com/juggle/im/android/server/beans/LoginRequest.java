@@ -1,14 +1,20 @@
 package com.juggle.im.android.server.beans;
 
-<<<<<<< Updated upstream
+import com.google.gson.annotations.SerializedName;
+
 /**
  * 登录请求Bean
  */
 public class LoginRequest {
+    @SerializedName("account")
     private String account;
+    @SerializedName("phone")
     private String phone;
+    @SerializedName("email")
     private String email;
+    @SerializedName("password")
     private String password;
+    @SerializedName("code")
     private String code;
 
     public LoginRequest(String accountOrPhoneOrEmail, String password) {
@@ -19,28 +25,11 @@ public class LoginRequest {
         } else {
             this.account = accountOrPhoneOrEmail;
         }
-=======
-import com.google.gson.annotations.SerializedName;
-
-public class LoginRequest {
-    @SerializedName("account")
-    private String account;
-    
-    @SerializedName("password")
-    private String password;
-
-    @SerializedName("code")
-    private String code;
-
-    public LoginRequest(String account, String password) {
-        this.account = account;
->>>>>>> Stashed changes
         this.password = password;
     }
 
     public String getAccount() {
         return account;
-<<<<<<< Updated upstream
     }
 
     public void setAccount(String account) {
@@ -49,12 +38,10 @@ public class LoginRequest {
 
     public String getPhone() {
         return phone;
-=======
->>>>>>> Stashed changes
     }
 
-    public void setAccount(String account) {
-        this.account = account;
+    public void setPhone(String phone) {
+        this.phone = phone;
     }
 
     public String getEmail() {

@@ -1,10 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-<<<<<<< Updated upstream
     android:background="@android:color/white"
     android:paddingStart="16dp"
     android:paddingEnd="16dp"
@@ -103,30 +102,8 @@
                 android:visibility="gone"
                 android:layout_gravity="center"
                 android:indeterminate="true" />
-=======
-    android:layout_marginHorizontal="8dp"
-    android:layout_marginVertical="4dp"
-    app:cardCornerRadius="12dp"
-    app:cardElevation="2dp"
-    app:cardBackgroundColor="?attr/colorSurface">
 
-    <androidx.constraintlayout.widget.ConstraintLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:padding="12dp">
-
-        <!-- 头像容器 -->
-        <FrameLayout
-            android:id="@+id/avatar_container"
-            android:layout_width="56dp"
-            android:layout_height="56dp"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent">
->>>>>>> Stashed changes
-
-            <!-- 头像 -->
             <ImageView
-<<<<<<< Updated upstream
                 android:id="@+id/iv_msg_status"
                 android:layout_width="14dp"
                 android:layout_height="14dp"
@@ -187,133 +164,3 @@
         app:layout_constraintEnd_toEndOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
-=======
-                android:id="@+id/iv_avatar"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:adjustViewBounds="true"
-                android:background="?attr/colorSurfaceVariant"
-                android:clipToOutline="true"
-                android:contentDescription="@string/avatar"
-                android:scaleType="centerCrop" />
-
-            <!-- 未读徽章 -->
-            <com.google.android.material.badge.BadgeDrawable
-                android:id="@+id/unread_dot"
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:layout_gravity="top|end"
-                android:layout_marginTop="-4dp"
-                android:layout_marginEnd="-4dp" />
-
-            <TextView
-                android:id="@+id/unread_badge"
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:layout_gravity="top|end"
-                android:layout_marginTop="-4dp"
-                android:layout_marginEnd="-4dp"
-                android:background="@drawable/badge_background"
-                android:gravity="center"
-                android:textColor="?attr/colorOnError"
-                android:textSize="10sp"
-                android:textStyle="bold"
-                android:visibility="gone"
-                tools:text="99" />
-
-        </FrameLayout>
-
-        <!-- 聊天名称 -->
-        <TextView
-            android:id="@+id/tv_name"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="12dp"
-            android:textColor="?attr/colorOnSurface"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            app:layout_constraintEnd_toStartOf="@id/tv_time"
-            app:layout_constraintStart_toEndOf="@id/avatar_container"
-            app:layout_constraintTop_toTopOf="@id/avatar_container"
-            tools:text="群聊名称" />
-
-        <!-- 时间戳 -->
-        <TextView
-            android:id="@+id/tv_time"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:textColor="?attr/colorOnSurfaceVariant"
-            android:textSize="12sp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="@id/tv_name"
-            tools:text="12:34" />
-
-        <!-- 最后一条消息容器 -->
-        <LinearLayout
-            android:id="@+id/last_msg_container"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            app:layout_constraintEnd_toStartOf="@id/iv_mute"
-            app:layout_constraintStart_toStartOf="@id/tv_name"
-            app:layout_constraintTop_toBottomOf="@id/tv_name">
-
-            <!-- 消息状态指示 -->
-            <FrameLayout
-                android:layout_gravity="center_vertical"
-                android:paddingEnd="4dp"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content">
-
-                <ProgressBar
-                    android:id="@+id/msg_progress"
-                    style="?android:attr/progressBarStyleSmall"
-                    android:layout_width="14dp"
-                    android:layout_height="14dp"
-                    android:visibility="gone"
-                    android:layout_gravity="center"
-                    android:indeterminate="true" />
-
-                <ImageView
-                    android:id="@+id/iv_msg_status"
-                    android:layout_width="14dp"
-                    android:layout_height="14dp"
-                    android:layout_gravity="center"
-                    android:visibility="gone"
-                    android:src="@drawable/ic_send_error"
-                    android:contentDescription="@string/message_status" />
-            </FrameLayout>
-
-            <!-- 最后一条消息 -->
-            <TextView
-                android:id="@+id/tv_last_message"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:ellipsize="end"
-                android:maxLines="1"
-                android:textColor="?attr/colorOnSurfaceVariant"
-                android:textSize="13sp"
-                tools:text="最后一条消息内容" />
-        </LinearLayout>
-
-        <!-- 静音图标 -->
-        <ImageView
-            android:id="@+id/iv_mute"
-            android:layout_width="16dp"
-            android:layout_height="16dp"
-            android:layout_marginStart="8dp"
-            android:src="@drawable/ic_mute"
-            android:contentDescription="@string/mute"
-            android:visibility="gone"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/tv_name"
-            app:tint="?attr/colorOnSurfaceVariant" />
-
-    </androidx.constraintlayout.widget.ConstraintLayout>
-
-</com.google.android.material.card.MaterialCardView>
->>>>>>> Stashed changes

@@ -24,19 +24,15 @@ public class Application extends MultiDexApplication {
     @Override
     public void onCreate() {
         super.onCreate();
-<<<<<<< HEAD
 
-=======
-        
         // 腾讯地图隐私协议同意（必须在地图初始化之前调用）
         try {
             TencentMapInitializer.setAgreePrivacy(true);
         } catch (Throwable ignored) {
             // 如果地图SDK类不可用，不要崩溃应用启动
         }
-        
+
         // 主题通过 AndroidManifest.xml 中的 android:theme 属性应用
->>>>>>> c403ce15fa0088025ee02734a798ba9c97c3ab8c
         JIMChatCore.getInstance().init(this, Collections.singletonList(ConfigUtils.imServer), ConfigUtils.appKey);
 
         // 初始化极光推送

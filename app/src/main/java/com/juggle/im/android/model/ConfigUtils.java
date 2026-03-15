@@ -4,7 +4,6 @@ package com.juggle.im.android.model;
  * 应用配置工具类
  */
 public class ConfigUtils {
-<<<<<<< Updated upstream
     // 应用密钥
     public static String appKey = "JJJB0Dh1PtDgZx5X";
     
@@ -14,15 +13,6 @@ public class ConfigUtils {
     // IM 核心服务（im-server-master）的 WebSocket 地址，用于长连接收发消息（端口与 im-server defaultPort/connectManager.wsPort 一致，默认 9003）
     public static String imServer = "ws://192.168.123.214:9003";
     
-=======
-    /**
-     * 申请新的key进行替换
-     */
-    public static String appKey = "JJJB0Dh1PtDgZx5X";
-    public static String appServerUrl = "http://192.168.123.214:8070";
-    public static String imServer = "ws://192.168.123.214:9003";
-
->>>>>>> Stashed changes
     /**
      * 音视频ID
      * 需要申请即构音视频ID
@@ -48,7 +38,6 @@ public class ConfigUtils {
      * 我的昵称
      */
     public static String myName = null;
-<<<<<<< Updated upstream
 
     /**
      * 当前登录用户的user_id
@@ -68,9 +57,4 @@ public class ConfigUtils {
      * 由Application初始化时填充
      */
     public static String jpushRegistrationId = null;
-=======
-    
-    // 当前用户 ID
-    public static String currentUserId = null;
->>>>>>> Stashed changes
 }

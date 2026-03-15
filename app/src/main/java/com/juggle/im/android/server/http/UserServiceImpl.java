@@ -27,28 +27,11 @@ public class UserServiceImpl extends BaseService implements UserService {
 
     @Override
     public void login(LoginRequest request, ApiCallback<LoginResult> callback) {
-<<<<<<< Updated upstream
         // 对密码进行SHA1加密
         if (request.getPassword() != null && !request.getPassword().isEmpty()) {
             request.setPassword(SHA1Utils.sha1(request.getPassword()));
         }
         enqueueJson("/jim/login", request, LoginResult.class, callback);
-=======
-        // 将密码复制到 code 字段
-        request.setCode(request.getPassword());
-        request.setPassword(null);
-        
-        // 手动构建 JSON，排除 null 值
-        com.google.gson.JsonObject jsonObject = new com.google.gson.JsonObject();
-        if (request.getAccount() != null) {
-            jsonObject.addProperty("account", request.getAccount());
-        }
-        if (request.getCode() != null) {
-            jsonObject.addProperty("code", request.getCode());
-        }
-        
-        enqueueJson("/jim/sms/login", jsonObject, LoginResult.class, callback);
->>>>>>> Stashed changes
     }
 
     @Override

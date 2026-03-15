@@ -26,11 +26,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_centerInParent="true"
-<<<<<<< Updated upstream
             android:text="@string/new_friends"
-=======
-            android:text="New Friends"
->>>>>>> Stashed changes
             android:textColor="?attr/colorOnSurface"
             android:textSize="18sp"
             android:textStyle="bold" />
