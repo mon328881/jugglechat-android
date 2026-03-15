@@ -1,7 +1,7 @@
 package com.juggle.im.android;
 
 import android.content.Context;
-import android.util.Log;
+import com.juggle.im.android.utils.LogUtil;
 
 import cn.jpush.android.api.CustomMessage;
 import cn.jpush.android.api.JPushMessage;
@@ -17,13 +17,13 @@ public class MyJPushMessageReceiver extends JPushMessageReceiver {
 
     @Override
     public void onMessage(Context context, CustomMessage customMessage) {
-        Log.d(TAG, "onMessage: " + (customMessage != null ? customMessage.message : "null"));
+        LogUtil.d(TAG, "onMessage received");
         super.onMessage(context, customMessage);
     }
 
     @Override
     public void onAliasOperatorResult(Context context, JPushMessage jPushMessage) {
-        Log.d(TAG, "onAliasOperatorResult: " + jPushMessage);
+        LogUtil.d(TAG, "onAliasOperatorResult");
         super.onAliasOperatorResult(context, jPushMessage);
     }
 }

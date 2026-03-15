@@ -1,8 +1,7 @@
 package com.juggle.im.android.core;
 
 import android.content.Context;
-import android.util.Log;
-
+import com.juggle.im.android.utils.LogUtil;
 import com.juggle.im.JIM;
 import com.juggle.im.JIMConst;
 import com.juggle.im.android.chat.message.FriendNotifyMessage;
@@ -97,19 +96,19 @@ public class JIMChatCore {
         JIM.getInstance().getConnectionManager().addConnectionStatusListener("conn", new IConnectionManager.IConnectionStatusListener() {
             @Override
             public void onStatusChange(JIMConst.ConnectionStatus connectionStatus, int i, String s) {
-                Log.i(tag, "connection status change: " + connectionStatus + ", user = " + s);
+                LogUtil.i(tag, "connection status change: " + connectionStatus);
                 EventBus.getDefault().post(new ConnectStatusEvent(connectionStatus, i, s));
             }
 
             @Override
             public void onDbOpen() {
-                Log.i(tag, "db open");
+                LogUtil.i(tag, "db open");
                 syncConversationList();
             }
 
             @Override
             public void onDbClose() {
-                Log.i(tag, "db close");
+                LogUtil.i(tag, "db close");
             }
         });
     }
@@ -133,10 +132,10 @@ public class JIMChatCore {
         for(;;) {
             List<ConversationInfo> conversationInfoList = JIM.getInstance().getConversationManager().getConversationInfoList(20, cursor, JIMConst.PullDirection.NEWER);
             if (conversationInfoList == null || conversationInfoList.isEmpty()) {
-                Log.i(tag, "empty conversation");
+                LogUtil.i(tag, "empty conversation");
                 break;
             }
-            Log.d(tag, "fetch conversation size: " + conversationInfoList.size());
+            LogUtil.d(tag, "fetch conversation size: " + conversationInfoList.size());
 
             // Post conversation update event for this page
             EventBus.getDefault().post(new ConversationUpdatedEvent(conversationInfoList));
@@ -146,7 +145,7 @@ public class JIMChatCore {
             cursor = last.getSortTime();
 
             if (conversationInfoList.size() < 20) {
-                Log.i(tag, "fetch conversation end");
+                LogUtil.i(tag, "fetch conversation end");
                 break;
             }
         }
@@ -165,10 +164,10 @@ public class JIMChatCore {
         List<ConversationInfo> conversationInfoList = JIM.getInstance().getConversationManager()
                 .getConversationInfoList(pageSize, cursor, JIMConst.PullDirection.OLDER);
         if (conversationInfoList == null || conversationInfoList.isEmpty()) {
-            Log.i(tag, "no more conversations to load");
+            LogUtil.i(tag, "no more conversations to load");
             return 0;
         }
-        Log.d(tag, "load more conversations size: " + conversationInfoList.size());
+        LogUtil.d(tag, "load more conversations size: " + conversationInfoList.size());
 
         // Post conversation update event for this page
         EventBus.getDefault().post(new ConversationUpdatedEvent(conversationInfoList));
@@ -181,14 +180,14 @@ public class JIMChatCore {
         JIM.getInstance().getConversationManager().addListener("conversationList", new IConversationManager.IConversationListener() {
             @Override
             public void onConversationInfoAdd(List<ConversationInfo> list) {
-                Log.i(tag, "onConversationInfoAdd: " + list.size());
+                LogUtil.i(tag, "onConversationInfoAdd: " + list.size());
                 EventBus.getDefault().post(new ConversationUpdatedEvent(list));
                 maybePostFriendApplyBadge(list);
             }
 
             @Override
             public void onConversationInfoUpdate(List<ConversationInfo> list) {
-                Log.i(tag, "onConversationInfoUpdate: " + list.size());
+                LogUtil.i(tag, "onConversationInfoUpdate: " + list.size());
                 EventBus.getDefault().post(new ConversationUpdatedEvent(list));
                 maybePostFriendApplyBadge(list);
             }
@@ -207,7 +206,7 @@ public class JIMChatCore {
         JIM.getInstance().getMessageManager().addListener("msg", new IMessageManager.IMessageListener() {
             @Override
             public void onMessageReceive(Message message) {
-                Log.d(tag, "onMessageReceive: " + message.toString());
+                LogUtil.d(tag, "onMessageReceive: " + message.toString());
                 EventBus.getDefault().post(new MessageUpdatedEvent(message));
                 // 好友申请会话收到新消息时立即刷新通讯录/新朋友红点（会话列表回调可能晚于消息回调）
                 if (message != null && message.getConversation() != null
@@ -219,7 +218,7 @@ public class JIMChatCore {
 
             @Override
             public void onMessageRecall(Message message) {
-                Log.d(tag, "onMessageRecall: " + message.toString());
+                LogUtil.d(tag, "onMessageRecall: " + message.toString());
             }
 
             @Override
@@ -234,23 +233,23 @@ public class JIMChatCore {
 
             @Override
             public void onMessageUpdate(Message message) {
-                Log.d(tag, "onMessageUpdate: " + message.toString());
+                LogUtil.d(tag, "onMessageUpdate: " + message.toString());
 
             }
 
             @Override
             public void onMessageReactionAdd(Conversation conversation, MessageReaction messageReaction) {
-                Log.d(tag, "onMessageReactionAdd: " + messageReaction.toString());
+                LogUtil.d(tag, "onMessageReactionAdd: " + messageReaction.toString());
             }
 
             @Override
             public void onMessageReactionRemove(Conversation conversation, MessageReaction messageReaction) {
-                Log.d(tag, "onMessageReactionRemove: " + messageReaction.toString());
+                LogUtil.d(tag, "onMessageReactionRemove: " + messageReaction.toString());
             }
 
             @Override
             public void onMessageSetTop(Message message, UserInfo userInfo, boolean b) {
-                Log.d(tag, "onMessageSetTop: " + message.toString());
+                LogUtil.d(tag, "onMessageSetTop: " + message.toString());
                 EventBus.getDefault().post(new MessageTopEvent(message, userInfo, b));
             }
         });
@@ -357,7 +356,7 @@ public class JIMChatCore {
         JIM.getInstance().getMessageManager().getMessages(conversation, JIMConst.PullDirection.OLDER, options, new IMessageManager.IGetMessagesCallbackV3() {
             @Override
             public void onGetMessages(List<Message> messages, long timestamp, boolean hasMore, int code) {
-                Log.d("TAG", "messageList count is " + messages.size());
+                LogUtil.d(tag, "messageList count: " + messages.size());
                 callback.onGetMessages(messages, timestamp, hasMore, code);
             }
         });

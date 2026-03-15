@@ -45,7 +45,7 @@ public final class SecurePrefsHelper {
                         migrateFromPlainIfNeeded(app, encrypted);
                         instance = encrypted;
                     } catch (Throwable e) {
-                        android.util.Log.w("SecurePrefsHelper", "EncryptedSharedPreferences init failed, fallback to plain", e);
+                        LogUtil.w("SecurePrefsHelper", "EncryptedSharedPreferences init failed, fallback to plain", e);
                         instance = app.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
                     }
                 }

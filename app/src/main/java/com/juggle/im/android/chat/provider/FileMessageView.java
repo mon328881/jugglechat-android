@@ -11,7 +11,7 @@ import android.net.Uri;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.text.TextUtils;
-import android.util.Log;
+import com.juggle.im.android.utils.LogUtil;
 import android.view.View;
 import android.view.ViewGroup;
 import android.webkit.MimeTypeMap;
@@ -103,7 +103,7 @@ public class FileMessageView extends MessageView<UiMessage, FileMessage> {
                             MediaStore.Images.Thumbnails.MINI_KIND);
                 }
             } catch (Throwable e) {
-                Log.w(TAG, "generate video thumbnail error", e);
+                LogUtil.w(TAG, "generate video thumbnail error", e);
             }
 
             if (thumb != null) {
@@ -249,7 +249,7 @@ public class FileMessageView extends MessageView<UiMessage, FileMessage> {
         client.newCall(request).enqueue(new Callback() {
             @Override
             public void onFailure(@NonNull Call call, @NonNull IOException e) {
-                Log.e(TAG, "文件下载失败", e);
+                LogUtil.e(TAG, "文件下载失败", e);
                 if (context instanceof android.app.Activity) {
                     ((android.app.Activity) context).runOnUiThread(() -> 
                         Toast.makeText(context, "文件下载失败: " + e.getMessage(), Toast.LENGTH_SHORT).show()
@@ -260,7 +260,7 @@ public class FileMessageView extends MessageView<UiMessage, FileMessage> {
             @Override
             public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
                 if (!response.isSuccessful()) {
-                    Log.e(TAG, "文件下载失败，响应码: " + response.code());
+                    LogUtil.e(TAG, "文件下载失败，响应码: " + response.code());
                     if (context instanceof android.app.Activity) {
                         ((android.app.Activity) context).runOnUiThread(() -> 
                             Toast.makeText(context, "文件下载失败，响应码: " + response.code(), Toast.LENGTH_SHORT).show()
@@ -271,7 +271,7 @@ public class FileMessageView extends MessageView<UiMessage, FileMessage> {
                 
                 ResponseBody responseBody = response.body();
                 if (responseBody == null) {
-                    Log.e(TAG, "文件下载失败，响应体为空");
+                    LogUtil.e(TAG, "文件下载失败，响应体为空");
                     if (context instanceof android.app.Activity) {
                         ((android.app.Activity) context).runOnUiThread(() -> 
                             Toast.makeText(context, "文件下载失败，响应体为空", Toast.LENGTH_SHORT).show()
@@ -297,7 +297,7 @@ public class FileMessageView extends MessageView<UiMessage, FileMessage> {
                         );
                     }
                 } catch (IOException e) {
-                    Log.e(TAG, "文件保存失败", e);
+                    LogUtil.e(TAG, "文件保存失败", e);
                     if (context instanceof android.app.Activity) {
                         ((android.app.Activity) context).runOnUiThread(() -> 
                             Toast.makeText(context, "文件保存失败: " + e.getMessage(), Toast.LENGTH_SHORT).show()
@@ -364,10 +364,10 @@ public class FileMessageView extends MessageView<UiMessage, FileMessage> {
                     break;
             }
         } catch (ActivityNotFoundException e) {
-            Log.e(TAG, "无法找到适合的应用打开文件", e);
+            LogUtil.e(TAG, "无法找到适合的应用打开文件", e);
             Toast.makeText(context, "无法找到适合的应用打开文件", Toast.LENGTH_SHORT).show();
         } catch (Exception e) {
-            Log.e(TAG, "打开文件时出错", e);
+            LogUtil.e(TAG, "打开文件时出错", e);
             Toast.makeText(context, "打开文件时出错: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
     }

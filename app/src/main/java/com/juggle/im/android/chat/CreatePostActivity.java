@@ -7,7 +7,7 @@ import android.media.ThumbnailUtils;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.text.TextUtils;
-import android.util.Log;
+import com.juggle.im.android.utils.LogUtil;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -147,7 +147,7 @@ public class CreatePostActivity extends AppCompatActivity {
 
                         @Override
                         public void onError(int i) {
-                            Log.e("createpost", "error: " + i);
+                            LogUtil.e("createpost", "error: " + i);
                             uploadingCount--;
                             Toast.makeText(CreatePostActivity.this, "图片上传失败", Toast.LENGTH_SHORT).show();
                             isSubmitting = false;
@@ -197,7 +197,7 @@ public class CreatePostActivity extends AppCompatActivity {
 
                             @Override
                             public void onError(int i) {
-                                Log.e("createpost", "error: " + i);
+                                LogUtil.e("createpost", "error: " + i);
                                 uploadingCount--;
                                 Toast.makeText(CreatePostActivity.this, "图片上传失败", Toast.LENGTH_SHORT).show();
                                 isSubmitting = false;
@@ -478,7 +478,7 @@ public class CreatePostActivity extends AppCompatActivity {
 
             @Override
             public void onError(int code, String message) {
-                Log.e("CreatePostActivity", "获取社区标签失败: " + message);
+                LogUtil.e("CreatePostActivity", "获取社区标签失败: " + message);
                 runOnUiThread(() -> {
                     // 获取失败时使用默认标签
                     mAvailableCommunityTags.clear();
@@ -506,7 +506,7 @@ public class CreatePostActivity extends AppCompatActivity {
             Bitmap thumb = ThumbnailUtils.createVideoThumbnail(localPath, MediaStore.Images.Thumbnails.MINI_KIND);
             mVideoThumbnail = thumb;
         } catch (Exception e) {
-            Log.e("createpost", "generate video thumbnail error", e);
+            LogUtil.e("createpost", "generate video thumbnail error", e);
             mVideoThumbnail = null;
         }
 
@@ -561,7 +561,7 @@ public class CreatePostActivity extends AppCompatActivity {
                 }
             });
         } catch (Throwable e) {
-            Log.e("createpost", "save/upload video thumbnail error", e);
+            LogUtil.e("createpost", "save/upload video thumbnail error", e);
         }
     }
 }

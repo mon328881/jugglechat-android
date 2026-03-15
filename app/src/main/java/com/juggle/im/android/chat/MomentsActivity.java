@@ -13,7 +13,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.text.TextUtils;
-import android.util.Log;
+import com.juggle.im.android.utils.LogUtil;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -186,7 +186,7 @@ public class MomentsActivity extends AppCompatActivity {
 
                 @Override
                 public void onError(int code, String message) {
-                    Log.e("MomentsActivity", "获取用户信息失败: " + message);
+                    LogUtil.e("MomentsActivity", "获取用户信息失败: " + message);
                 }
             });
         }
@@ -392,7 +392,7 @@ public class MomentsActivity extends AppCompatActivity {
                                 @Override
                                 public void onError(int code, String message) {
                                     runOnUiThread(() -> {
-                                        Log.e("MomentsActivity", "Failed to add comment: " + message);
+                                        LogUtil.e("MomentsActivity", "Failed to add comment: " + message);
                                     });
                                 }
                             }
@@ -503,7 +503,7 @@ public class MomentsActivity extends AppCompatActivity {
 
                 @Override
                 public void onError(int code, String message) {
-                    Log.e("MomentsActivity", "Failed to remove reaction: " + message);
+                    LogUtil.e("MomentsActivity", "Failed to remove reaction: " + message);
                 }
             });
         } else {
@@ -516,7 +516,7 @@ public class MomentsActivity extends AppCompatActivity {
 
                 @Override
                 public void onError(int code, String message) {
-                    Log.e("MomentsActivity", "Failed to add reaction: " + message);
+                    LogUtil.e("MomentsActivity", "Failed to add reaction: " + message);
                 }
             });
         }
@@ -684,7 +684,7 @@ public class MomentsActivity extends AppCompatActivity {
 
             @Override
             public void onError(int code, String message) {
-                Log.e("MomentsActivity", "Failed to loadMoments: " + message);
+                LogUtil.e("MomentsActivity", "Failed to loadMoments: " + message);
                 runOnUiThread(() -> {
                     swipeRefreshLayout.setRefreshing(false);
                     isLoading = false;
@@ -886,7 +886,7 @@ public class MomentsActivity extends AppCompatActivity {
 
             @Override
             public void onError(int code, String message) {
-                Log.e("MomentsActivity", "获取社区标签失败: " + message);
+                LogUtil.e("MomentsActivity", "获取社区标签失败: " + message);
                 runOnUiThread(() -> {
                     // 获取失败时使用默认标签（第一个为“全部”）
                     String[] defaultTags = {"全部", "推荐", "直播", "短剧", "美食", "穿搭", "旅行"};

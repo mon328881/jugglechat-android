@@ -2,7 +2,7 @@ package com.juggle.im.android.server.http;
 
 import android.os.Handler;
 import android.os.Looper;
-import android.util.Log;
+import com.juggle.im.android.utils.LogUtil;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
@@ -115,24 +115,24 @@ public abstract class BaseService {
      */
     protected <T> HttpResult<T> parseHttpResult(String json, Class<T> dataClass) {
         try {
-            Log.d("BaseService", "解析响应 JSON: " + json);
+            LogUtil.d("BaseService", "解析响应 JSON: " + json);
             HttpResult raw = gson.fromJson(json, HttpResult.class);
             com.google.gson.JsonObject jo = gson.fromJson(json, com.google.gson.JsonObject.class);
             if (jo.has("data") && !jo.get("data").isJsonNull()) {
                 try {
                     T data = gson.fromJson(jo.get("data"), dataClass);
                     raw.setData(data);
-                    Log.d("BaseService", "成功解析数据: " + dataClass.getSimpleName());
+                    LogUtil.d("BaseService", "成功解析数据: " + dataClass.getSimpleName());
                 } catch (JsonSyntaxException e) {
-                    Log.e("BaseService", "数据解析失败: " + e.getMessage());
+                    LogUtil.e("BaseService", "数据解析失败: " + e.getMessage());
                     return null;
                 }
             } else {
-                Log.w("BaseService", "响应中没有 data 字段或 data 为 null");
+                LogUtil.w("BaseService", "响应中没有 data 字段或 data 为 null");
             }
             return raw;
         } catch (JsonSyntaxException e) {
-            Log.e("BaseService", "JSON 解析失败: " + e.getMessage());
+            LogUtil.e("BaseService", "JSON 解析失败: " + e.getMessage());
             return null;
         }
     }
@@ -153,7 +153,7 @@ public abstract class BaseService {
      * 在主线程上发送错误回调
      */
     protected void postError(ApiCallback<?> callback, int code, String msg) {
-        Log.e("BaseService", "错误: " + code + " - " + msg);
+        LogUtil.e("BaseService", "错误: " + code + " - " + msg);
         if (callback == null) return;
         if (Looper.myLooper() == Looper.getMainLooper()) {
             callback.onError(code, msg);

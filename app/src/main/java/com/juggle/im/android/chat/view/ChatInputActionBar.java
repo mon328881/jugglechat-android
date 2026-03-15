@@ -12,7 +12,7 @@ import android.util.AttributeSet;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.util.Log;
+import com.juggle.im.android.utils.LogUtil;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.view.WindowManager;
@@ -195,7 +195,7 @@ public class ChatInputActionBar extends LinearLayout {
 
             @Override
             public void onMentionInvalidated(String mentionId) {
-                Log.d("AT", "Mention removed = " + mentionId);
+                LogUtil.d("AT", "Mention removed = " + mentionId);
             }
         }, new MentionConfig());
         editTextInput.setRawInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE);
@@ -303,7 +303,7 @@ public class ChatInputActionBar extends LinearLayout {
                 // 3. 计算键盘弹起导致的高度差
                 int heightDifference = screenHeight - r.bottom;
 
-                Log.d("ChatInput", "Keyboard shown, height: " + keyboardHeight + "px,, " + heightDifference);
+                LogUtil.d("ChatInput", "Keyboard shown, height: " + keyboardHeight + "px,, " + heightDifference);
                 if (difference == 0 && heightDifference != 0 && heightDifference != keyboardHeight && keyboardHeight > 0) {
                     difference = heightDifference;
                 }
@@ -314,7 +314,7 @@ public class ChatInputActionBar extends LinearLayout {
                     if (!isKeyboardShowing) {
                         isKeyboardShowing = true;
                         keyboardHeight = heightDifference;
-                        Log.d("ChatInput", "Keyboard shown, height: " + keyboardHeight + "px");
+                        LogUtil.d("ChatInput", "Keyboard shown, height: " + keyboardHeight + "px");
                         // 在这里调用你的调整布局方法
                         adjustLayoutForKeyboard(keyboardHeight);
                         if (listener != null) listener.onKeyboardVisibilityChanged(true);
@@ -323,7 +323,7 @@ public class ChatInputActionBar extends LinearLayout {
                     // 键盘隐藏
                     if (isKeyboardShowing) {
                         isKeyboardShowing = false;
-                        Log.d("ChatInput", "Keyboard hidden");
+                        LogUtil.d("ChatInput", "Keyboard hidden");
                         // 在这里调用你的调整布局方法
                         if (listener != null) {
                             imeMode = WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING;
@@ -337,7 +337,7 @@ public class ChatInputActionBar extends LinearLayout {
     }
 
     private void adjustLayoutForKeyboard(int height) {
-        Log.d("ChatInputActionBar", "keyboard height=" + height);
+        LogUtil.d("ChatInputActionBar", "keyboard height=" + height);
 
     }
 
@@ -606,7 +606,7 @@ public class ChatInputActionBar extends LinearLayout {
         panel.setFocusableInTouchMode(false);
         // Diagnostic touch listener: will log touch actions but NOT consume them
         grid.setOnTouchListener((v, event) -> {
-            Log.d("ChatInputActionBar", "emoji grid touch action=" + event.getAction() + " viewVisible=" + v.isShown());
+            LogUtil.d("ChatInputActionBar", "emoji grid touch action=" + event.getAction() + " viewVisible=" + v.isShown());
             return false; // do not consume; allow normal processing
         });
         // Prevent children from taking focus/clicks

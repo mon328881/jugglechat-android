@@ -5,7 +5,7 @@ import android.content.Intent;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
-import android.util.Log;
+import com.juggle.im.android.utils.LogUtil;
 import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
@@ -90,7 +90,7 @@ public class VideoPlayerActivity extends AppCompatActivity {
             videoView.setOnPreparedListener(mp -> {
                 progressBar.setVisibility(View.GONE);
                 videoView.start();
-                Log.d(TAG, "视频开始播放: " + videoName);
+                LogUtil.d(TAG, "视频开始播放: " + videoName);
             });
             videoView.setOnCompletionListener(mp -> finish());
             videoView.setOnErrorListener((mp, what, extra) -> {
@@ -116,25 +116,25 @@ public class VideoPlayerActivity extends AppCompatActivity {
             videoView.setOnPreparedListener(mp -> {
                 progressBar.setVisibility(View.GONE);
                 videoView.start();
-                Log.d(TAG, "视频开始播放: " + videoName);
+                LogUtil.d(TAG, "视频开始播放: " + videoName);
             });
 
             // 设置视频完成监听
             videoView.setOnCompletionListener(mp -> {
-                Log.d(TAG, "视频播放完成");
+                LogUtil.d(TAG, "视频播放完成");
                 finish();
             });
 
             // 设置错误监听
             videoView.setOnErrorListener((mp, what, extra) -> {
-                Log.e(TAG, "视频播放错误: what=" + what + ", extra=" + extra);
+                LogUtil.e(TAG, "视频播放错误: what=" + what + ", extra=" + extra);
                 progressBar.setVisibility(View.GONE);
                 showError("视频播放失败 (错误码: " + what + ")");
                 return true;
             });
 
         } catch (Exception e) {
-            Log.e(TAG, "播放视频异常", e);
+            LogUtil.e(TAG, "播放视频异常", e);
             progressBar.setVisibility(View.GONE);
             showError("播放视频异常: " + e.getMessage());
         }

@@ -8,7 +8,7 @@ import android.media.MediaRecorder;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.AttributeSet;
-import android.util.Log;
+import com.juggle.im.android.utils.LogUtil;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -215,9 +215,9 @@ public class VoiceInputAction extends FrameLayout {
             // update recording time display
             uiHandler.postDelayed(recordingTimeUpdateRunnable, 500);
             
-            Log.d(TAG, "Recording started successfully");
+            LogUtil.d(TAG, "Recording started successfully");
         } catch (IOException | RuntimeException e) {
-            Log.w(TAG, "startRecording failed", e);
+            LogUtil.w(TAG, "startRecording failed", e);
             recording = false;
             stopRipple();
             
@@ -263,7 +263,7 @@ public class VoiceInputAction extends FrameLayout {
             if (recordingStatusText != null) {
                 recordingStatusText.setText("已取消");
             }
-            Log.d(TAG, "Recording cancelled by user");
+            LogUtil.d(TAG, "Recording cancelled by user");
             if (callback != null) callback.onCancel();
         } else {
             if (duration < 800) {
@@ -272,7 +272,7 @@ public class VoiceInputAction extends FrameLayout {
                 if (recordingStatusText != null) {
                     recordingStatusText.setText("录音太短，请重试");
                 }
-                Log.d(TAG, "Recording too short: " + duration + "ms");
+                LogUtil.d(TAG, "Recording too short: " + duration + "ms");
                 if (callback != null) callback.onTooShort();
             } else {
                 if (recordingStatusText != null) {
@@ -285,11 +285,11 @@ public class VoiceInputAction extends FrameLayout {
                     filePath = outFile.getAbsolutePath();
                     boolean fileExists = outFile.exists();
                     long fileSize = fileExists ? outFile.length() : 0;
-                    Log.d(TAG, "Recording completed: duration=" + duration + "ms, file=" + filePath + 
+                    LogUtil.d(TAG, "Recording completed: duration=" + duration + "ms, file=" + filePath + 
                           ", exists=" + fileExists + ", size=" + fileSize + " bytes");
                     
                     if (!fileExists) {
-                        Log.e(TAG, "ERROR: Voice file does not exist at: " + filePath);
+                        LogUtil.e(TAG, "ERROR: Voice file does not exist at: " + filePath);
                         if (recordingStatusText != null) {
                             recordingStatusText.setText("录音文件保存失败");
                         }
@@ -298,7 +298,7 @@ public class VoiceInputAction extends FrameLayout {
                     }
                     
                     if (fileSize == 0) {
-                        Log.e(TAG, "ERROR: Voice file is empty at: " + filePath);
+                        LogUtil.e(TAG, "ERROR: Voice file is empty at: " + filePath);
                         outFile.delete();
                         if (recordingStatusText != null) {
                             recordingStatusText.setText("录音文件为空");
@@ -307,7 +307,7 @@ public class VoiceInputAction extends FrameLayout {
                         return;
                     }
                 } else {
-                    Log.e(TAG, "ERROR: outFile is null");
+                    LogUtil.e(TAG, "ERROR: outFile is null");
                     if (recordingStatusText != null) {
                         recordingStatusText.setText("录音文件创建失败");
                     }
@@ -331,7 +331,7 @@ public class VoiceInputAction extends FrameLayout {
                     recorder.stop();
                 } catch (RuntimeException ignored) {
                     // stop can throw if start failed
-                    Log.e("voice", "stop failed", ignored);
+                    LogUtil.e("voice", "stop failed", ignored);
                 }
                 recorder.reset();
                 recorder.release();

@@ -185,3 +185,6 @@ IM_SERVER=ws://192.168.123.214:9003
 - **日志脱敏**：新增 `utils/LogUtil.java`，仅 `BuildConfig.DEBUG` 时输出 d/i/w/e；Application、LoginActivity、MainActivity、GroupListActivity 等敏感处改为使用 `LogUtil`，不再打印 token、registrationId、userId、账号、完整 URL。
 - **生产环境 HTTPS/WSS**：`Application.onCreate()` 在 Debug 下若检测到 `appServerUrl` 非 https 或 `imServer` 非 wss，会打一条 LogUtil 提示；`local.properties.example` 中已注明生产环境请配置 https/wss。
 - **RecyclerView 调优**：`MessageListFragment`、`ConversationListFragment`、`MomentsActivity` 的 RecyclerView 已设置 `setItemViewCacheSize(20/24)`，减少滑动时重复创建 ViewHolder。
+
+**后续（全量 Log → LogUtil）**：以下模块已统一改为 `LogUtil`，Release 下不再输出日志，避免敏感信息泄露：  
+`JIMChatCore`、`ConversationActivity`、`VoiceInputAction`、`FileMessageView`、`MessageListFragment`、`ConversationListFragment`、`ConversationListAdapter`、`MomentsActivity`、`MomentDetailActivity`、`CreatePostActivity`、`VideoPlayerActivity`、`ChatInputActionBar`、`FileServiceImpl`、`BaseService`、`MyJPushMessageReceiver`、`SecurePrefsHelper`。

@@ -7,7 +7,7 @@ import static com.juggle.im.android.chat.ConversationActivity.EXTRA_TITLE;
 
 import android.os.Bundle;
 import android.content.Intent;
-import android.util.Log;
+import com.juggle.im.android.utils.LogUtil;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -113,7 +113,7 @@ public class MessageListFragment extends Fragment {
         
         // 检查 conversationId 是否为 null，如果为 null 则无法加载消息
         if (conversationId == null || conversationId.isEmpty()) {
-            Log.e("MessageListFragment", "conversationId is null or empty, cannot load messages");
+            LogUtil.e("MessageListFragment", "conversationId is null or empty, cannot load messages");
             return;
         }
 
@@ -217,7 +217,7 @@ public class MessageListFragment extends Fragment {
                 
                 // Add logging to debug scroll behavior
                 if (atBottom != nowAtBottom) {
-                    Log.d("MessageListFragment", "atBottom changed: " + atBottom + " -> " + nowAtBottom + 
+                    LogUtil.d("MessageListFragment", "atBottom changed: " + atBottom + " -> " + nowAtBottom + 
                           " (lastVis=" + lastVisiblePos + ", count=" + itemCount + ")");
                 }
                 
@@ -479,7 +479,7 @@ public class MessageListFragment extends Fragment {
         
         // 检查 conversationId 是否有效
         if (conversationId == null || conversationId.isEmpty()) {
-            Log.e("MessageListFragment", "conversationId is null or empty, cannot load messages");
+            LogUtil.e("MessageListFragment", "conversationId is null or empty, cannot load messages");
             isLoadingMore = false;
             return;
         }
@@ -749,12 +749,12 @@ public class MessageListFragment extends Fragment {
                         new IMessageManager.ISimpleCallback() {
                             @Override
                             public void onSuccess() {
-                                Log.d("MessageListFragment", "set top success");
+                                LogUtil.d("MessageListFragment", "set top success");
                             }
 
                             @Override
                             public void onError(int i) {
-                                Log.d("MessageListFragment", "set top failed: " + i);
+                                LogUtil.d("MessageListFragment", "set top failed: " + i);
                             }
                         });
                 break;
@@ -931,7 +931,7 @@ public class MessageListFragment extends Fragment {
             repo.add(item);
             Toast.makeText(requireContext(), "已收藏", Toast.LENGTH_SHORT).show();
         } catch (Exception e) {
-            Log.e("MessageListFragment", "Error collecting message", e);
+            LogUtil.e("MessageListFragment", "Error collecting message", e);
             Toast.makeText(requireContext(), "收藏失败", Toast.LENGTH_SHORT).show();
         }
     }

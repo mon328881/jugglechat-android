@@ -7,7 +7,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.text.TextUtils;
-import android.util.Log;
+import com.juggle.im.android.utils.LogUtil;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
@@ -593,17 +593,17 @@ public class MomentDetailActivity extends AppCompatActivity {
                         // 404 时尝试向后端换取可播放 URL 并重试（含过期预签名链接），每视频只换链一次避免无限重试
                         if (e.responseCode == 404 && !TextUtils.isEmpty(currentVideoUrl) && !hasRetriedPlayUrlForCurrentVideo) {
                             hasRetriedPlayUrlForCurrentVideo = true;
-                            Log.w("MomentDetail", "视频 404，换链请求 storedUrl=" + (currentVideoUrl.length() > 80 ? currentVideoUrl.substring(0, 80) + "..." : currentVideoUrl));
+                            LogUtil.w("MomentDetail", "视频 404，换链请求 storedUrl=" + (currentVideoUrl.length() > 80 ? currentVideoUrl.substring(0, 80) + "..." : currentVideoUrl));
                             ServiceManager.getFileService().getPlayUrl(currentVideoUrl, new ApiCallback<String>() {
                                 @Override
                                 public void onSuccess(String playUrl) {
                                     runOnUiThread(() -> {
                                         if (TextUtils.isEmpty(playUrl)) {
-                                            Log.e("MomentDetail", "换链返回空 URL");
+                                            LogUtil.e("MomentDetail", "换链返回空 URL");
                                             Toast.makeText(MomentDetailActivity.this, "视频加载失败，换链返回空地址", Toast.LENGTH_LONG).show();
                                             return;
                                         }
-                                        Log.d("MomentDetail", "换链成功，使用新 URL 重试");
+                                        LogUtil.d("MomentDetail", "换链成功，使用新 URL 重试");
                                         currentVideoUrl = playUrl;
                                         // 先释放再重建播放器，避免沿用错误状态
                                         releasePlayer();
@@ -614,7 +614,7 @@ public class MomentDetailActivity extends AppCompatActivity {
 
                                 @Override
                                 public void onError(int code, String message) {
-                                    Log.e("MomentDetail", "换链失败 code=" + code + " message=" + message);
+                                    LogUtil.e("MomentDetail", "换链失败 code=" + code + " message=" + message);
                                     runOnUiThread(() -> {
                                         Toast.makeText(MomentDetailActivity.this,
                                                 "视频加载失败(404)，换链失败，正在尝试下载后播放…",
@@ -714,7 +714,7 @@ public class MomentDetailActivity extends AppCompatActivity {
         client.newCall(request).enqueue(new Callback() {
             @Override
             public void onFailure(@NonNull Call call, @NonNull IOException e) {
-                Log.e("MomentDetail", "视频下载失败", e);
+                LogUtil.e("MomentDetail", "视频下载失败", e);
                 runOnUiThread(() ->
                         Toast.makeText(MomentDetailActivity.this, "视频下载失败: " + e.getMessage(), Toast.LENGTH_LONG).show());
             }
@@ -739,7 +739,7 @@ public class MomentDetailActivity extends AppCompatActivity {
                         out.write(buf, 0, n);
                     }
                 } catch (IOException e) {
-                    Log.e("MomentDetail", "视频保存失败", e);
+                    LogUtil.e("MomentDetail", "视频保存失败", e);
                     runOnUiThread(() ->
                             Toast.makeText(MomentDetailActivity.this, "视频保存失败: " + e.getMessage(), Toast.LENGTH_LONG).show());
                     return;

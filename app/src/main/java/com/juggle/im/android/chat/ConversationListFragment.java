@@ -11,7 +11,7 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import android.util.Log;
+import com.juggle.im.android.utils.LogUtil;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -76,13 +76,13 @@ public class ConversationListFragment extends Fragment implements ConversationLi
         conversationListAdapter.setShouldAutoScrollChecker(() -> {
             boolean atTop = isAtTop();
             boolean shouldScroll = atTop && !userScrolledAway;
-            Log.d(TAG, "[检查器] isAtTop=" + atTop + ", userScrolledAway=" + userScrolledAway + ", shouldScroll=" + shouldScroll);
+            LogUtil.d(TAG, "[检查器] isAtTop=" + atTop + ", userScrolledAway=" + userScrolledAway + ", shouldScroll=" + shouldScroll);
             return shouldScroll;
         });
 
         // 设置新会话监听器,这里只打印日志,滚动逻辑由Adapter内部直接处理
         conversationListAdapter.setOnNewConversationListener(() -> {
-            Log.d(TAG, "[监听器] 新会话插入到顶部");
+            LogUtil.d(TAG, "[监听器] 新会话插入到顶部");
         });
         LinearLayoutManager layoutManager = new LinearLayoutManager(requireContext());
         conversationListView.setLayoutManager(layoutManager);
@@ -102,18 +102,18 @@ public class ConversationListFragment extends Fragment implements ConversationLi
                 // 如果用户滚动回到顶部,恢复自动滚动模式
                 if (dy != 0) { // 有滚动发生
                     boolean wasAtTop = isAtTop();
-                    Log.d(TAG, "[滚动监听] dy=" + dy + ", isAtTop=" + wasAtTop + ", userScrolledAway=" + userScrolledAway);
+                    LogUtil.d(TAG, "[滚动监听] dy=" + dy + ", isAtTop=" + wasAtTop + ", userScrolledAway=" + userScrolledAway);
                     
                     if (wasAtTop) {
                         // 用户滚动回到顶部,恢复自动滚动模式
                         if (userScrolledAway) {
-                            Log.i(TAG, "[滚动监听] 用户滚动回到顶部,恢复自动滚动模式");
+                            LogUtil.i(TAG, "[滚动监听] 用户滚动回到顶部,恢复自动滚动模式");
                         }
                         userScrolledAway = false;
                     } else if (dy > 0) {
                         // 用户向下滚动离开顶部,标记为已滚动离开
                         if (!userScrolledAway) {
-                            Log.i(TAG, "[滚动监听] 用户向下滚动离开顶部");
+                            LogUtil.i(TAG, "[滚动监听] 用户向下滚动离开顶部");
                         }
                         userScrolledAway = true;
                     }
@@ -142,7 +142,7 @@ public class ConversationListFragment extends Fragment implements ConversationLi
             try {
                 JIMChatCore.getInstance().syncConversationList();
             } catch (Exception e) {
-                Log.e(TAG, "syncConversationList onResume failed", e);
+                LogUtil.e(TAG, "syncConversationList onResume failed", e);
             }
         }, "conv-sync").start();
     }
@@ -178,7 +178,7 @@ public class ConversationListFragment extends Fragment implements ConversationLi
         // 某些情况下可能有1像素的偏移
         int offset = Math.abs(firstView.getTop() - conversationListView.getPaddingTop());
         boolean atTop = offset <= 1;
-        Log.v(TAG, "[isAtTop] firstPos=" + firstVisiblePosition + ", firstTop=" + firstView.getTop() + ", rvTop=" + conversationListView.getPaddingTop() + ", result=" + atTop);
+        LogUtil.v(TAG, "[isAtTop] firstPos=" + firstVisiblePosition + ", firstTop=" + firstView.getTop() + ", rvTop=" + conversationListView.getPaddingTop() + ", result=" + atTop);
         return atTop;
     }
 

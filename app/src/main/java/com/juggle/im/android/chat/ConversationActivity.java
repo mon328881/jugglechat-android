@@ -22,7 +22,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
-import android.util.Log;
+import com.juggle.im.android.utils.LogUtil;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.Window;
@@ -208,35 +208,35 @@ public class ConversationActivity extends AppCompatActivity {
 
                 @Override
                 public void onStartVoiceRecord() {
-                    Log.i("TAG", "onStartVoiceRecord");
+                    LogUtil.i("TAG", "onStartVoiceRecord");
                 }
 
                 @Override
                 public void onFinishRecord(String voiceUrl, long duration) {
-                    Log.i("TAG", "onFinishVoiceRecord: voiceUrl=" + voiceUrl + ", duration=" + duration);
+                    LogUtil.i("TAG", "onFinishVoiceRecord: voiceUrl=" + voiceUrl + ", duration=" + duration);
                     
                     // Validate voice file path
                     if (voiceUrl == null || voiceUrl.isEmpty()) {
-                        Log.e("TAG", "ERROR: voiceUrl is null or empty");
+                        LogUtil.e("TAG", "ERROR: voiceUrl is null or empty");
                         Toast.makeText(ConversationActivity.this, "语音文件路径无效", Toast.LENGTH_SHORT).show();
                         return;
                     }
                     
                     File voiceFile = new File(voiceUrl);
                     if (!voiceFile.exists()) {
-                        Log.e("TAG", "ERROR: Voice file does not exist at: " + voiceUrl);
+                        LogUtil.e("TAG", "ERROR: Voice file does not exist at: " + voiceUrl);
                         Toast.makeText(ConversationActivity.this, "语音文件不存在", Toast.LENGTH_SHORT).show();
                         return;
                     }
                     
                     long fileSize = voiceFile.length();
                     if (fileSize == 0) {
-                        Log.e("TAG", "ERROR: Voice file is empty at: " + voiceUrl);
+                        LogUtil.e("TAG", "ERROR: Voice file is empty at: " + voiceUrl);
                         Toast.makeText(ConversationActivity.this, "语音文件为空", Toast.LENGTH_SHORT).show();
                         return;
                     }
                     
-                    Log.i("TAG", "Voice file validated: size=" + fileSize + " bytes");
+                    LogUtil.i("TAG", "Voice file validated: size=" + fileSize + " bytes");
                     
                     VoiceMessage voice = new VoiceMessage();
                     voice.setLocalPath(voiceUrl);
@@ -246,7 +246,7 @@ public class ConversationActivity extends AppCompatActivity {
 
                 @Override
                 public void onCancelVoiceRecord() {
-                    Log.i("TAG", "onCancelVoiceRecord");
+                    LogUtil.i("TAG", "onCancelVoiceRecord");
                 }
 
                 @Override
@@ -287,7 +287,7 @@ public class ConversationActivity extends AppCompatActivity {
 
             @Override
             public void onError(int i) {
-                Log.i("TAG", "getTopMessage error: " + i);
+                LogUtil.i("TAG", "getTopMessage error: " + i);
             }
         });
         Window window = getWindow();
@@ -325,7 +325,7 @@ public class ConversationActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        android.util.Log.d("ConversationActivity", "onActivityResult: requestCode=" + requestCode + 
+        LogUtil.d("ConversationActivity", "onActivityResult: requestCode=" + requestCode + 
                 ", resultCode=" + resultCode + ", data=" + (data != null ? "not null" : "null"));
         
         ChatInputActionBar inputBar = findViewById(R.id.input_bar);
@@ -390,7 +390,7 @@ public class ConversationActivity extends AppCompatActivity {
             
             // 发送为文本消息，格式 [LOCATION]lat,lng|address
             String content = com.juggle.im.android.chat.utils.LocationMessageHelper.buildContent(lat, lng, address);
-            Log.d("LocationMessage", "Sending location: " + content + ", conversation: " + (conversation != null ? conversation.getConversationId() : "null"));
+            LogUtil.d("LocationMessage", "Sending location: " + content + ", conversation: " + (conversation != null ? conversation.getConversationId() : "null"));
             TextMessage msg = new TextMessage(content);
             sendTextMessage(msg, null, conversation);
             
@@ -507,7 +507,7 @@ public class ConversationActivity extends AppCompatActivity {
                 uri = Uri.parse(data.toString());
             }
             if (uri == null) {
-                Log.w("ConversationActivity", "FilePlugin data is null, ignore.");
+                LogUtil.w("ConversationActivity", "FilePlugin data is null, ignore.");
                 return;
             }
 
@@ -627,7 +627,7 @@ public class ConversationActivity extends AppCompatActivity {
 
                     @Override
                     public void onError(int i) {
-                        Log.d("MessageListFragment", "update message failed: " + i);
+                        LogUtil.d("MessageListFragment", "update message failed: " + i);
                     }
                 });
     }
@@ -645,7 +645,7 @@ public class ConversationActivity extends AppCompatActivity {
 
             @Override
             public void onError(Message message, int errorCode) {
-                Log.i("TAG", "send message error: " + errorCode);
+                LogUtil.i("TAG", "send message error: " + errorCode);
                 MessageListFragment frag = (MessageListFragment) getSupportFragmentManager()
                         .findFragmentById(R.id.fragment_messages_container);
                 if (frag != null) {
@@ -667,28 +667,28 @@ public class ConversationActivity extends AppCompatActivity {
         IMessageManager.ISendMediaMessageCallback callback = new IMessageManager.ISendMediaMessageCallback() {
             @Override
             public void onProgress(int progress, Message message) {
-                Log.i("sendImageMessage", "onProgress: " + progress);
+                LogUtil.i("sendImageMessage", "onProgress: " + progress);
             }
 
             @Override
             public void onSuccess(Message message) {
-                Log.i("sendImageMessage", "send message success");
+                LogUtil.i("sendImageMessage", "send message success");
                 frag.onUpdateMessage(Arrays.asList(message));
             }
 
             @Override
             public void onError(Message message, int errorCode) {
-                Log.i("sendImageMessage", "send message error: " + errorCode);
+                LogUtil.i("sendImageMessage", "send message error: " + errorCode);
                 frag.onUpdateMessage(Arrays.asList(message));
             }
 
             @Override
             public void onCancel(Message message) {
-                Log.i("sendImageMessage", "onCancel");
+                LogUtil.i("sendImageMessage", "onCancel");
             }
         };
         Message message = JIM.getInstance().getMessageManager().sendMediaMessage(image, conversation, callback);
-        Log.i("TAG", "sendImageMessage msgId= " + message.getMessageId());
+        LogUtil.i("TAG", "sendImageMessage msgId= " + message.getMessageId());
         if (frag != null) {
             frag.onNewMessage(message);
         }
@@ -700,16 +700,16 @@ public class ConversationActivity extends AppCompatActivity {
         IMessageManager.ISendMediaMessageCallback callback = new IMessageManager.ISendMediaMessageCallback() {
             @Override
             public void onProgress(int progress, Message message) {
-                Log.i("TAG", "onProgress");
+                LogUtil.i("TAG", "onProgress");
             }
 
             @Override
             public void onSuccess(Message message) {
-                Log.i("TAG", "send message success");
+                LogUtil.i("TAG", "send message success");
                 if (message != null && message.getContent() instanceof FileMessage) {
                     FileMessage fm = (FileMessage) message.getContent();
                     String url = fm.getUrl();
-                    Log.i("ConversationFile", "会话页发送视频/文件成功，拿到的 url=" + (url != null ? url : "(null)"));
+                    LogUtil.i("ConversationFile", "会话页发送视频/文件成功");
                 }
                 frag.onUpdateMessage(Arrays.asList(message));
 
@@ -717,63 +717,63 @@ public class ConversationActivity extends AppCompatActivity {
 
             @Override
             public void onError(Message message, int errorCode) {
-                Log.i("TAG", "send message error: " + errorCode);
+                LogUtil.i("TAG", "send message error: " + errorCode);
                 frag.onUpdateMessage(Arrays.asList(message));
 
             }
 
             @Override
             public void onCancel(Message message) {
-                Log.i("TAG", "onCancel");
+                LogUtil.i("TAG", "onCancel");
             }
         };
 
         Message message = JIM.getInstance().getMessageManager().sendMediaMessage(fileMessage, conversation, callback);
-        Log.i("TAG", "after send, clientMsgNo is " + message.getClientMsgNo());
+        LogUtil.i("TAG", "after send, clientMsgNo is " + message.getClientMsgNo());
         frag.onNewMessage(message);
     }
 
     private void sendVoiceMessage(VoiceMessage voice, Conversation conversation) {
-        Log.i("TAG", "sendVoiceMessage: localPath=" + voice.getLocalPath() + ", duration=" + voice.getDuration());
+        LogUtil.i("TAG", "sendVoiceMessage: localPath=" + voice.getLocalPath() + ", duration=" + voice.getDuration());
         
         MessageListFragment frag = (MessageListFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.fragment_messages_container);
         
         if (frag == null) {
-            Log.e("TAG", "ERROR: MessageListFragment is null");
+            LogUtil.e("TAG", "ERROR: MessageListFragment is null");
             return;
         }
         
         IMessageManager.ISendMediaMessageCallback callback = new IMessageManager.ISendMediaMessageCallback() {
             @Override
             public void onProgress(int progress, Message message) {
-                Log.i("TAG", "onProgress: " + progress + "%");
+                LogUtil.i("TAG", "onProgress: " + progress + "%");
             }
 
             @Override
             public void onSuccess(Message message) {
-                Log.i("TAG", "send message success: msgId=" + message.getMessageId());
+                LogUtil.i("TAG", "send message success: msgId=" + message.getMessageId());
                 frag.onUpdateMessage(Arrays.asList(message));
             }
 
             @Override
             public void onError(Message message, int errorCode) {
-                Log.e("TAG", "send message error: errorCode=" + errorCode + ", msgId=" + message.getMessageId());
+                LogUtil.e("TAG", "send message error: errorCode=" + errorCode + ", msgId=" + message.getMessageId());
                 frag.onUpdateMessage(Arrays.asList(message));
             }
 
             @Override
             public void onCancel(Message message) {
-                Log.i("TAG", "send message cancelled: msgId=" + message.getMessageId());
+                LogUtil.i("TAG", "send message cancelled: msgId=" + message.getMessageId());
             }
         };
         
         try {
             Message message = JIM.getInstance().getMessageManager().sendMediaMessage(voice, conversation, callback);
-            Log.i("TAG", "after send, clientMsgNo=" + message.getClientMsgNo() + ", msgId=" + message.getMessageId());
+            LogUtil.i("TAG", "after send, clientMsgNo=" + message.getClientMsgNo() + ", msgId=" + message.getMessageId());
             frag.onNewMessage(message);
         } catch (Exception e) {
-            Log.e("TAG", "sendMediaMessage exception", e);
+            LogUtil.e("TAG", "sendMediaMessage exception", e);
             Toast.makeText(this, "发送语音失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
     }
@@ -803,7 +803,7 @@ public class ConversationActivity extends AppCompatActivity {
 
                     @Override
                     public void onError(Message message, int errorCode) {
-                        Log.i("TAG", "send message error: " + errorCode);
+                        LogUtil.i("TAG", "send message error: " + errorCode);
                         frag.onUpdateMessage(Arrays.asList(message));
                     }
                 });
@@ -867,7 +867,7 @@ public class ConversationActivity extends AppCompatActivity {
                     }
                 }
             } catch (Exception e) {
-                Log.w("ConversationActivity", "query display name error", e);
+                LogUtil.w("ConversationActivity", "query display name error", e);
             } finally {
                 if (cursor != null) {
                     cursor.close();

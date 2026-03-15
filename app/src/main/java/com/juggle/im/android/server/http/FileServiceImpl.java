@@ -1,7 +1,7 @@
 package com.juggle.im.android.server.http;
 
 import android.text.TextUtils;
-import android.util.Log;
+import com.juggle.im.android.utils.LogUtil;
 
 import com.juggle.im.android.server.beans.FileCredResp;
 import com.juggle.im.android.server.beans.PlayUrlResp;
@@ -148,7 +148,7 @@ public class FileServiceImpl extends BaseService implements FileService {
                     callback.onSuccess(null);
                 }
             } catch (IOException e) {
-                Log.e("FileService", "上传错误", e);
+                LogUtil.e("FileService", "上传错误", e);
                 if (callback != null) {
                     callback.onError(-1, e.getMessage());
                 }

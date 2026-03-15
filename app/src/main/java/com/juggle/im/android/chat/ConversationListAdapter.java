@@ -10,7 +10,7 @@ import android.graphics.drawable.Drawable;
 import android.text.SpannableString;
 import android.text.Spanned;
 import android.text.style.ForegroundColorSpan;
-import android.util.Log;
+import com.juggle.im.android.utils.LogUtil;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -48,7 +48,7 @@ public class ConversationListAdapter extends RecyclerView.Adapter<ConversationLi
     }
 
     /**
-     * 新会话插入监听器，当新会话插入到顶部时回�?
+     * 新会话插入监听器，当新会话插入到顶部时回
      */
     public interface OnNewConversationListener {
         void onNewConversationAtTop();
@@ -150,19 +150,19 @@ public class ConversationListAdapter extends RecyclerView.Adapter<ConversationLi
                 uiConversations.add(targetPos, item);
                 notifyItemMoved(currentPos, targetPos);
                 
-                // 检查是否移动到了顶�?如果是且满足条件,则自动滚�?
+                // 检查是否移动到了顶如果是且满足条件,则自动滚
                 boolean isMovingToTop = (targetPos == 0);
                 if (isMovingToTop && recyclerView != null) {
-                    // 检查是否应该自动滚�?用户是否在顶部且未主动滚动离开)
+                    // 检查是否应该自动滚用户是否在顶部且未主动滚动离开)
                     boolean shouldScroll = (shouldAutoScrollChecker == null) || shouldAutoScrollChecker.shouldAutoScroll();
-                    android.util.Log.i(TAG, "[移动] 会话移动到顶�? shouldScroll=" + shouldScroll);
+                    LogUtil.i(TAG, "[移动] 会话移动到顶 shouldScroll=" + shouldScroll);
                     
                     if (shouldScroll) {
-                        // 直接滚动,不等待RecyclerView的自动调�?
+                        // 直接滚动,不等待RecyclerView的自动调
                         LinearLayoutManager layoutManager = (LinearLayoutManager) recyclerView.getLayoutManager();
                         if (layoutManager != null) {
                             layoutManager.scrollToPositionWithOffset(0, 0);
-                            android.util.Log.d(TAG, "[移动] 滚动完成");
+                            LogUtil.d(TAG, "[移动] 滚动完成");
                         }
                     }
                 }
@@ -174,32 +174,32 @@ public class ConversationListAdapter extends RecyclerView.Adapter<ConversationLi
             UiConversation newUi = updateMap.get(id);
             int insertIndex = findInsertIndex(newUi.isTop(), newUi.getSortTime(), uiConversations);
             
-            // 在插入之前先通知监听�?此时可以准确判断是否在顶�?
+            // 在插入之前先通知监听此时可以准确判断是否在顶
             boolean isInsertingAtTop = (insertIndex == 0);
             
             uiConversations.add(insertIndex, newUi);
             notifyItemInserted(insertIndex);
 
-            // 如果新会话插入到顶部,检查是否应该自动滚�?
+            // 如果新会话插入到顶部,检查是否应该自动滚
             // 关键:在notifyItemInserted之后立即滚动,不使用post延迟
             if (isInsertingAtTop && recyclerView != null) {
-                // 检查是否应该自动滚�?用户是否在顶部且未主动滚动离开)
+                // 检查是否应该自动滚用户是否在顶部且未主动滚动离开)
                 boolean shouldScroll = (shouldAutoScrollChecker == null) || shouldAutoScrollChecker.shouldAutoScroll();
-                android.util.Log.i(TAG, "[插入] 新会话插入到顶部, shouldScroll=" + shouldScroll);
+                LogUtil.i(TAG, "[插入] 新会话插入到顶部, shouldScroll=" + shouldScroll);
                 
                 if (shouldScroll) {
-                    // 直接滚动,不等待RecyclerView的自动调�?
+                    // 直接滚动,不等待RecyclerView的自动调
                     LinearLayoutManager layoutManager = (LinearLayoutManager) recyclerView.getLayoutManager();
                     if (layoutManager != null) {
                         layoutManager.scrollToPositionWithOffset(0, 0);
-                        android.util.Log.d(TAG, "[插入] 滚动完成");
+                        LogUtil.d(TAG, "[插入] 滚动完成");
                     }
                 } else {
-                    android.util.Log.d(TAG, "[插入] 用户不在顶部或已滚动离开,不自动滚动");
+                    LogUtil.d(TAG, "[插入] 用户不在顶部或已滚动离开,不自动滚动");
                 }
             }
             
-            // 仍然通知监听�?用于其他逻辑,如用户滚动状态追�?
+            // 仍然通知监听用于其他逻辑,如用户滚动状态追
             if (isInsertingAtTop && newConversationListener != null) {
                 newConversationListener.onNewConversationAtTop();
             }
@@ -273,7 +273,7 @@ public class ConversationListAdapter extends RecyclerView.Adapter<ConversationLi
         UiConversation uiConversation = uiConversations.get(position);
         holder.bind(uiConversation);
         
-        // 移除选中状态和置顶的背景色，保持统一的白色背�?
+        // 移除选中状态和置顶的背景色，保持统一的白色背
         holder.itemView.setBackgroundResource(android.R.color.transparent);
     }
 
@@ -282,7 +282,7 @@ public class ConversationListAdapter extends RecyclerView.Adapter<ConversationLi
         return uiConversations.size();
     }
     
-    // 添加方法来清除选中状�?
+    // 添加方法来清除选中状
     public void clearSelectedPosition() {
         if (selectedPosition >= 0) {
             int previousPosition = selectedPosition;
@@ -291,16 +291,16 @@ public class ConversationListAdapter extends RecyclerView.Adapter<ConversationLi
         }
     }
     
-    // 添加方法来设置选中状�?
+    // 添加方法来设置选中状
     public void setSelectedPosition(int position) {
-        // 清除之前的选中状�?
+        // 清除之前的选中状
         if (selectedPosition >= 0) {
             int previousPosition = selectedPosition;
             selectedPosition = -1;
             notifyItemChanged(previousPosition);
         }
         
-        // 设置新的选中状�?
+        // 设置新的选中状
         if (position >= 0) {
             selectedPosition = position;
             notifyItemChanged(position);
@@ -360,7 +360,7 @@ public class ConversationListAdapter extends RecyclerView.Adapter<ConversationLi
             // 设置时间
             timeView.setText(MessageUtils.formateConversationTime(uiConversation.getSortTime()));
 
-            // 设置最后一条消�?
+            // 设置最后一条消
             Message lastMessage = uiConversation.getLastMessage();
             if (lastMessage != null) {
                 String senderName = lastMessage.getSenderUserId().equals(JIM.getInstance().getCurrentUserId()) ? "我" : uiConversation.getLastMessageUserName();
@@ -377,7 +377,7 @@ public class ConversationListAdapter extends RecyclerView.Adapter<ConversationLi
                 }
             }
 
-            // 设置免打扰图�?
+            // 设置免打扰图
             muteView.setVisibility(uiConversation.isMuted() ? VISIBLE : GONE);
 
             // 设置置顶图标
@@ -407,7 +407,7 @@ public class ConversationListAdapter extends RecyclerView.Adapter<ConversationLi
     }
 
     /**
-     * 获取会话在列表中的位�?
+     * 获取会话在列表中的位
      *
      * @param uiConversation 会话对象
      * @return 位置索引，未找到返回-1
@@ -432,7 +432,7 @@ public class ConversationListAdapter extends RecyclerView.Adapter<ConversationLi
             uiConversations.remove(position);
             notifyItemRemoved(position);
             
-            // 如果删除的是选中的项目，清除选中状�?
+            // 如果删除的是选中的项目，清除选中状
             if (position == selectedPosition) {
                 selectedPosition = -1;
             }
@@ -452,11 +452,11 @@ public class ConversationListAdapter extends RecyclerView.Adapter<ConversationLi
                 if (i == selectedPosition) {
                     selectedPosition = -1;
                 }
-                Log.d("ConvListAdapter", "已删除会话: " + conversationId + ", 剩余会话数: " + uiConversations.size());
+                LogUtil.d("ConvListAdapter", "已删除会话: " + conversationId + ", 剩余会话数: " + uiConversations.size());
                 return;
             }
         }
-        Log.w("ConvListAdapter", "未找到要删除的会话: " + conversationId);
+        LogUtil.w("ConvListAdapter", "未找到要删除的会话: " + conversationId);
     }
 
     /**
@@ -500,10 +500,10 @@ public class ConversationListAdapter extends RecyclerView.Adapter<ConversationLi
      */
     public void updateDisplayInfo(String conversationId, String name, String avatar) {
         if (conversationId == null) {
-            android.util.Log.d("ConversationListAdapter", "updateDisplayInfo: conversationId is null, return");
+            LogUtil.d("ConversationListAdapter", "updateDisplayInfo: conversationId is null, return");
             return;
         }
-        android.util.Log.d("ConversationListAdapter", "updateDisplayInfo: conversationId=" + conversationId + ", name=" + name + ", avatar=" + avatar + ", list size=" + uiConversations.size());
+        LogUtil.d("ConversationListAdapter", "updateDisplayInfo: conversationId=" + conversationId + ", name=" + name + ", avatar=" + avatar + ", list size=" + uiConversations.size());
         
         boolean found = false;
         for (int i = 0; i < uiConversations.size(); i++) {
@@ -512,13 +512,13 @@ public class ConversationListAdapter extends RecyclerView.Adapter<ConversationLi
             try {
                 uiId = ui.getId();
             } catch (Exception e) {
-                android.util.Log.e("ConversationListAdapter", "Error getting ui.getId() at position " + i, e);
+                LogUtil.e("ConversationListAdapter", "Error getting ui.getId() at position " + i, e);
                 continue;
             }
-            android.util.Log.d("ConversationListAdapter", "  [" + i + "] comparing: uiId=" + uiId + " vs conversationId=" + conversationId);
+            LogUtil.d("ConversationListAdapter", "  [" + i + "] comparing: uiId=" + uiId + " vs conversationId=" + conversationId);
             
             if (conversationId.equals(uiId)) {
-                android.util.Log.d("ConversationListAdapter", "  FOUND! Updating item at position " + i);
+                LogUtil.d("ConversationListAdapter", "  FOUND! Updating item at position " + i);
                 if (name != null) ui.setName(name);
                 if (avatar != null) ui.setAvatar(avatar);
                 notifyItemChanged(i);
@@ -528,7 +528,7 @@ public class ConversationListAdapter extends RecyclerView.Adapter<ConversationLi
         }
         
         if (!found) {
-            android.util.Log.w("ConversationListAdapter", "updateDisplayInfo: 未找到匹配的会话 conversationId=" + conversationId);
+            LogUtil.w("ConversationListAdapter", "updateDisplayInfo: 未找到匹配的会话 conversationId=" + conversationId);
         }
     }
 }
