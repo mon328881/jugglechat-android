@@ -56,6 +56,7 @@ public class CreatePostActivity extends AppCompatActivity {
     private CommunityTagAdapter mCommunityTagAdapter;
     private LinkedHashMap<String, String> mImageUrls = new LinkedHashMap<>();
     private String mVideoUrl = null;
+    private String mVideoSnapshotUrl = null;
     private Bitmap mVideoThumbnail = null;
     private boolean mIsUploadingVideo = false;
     private static final int REQUEST_CODE_PICK_IMAGES = 1001;
@@ -266,6 +267,9 @@ public class CreatePostActivity extends AppCompatActivity {
         if (!TextUtils.isEmpty(mVideoUrl)) {
             VideoBean video = new VideoBean();
             video.setUrl(mVideoUrl);
+            if (!TextUtils.isEmpty(mVideoSnapshotUrl)) {
+                video.setSnapshot_url(mVideoSnapshotUrl);
+            }
             postContent.setVideo(video);
         }
 
@@ -358,6 +362,7 @@ public class CreatePostActivity extends AppCompatActivity {
 
                 holder.btnDelete.setOnClickListener(v -> {
                     mVideoUrl = null;
+                    mVideoSnapshotUrl = null;
                     mVideoThumbnail = null;
                     mIsUploadingVideo = false;
                     notifyDataSetChanged();
@@ -508,8 +513,10 @@ public class CreatePostActivity extends AppCompatActivity {
         mIsUploadingVideo = true;
         mVideoUrl = null;
         mMediaAdapter.notifyDataSetChanged();
+        Toast.makeText(this, "正在上传", Toast.LENGTH_SHORT).show();
 
-        ServiceManager.getFileService().uploadFile(3, localPath, "mp4", new ApiCallback<String>() {
+        // 与图片同一通道：用 JIM.uploadImage 上传视频文件，走 im-server file_cred，拿到的 URL 与图片同源、可播放
+        JIM.getInstance().getMessageManager().uploadImage(localPath, new JIMConst.IResultCallback<String>() {
             @Override
             public void onSuccess(String url) {
                 mVideoUrl = url;
@@ -517,16 +524,44 @@ public class CreatePostActivity extends AppCompatActivity {
                 mImageUrls.clear();
                 mMediaAdapter.notifyDataSetChanged();
                 Toast.makeText(CreatePostActivity.this, "视频上传成功", Toast.LENGTH_SHORT).show();
+                // 上传首帧作为封面，与图片同通道
+                uploadVideoThumbnailIfNeed();
             }
 
             @Override
-            public void onError(int code, String message) {
+            public void onError(int errorCode) {
                 mIsUploadingVideo = false;
                 mVideoUrl = null;
                 mVideoThumbnail = null;
+                mVideoSnapshotUrl = null;
                 mMediaAdapter.notifyDataSetChanged();
-                Toast.makeText(CreatePostActivity.this, "视频上传失败: " + message, Toast.LENGTH_SHORT).show();
+                Toast.makeText(CreatePostActivity.this, "视频上传失败: " + errorCode, Toast.LENGTH_SHORT).show();
             }
         });
+    }
+
+    /** 若有首帧缩略图则上传为封面 URL，供发表时写入 snapshot_url */
+    private void uploadVideoThumbnailIfNeed() {
+        if (mVideoThumbnail == null) return;
+        java.io.File cacheDir = getCacheDir();
+        java.io.File thumbFile = new java.io.File(cacheDir, "video_cover_" + System.currentTimeMillis() + ".jpg");
+        try {
+            java.io.FileOutputStream fos = new java.io.FileOutputStream(thumbFile);
+            mVideoThumbnail.compress(android.graphics.Bitmap.CompressFormat.JPEG, 85, fos);
+            fos.close();
+            String path = thumbFile.getAbsolutePath();
+            JIM.getInstance().getMessageManager().uploadImage(path, new JIMConst.IResultCallback<String>() {
+                @Override
+                public void onSuccess(String url) {
+                    mVideoSnapshotUrl = url;
+                }
+                @Override
+                public void onError(int errorCode) {
+                    // 封面上传失败不影响发表，仅无封面图
+                }
+            });
+        } catch (Throwable e) {
+            Log.e("createpost", "save/upload video thumbnail error", e);
+        }
     }
 }

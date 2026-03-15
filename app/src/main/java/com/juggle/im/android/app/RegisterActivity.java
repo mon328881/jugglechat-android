@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.text.TextUtils;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.CheckBox;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -21,13 +22,15 @@ public class RegisterActivity extends AppCompatActivity {
     private EditText inputField;
     private EditText passwordInput;
     private EditText confirmPasswordInput;
+    private CheckBox agreeCheckbox;
     private Button registerButton;
     private Button backToLoginButton;
 
     // 正则表达式模式
-    private static final Pattern PHONE_PATTERN = Pattern.compile("^1[3-9]\\d{9}$");
+    // 邮箱单独识别，用于走 email 注册字段
     private static final Pattern EMAIL_PATTERN = Pattern.compile("^[A-Za-z0-9+_.-]+@(.+)$");
-    private static final Pattern ACCOUNT_PATTERN = Pattern.compile("^[A-Za-z0-9_]{5,20}$");
+    // 账号规则（支持纯数字，所以手机号也可以作为账号），与后端 6-20 位规则保持一致
+    private static final Pattern ACCOUNT_PATTERN = Pattern.compile("^[A-Za-z0-9_]{6,20}$");
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,6 +45,7 @@ public class RegisterActivity extends AppCompatActivity {
         inputField = findViewById(R.id.inputField);
         passwordInput = findViewById(R.id.passwordInput);
         confirmPasswordInput = findViewById(R.id.confirmPasswordInput);
+        agreeCheckbox = findViewById(R.id.agreeCheckbox);
         registerButton = findViewById(R.id.registerButton);
         backToLoginButton = findViewById(R.id.backToLoginButton);
     }
@@ -52,12 +56,10 @@ public class RegisterActivity extends AppCompatActivity {
     }
 
     /**
-     * 判断输入的类型：手机号、邮箱或账号
+     * 判断输入的类型：邮箱或账号（账号可为手机号）
      */
     private String getInputType(String input) {
-        if (PHONE_PATTERN.matcher(input).matches()) {
-            return "phone";
-        } else if (EMAIL_PATTERN.matcher(input).matches()) {
+        if (EMAIL_PATTERN.matcher(input).matches()) {
             return "email";
         } else if (ACCOUNT_PATTERN.matcher(input).matches()) {
             return "account";
@@ -72,7 +74,7 @@ public class RegisterActivity extends AppCompatActivity {
 
         // 验证输入
         if (TextUtils.isEmpty(input)) {
-            Toast.makeText(this, "请输入手机号、邮箱或账号", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "请输入邮箱或账号（账号可为手机号）", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -96,10 +98,16 @@ public class RegisterActivity extends AppCompatActivity {
             return;
         }
 
+        // 必须勾选“我已阅读并同意…”才允许注册
+        if (agreeCheckbox != null && !agreeCheckbox.isChecked()) {
+            Toast.makeText(this, "请先阅读并勾选同意服务协议和隐私政策", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         // 判断输入类型
         String inputType = getInputType(input);
         if (inputType == null) {
-            Toast.makeText(this, "请输入有效的手机号、邮箱或账号（账号需为5-20个字母数字）", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "请输入有效的邮箱或账号（6-20位字母、数字或下划线，手机号也可作为账号）", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -107,9 +115,7 @@ public class RegisterActivity extends AppCompatActivity {
         RegisterRequest request = new RegisterRequest();
         request.setPassword(password);
 
-        if ("phone".equals(inputType)) {
-            request.setPhone(input);
-        } else if ("email".equals(inputType)) {
+        if ("email".equals(inputType)) {
             request.setEmail(input);
         } else if ("account".equals(inputType)) {
             request.setAccount(input);
@@ -140,6 +146,9 @@ public class RegisterActivity extends AppCompatActivity {
         inputField.setEnabled(!isLoading);
         passwordInput.setEnabled(!isLoading);
         confirmPasswordInput.setEnabled(!isLoading);
+        if (agreeCheckbox != null) {
+            agreeCheckbox.setEnabled(!isLoading);
+        }
         backToLoginButton.setEnabled(!isLoading);
 
         if (isLoading) {

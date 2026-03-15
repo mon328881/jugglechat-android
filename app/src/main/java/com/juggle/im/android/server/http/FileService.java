@@ -19,4 +19,12 @@ public interface FileService {
      * @param callback  回调：成功返回可访问的URL
      */
     void uploadFile(int fileType, String localPath, String ext, ApiCallback<String> callback);
+
+    /**
+     * 根据已存储的文件 URL 换取可播放的 GET 预签名 URL（用于详情页 404 时换链重试）
+     *
+     * @param storedUrl 帖子中存储的原始 URL（可能 404）
+     * @param callback  回调：成功返回可播放的 URL
+     */
+    void getPlayUrl(String storedUrl, ApiCallback<String> callback);
 }

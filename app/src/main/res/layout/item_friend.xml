@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
+<<<<<<< Updated upstream
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
@@ -51,6 +52,94 @@
             android:textSize="16sp"
             android:textStyle="bold"
             android:textColor="?attr/colorOnSurface" />
+=======
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginHorizontal="8dp"
+    android:layout_marginVertical="4dp"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="2dp"
+    app:cardBackgroundColor="?attr/colorSurface">
+
+    <!-- 朋友项内容 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="64dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:padding="12dp">
+
+        <!-- 头像容器 -->
+        <FrameLayout
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginEnd="12dp">
+
+            <!-- 头像 -->
+            <ImageView
+                android:id="@+id/iv_avatar"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="centerCrop"
+                android:contentDescription="@string/avatar"
+                android:background="?attr/colorSurfaceVariant"
+                android:clipToOutline="true" />
+
+            <!-- 在线状态指示器 -->
+            <View
+                android:id="@+id/online_indicator"
+                android:layout_width="12dp"
+                android:layout_height="12dp"
+                android:layout_gravity="bottom|end"
+                android:layout_marginBottom="2dp"
+                android:layout_marginEnd="2dp"
+                android:background="@drawable/online_status_indicator"
+                android:visibility="gone" />
+        </FrameLayout>
+
+        <!-- 昵称和状态 -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center_vertical">
+
+            <!-- 昵称 -->
+            <TextView
+                android:id="@+id/tv_nickname"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="昵称"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="?attr/colorOnSurface" />
+
+            <!-- 最后活跃时间 -->
+            <TextView
+                android:id="@+id/tv_last_active"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="最后活跃：1小时前"
+                android:textSize="12sp"
+                android:textColor="?attr/colorOnSurfaceVariant"
+                android:visibility="gone" />
+        </LinearLayout>
+
+        <!-- 选择复选框 -->
+        <ImageView
+            android:id="@+id/iv_checkbox"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:visibility="gone"
+            android:src="@drawable/ic_checkbox_unselect"
+            android:contentDescription="@string/select"
+            android:layout_marginStart="8dp"
+            android:tint="?attr/colorPrimary" />
+>>>>>>> Stashed changes
 
         <!-- 最后活跃时间 -->
         <TextView
@@ -64,6 +153,7 @@
             android:visibility="gone" />
     </LinearLayout>
 
+<<<<<<< Updated upstream
     <!-- 选择复选框 -->
     <ImageView
         android:id="@+id/iv_checkbox"
@@ -76,3 +166,6 @@
         android:tint="?attr/colorPrimary" />
 
 </LinearLayout>
+=======
+</com.google.android.material.card.MaterialCardView>
+>>>>>>> Stashed changes

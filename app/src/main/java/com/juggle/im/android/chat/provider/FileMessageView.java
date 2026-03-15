@@ -119,8 +119,19 @@ public class FileMessageView extends MessageView<UiMessage, FileMessage> {
         // 统一点击行为：整条消息 / 图标 / 按钮 / 文件名 都可点击
         View.OnClickListener clickListener;
         if (isVideo) {
-            // 视频文件：下载到本地后用播放器打开
+            // 视频文件：有本地文件则直接播放，否则下载后播放
             clickListener = v -> {
+                String localPath = null;
+                try {
+                    localPath = f.getLocalPath();
+                } catch (Throwable ignore) { }
+                if (!TextUtils.isEmpty(localPath)) {
+                    File localFile = new File(localPath);
+                    if (localFile.exists()) {
+                        openFile(v.getContext(), localFile);
+                        return;
+                    }
+                }
                 if (url != null && !url.isEmpty()) {
                     downloadAndOpenFile(v.getContext(), url, name);
                 } else {

@@ -609,13 +609,6 @@ public class ConversationActivity extends AppCompatActivity {
                     sendFileMessage(fileMessage, conversation);
                 }
             }
-        } else if (pluginId.equals("scan")) {
-            // 处理扫一扫结果
-            String scanResult = (String) data;
-            if (scanResult != null && !scanResult.isEmpty()) {
-                TextMessage tm = new TextMessage(scanResult);
-                sendTextMessage(tm, null, conversation);
-            }
         }
         // 移除了通话插件的处理逻辑
     }
@@ -713,6 +706,11 @@ public class ConversationActivity extends AppCompatActivity {
             @Override
             public void onSuccess(Message message) {
                 Log.i("TAG", "send message success");
+                if (message != null && message.getContent() instanceof FileMessage) {
+                    FileMessage fm = (FileMessage) message.getContent();
+                    String url = fm.getUrl();
+                    Log.i("ConversationFile", "会话页发送视频/文件成功，拿到的 url=" + (url != null ? url : "(null)"));
+                }
                 frag.onUpdateMessage(Arrays.asList(message));
 
             }

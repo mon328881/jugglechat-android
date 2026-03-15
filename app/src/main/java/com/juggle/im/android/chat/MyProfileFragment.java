@@ -8,6 +8,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
@@ -258,8 +260,16 @@ public class MyProfileFragment extends Fragment {
             Context ctx = getContext();
             if (ctx == null) return;
             String ext = guessImageExt(ctx, uri);
-            String suffix = "temp_avatar." + ext;
-            String localPath = FileUtils.convertContentUriToFile(ctx.getApplicationContext(), uri.toString(), suffix);
+            boolean isHeif = "heic".equalsIgnoreCase(ext);
+            String suffix = "temp_avatar." + (isHeif ? "jpg" : ext);
+            String localPath;
+            if (isHeif) {
+                // 将 HEIC/HEIF 转码为 JPG，避免部分设备无法解码导致头像变灰
+                localPath = transcodeHeifToJpeg(ctx, uri, suffix);
+                ext = "jpg";
+            } else {
+                localPath = FileUtils.convertContentUriToFile(ctx.getApplicationContext(), uri.toString(), suffix);
+            }
             if (TextUtils.isEmpty(localPath)) {
                 Toast.makeText(getContext(), "无法读取图片文件", Toast.LENGTH_SHORT).show();
                 updateUI();
@@ -297,6 +307,29 @@ public class MyProfileFragment extends Fragment {
         } catch (Exception ignored) {
         }
         return "jpg";
+    }
+
+    /**
+     * 将 HEIC/HEIF 图片转码为 JPG 文件，确保所有 Android 设备都能正常解码头像。
+     */
+    private static String transcodeHeifToJpeg(Context ctx, Uri uri, String fileName) {
+        Bitmap bitmap = null;
+        try {
+            bitmap = BitmapFactory.decodeStream(ctx.getContentResolver().openInputStream(uri));
+            if (bitmap == null) return null;
+            java.io.File outFile = new java.io.File(ctx.getCacheDir(), fileName);
+            java.io.FileOutputStream fos = new java.io.FileOutputStream(outFile);
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 90, fos);
+            fos.flush();
+            fos.close();
+            return outFile.getAbsolutePath();
+        } catch (Exception ignored) {
+            return null;
+        } finally {
+            if (bitmap != null && !bitmap.isRecycled()) {
+                bitmap.recycle();
+            }
+        }
     }
 
     private void updateUserInfo(String nickname, String avatar) {
@@ -351,6 +384,23 @@ public class MyProfileFragment extends Fragment {
                         }
                     }
                     updateUI();
+                    
+                    // 通知首页顶部用户信息区域刷新头像/昵称（与会话列表顶部保持一致）
+                    if (getActivity() instanceof com.juggle.im.android.app.MainActivity) {
+                        com.juggle.im.android.app.MainActivity main = (com.juggle.im.android.app.MainActivity) getActivity();
+                        main.setupUserInfo();
+
+                        // 同步刷新消息列表中的“我”的私聊会话头像/昵称
+                        String selfId = JIM.getInstance().getCurrentUserId();
+                        if (TextUtils.isEmpty(selfId)) {
+                            selfId = ConfigUtils.currentUserId;
+                        }
+                        if (!TextUtils.isEmpty(selfId)) {
+                            String displayName = !TextUtils.isEmpty(nicknameToSave) ? nicknameToSave : selfId;
+                            String displayAvatar = avatarToSave;
+                            main.updateConversationUserDisplay(selfId, displayName, displayAvatar);
+                        }
+                    }
                 });
             }
 

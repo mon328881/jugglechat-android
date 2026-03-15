@@ -19,7 +19,9 @@ import okhttp3.Response;
  * HTTP服务基类
  */
 public abstract class BaseService {
-    private Gson gson = new Gson();
+    private Gson gson = new com.google.gson.GsonBuilder()
+            .serializeNulls()
+            .create();
     private Handler mainHandler = new Handler(Looper.getMainLooper());
     private OkHttpClient client;
     private String baseUrl;
@@ -113,18 +115,33 @@ public abstract class BaseService {
      */
     protected <T> HttpResult<T> parseHttpResult(String json, Class<T> dataClass) {
         try {
+<<<<<<< Updated upstream
+=======
+            Log.d("BaseService", "解析响应 JSON: " + json);
+            // parse outer HttpResult while parsing data field into dataClass
+            // First parse generic map, then replace data
+>>>>>>> Stashed changes
             HttpResult raw = gson.fromJson(json, HttpResult.class);
             com.google.gson.JsonObject jo = gson.fromJson(json, com.google.gson.JsonObject.class);
             if (jo.has("data") && !jo.get("data").isJsonNull()) {
                 try {
                     T data = gson.fromJson(jo.get("data"), dataClass);
                     raw.setData(data);
+                    Log.d("BaseService", "成功解析数据: " + dataClass.getSimpleName());
                 } catch (JsonSyntaxException e) {
+<<<<<<< Updated upstream
+=======
+                    // can't parse data into expected class
+                    Log.e("BaseService", "数据解析失败: " + e.getMessage());
+>>>>>>> Stashed changes
                     return null;
                 }
+            } else {
+                Log.w("BaseService", "响应中没有 data 字段或 data 为 null");
             }
             return raw;
         } catch (JsonSyntaxException e) {
+            Log.e("BaseService", "JSON 解析失败: " + e.getMessage());
             return null;
         }
     }

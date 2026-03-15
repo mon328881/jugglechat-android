@@ -60,10 +60,15 @@ public abstract class MessageView<T extends UiMessage, K> extends RecyclerView.V
         if (ivAvatar != null) {
             UserInfo sendUser = JIM.getInstance().getUserInfoManager().getUserInfo(message.getSenderId());
             if (sendUser != null) {
-                // 优先使用 IM 返回的用户资料
+                // 优先使用 IM 返回的用户资料；对于自己发送的消息，头像 URL 以 ConfigUtils.myAvatarUrl 为准，确保资料页更新后群聊/单聊头像立即生效
                 String name = sendUser.getUserName();
                 message.setSenderName(name);
-                AvatarUtils.loadAvatar(ivAvatar, sendUser.getPortrait(), name);
+                String portraitUrl = sendUser.getPortrait();
+                if (message.getDirection() == com.juggle.im.model.Message.MessageDirection.SEND
+                        && !TextUtils.isEmpty(ConfigUtils.myAvatarUrl)) {
+                    portraitUrl = ConfigUtils.myAvatarUrl;
+                }
+                AvatarUtils.loadAvatar(ivAvatar, portraitUrl, name);
                 TextView txSender = itemView.findViewById(R.id.text_sender_name);
                 if (txSender != null) {
                     if (isGroup && message.getDirection() != com.juggle.im.model.Message.MessageDirection.SEND) {

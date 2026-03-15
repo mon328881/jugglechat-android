@@ -60,12 +60,14 @@ public class FriendApplicationsActivity extends AppCompatActivity {
     }
 
     /**
-     * 清除好友申请系统会话的未读数，并通知底部通讯录与「新的朋友」右侧红点刷新。
-     * 进入本页或通过/拒绝请求后调用。
+     * 清除好友申请会话的未读数，并通知底部通讯录与「新的朋友」右侧红点刷新。
+     * IM 可能存为 SYSTEM 或 PRIVATE(friend_apply)，两路都清除，避免红点只增不减。
      */
     void clearFriendApplyUnread() {
-        Conversation friendApply = new Conversation(Conversation.ConversationType.SYSTEM, "friend_apply");
-        JIM.getInstance().getConversationManager().clearUnreadCount(friendApply, null);
+        Conversation sysConv = new Conversation(Conversation.ConversationType.SYSTEM, "friend_apply");
+        Conversation privateConv = new Conversation(Conversation.ConversationType.PRIVATE, "friend_apply");
+        JIM.getInstance().getConversationManager().clearUnreadCount(sysConv, null);
+        JIM.getInstance().getConversationManager().clearUnreadCount(privateConv, null);
         EventBus.getDefault().post(new FriendApplicationUpdateEvent(0));
     }
 

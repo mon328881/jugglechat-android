@@ -93,5 +93,8 @@
     <color name="connect_warning">#FBC6C4</color>
     <color name="selected">#E3F2FD</color>
     <color name="call_gb">#808080</color>
+<<<<<<< Updated upstream
     <color name="title">#333333</color>
+=======
+>>>>>>> Stashed changes
 </resources>

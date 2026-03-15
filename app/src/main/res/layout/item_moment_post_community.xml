@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="4dp"
+    android:background="@android:color/white"
+    android:orientation="vertical"
+    android:padding="0dp">
+
+    <!-- 封面图片区域：占据卡片上半部分，高度随图片比例自适应 -->
+    <FrameLayout
+        android:id="@+id/media_container"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#EEEEEE">
+
+        <ImageView
+            android:id="@+id/iv_cover"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:adjustViewBounds="true"
+            android:scaleType="centerCrop"
+            tools:src="@mipmap/ic_launcher" />
+
+    </FrameLayout>
+
+    <!-- 文本内容，最多两行 -->
+    <TextView
+        android:id="@+id/tv_content"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:layout_marginEnd="12dp"
+        android:layout_marginTop="8dp"
+        android:maxLines="2"
+        android:ellipsize="end"
+        android:textColor="#222222"
+        android:textSize="15sp"
+        tools:text="这是社区卡片标题文案，最多显示两行，多余部分省略" />
+
+    <!-- 底部信息栏：头像、昵称、时间/统计 -->
+    <LinearLayout
+        android:id="@+id/content_container"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:layout_marginEnd="12dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="10dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <ImageView
+            android:id="@+id/iv_avatar"
+            android:layout_width="22dp"
+            android:layout_height="22dp"
+            android:adjustViewBounds="true"
+            android:clipToPadding="true"
+            android:contentDescription="@string/avatar"
+            android:scaleType="centerCrop"
+            android:src="@android:drawable/sym_def_app_icon" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:layout_marginStart="8dp">
+
+            <TextView
+                android:id="@+id/tv_name"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="#34517a"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                tools:text="作者昵称" />
+
+            <!-- 时间/来源文案（不再显示，仅占位，便于兼容代码） -->
+            <TextView
+                android:id="@+id/tv_time"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:textColor="#999999"
+                android:textSize="11sp"
+                android:visibility="gone"
+                tools:text="2小时前" />
+
+            <!-- 删除按钮行（点赞/评论入口已移至详情页） -->
+            <LinearLayout
+                android:id="@+id/actions_container"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:orientation="horizontal">
+
+                <!-- 删除按钮：仅自己发布的动态时在代码中设置为可见 -->
+                <TextView
+                    android:id="@+id/delete_moment"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:padding="2dp"
+                    android:text="删除"
+                    android:textColor="#FF5555"
+                    android:textSize="11sp"
+                    android:visibility="gone" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- 简单的点赞统计文本，靠右展示 -->
+        <LinearLayout
+            android:id="@+id/likes_container"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="end|center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/tv_likes"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="#999999"
+                android:textSize="11sp"
+                tools:text="1234赞" />
+        </LinearLayout>
+
+        <!-- 三点更多按钮（社区卡片不展示，保留 id 仅为兼容） -->
+        <ImageView
+            android:id="@+id/btn_more"
+            android:layout_width="32dp"
+            android:layout_height="24dp"
+            android:layout_marginStart="6dp"
+            android:padding="4dp"
+            android:scaleType="centerInside"
+            android:visibility="gone" />
+
+    </LinearLayout>
+
+    <!-- 兼容旧代码的占位容器，默认隐藏，不在卡片内渲染评论列表 -->
+    <LinearLayout
+        android:id="@+id/block_likes_comments"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="0dp"
+        android:visibility="gone">
+
+        <View
+            android:id="@+id/divider_likes"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:background="@android:color/transparent" />
+
+        <LinearLayout
+            android:id="@+id/comments_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" />
+    </LinearLayout>
+
+</LinearLayout>
+

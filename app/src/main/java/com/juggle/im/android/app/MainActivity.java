@@ -28,19 +28,23 @@ import com.juggle.im.android.chat.ConversationListFragment;
 import com.juggle.im.android.chat.FriendsFragment;
 import com.juggle.im.android.chat.DiscoverFragment;
 import com.juggle.im.android.chat.MyProfileFragment;
-import com.juggle.im.android.chat.SearchActivity;
 import com.juggle.im.android.chat.call.MultiCallActivity;
 import com.juggle.im.android.chat.call.SingleCallActivity;
 import com.juggle.im.android.core.JIMChatCore;
 import com.juggle.im.android.event.ConnectStatusEvent;
 import com.juggle.im.android.event.ConversationUpdatedEvent;
+import com.juggle.im.android.event.FriendApplicationRefreshRequestEvent;
+import com.juggle.im.android.event.FriendApplicationUpdateEvent;
 import com.juggle.im.android.event.MessageReadUpdatedEvent;
 import com.juggle.im.android.event.UnreadMessageCountEvent;
 import com.juggle.im.android.model.ConfigUtils;
 import com.juggle.im.android.model.UiConversation;
+import com.juggle.im.android.server.beans.FriendApplicationBean;
+import com.juggle.im.android.server.beans.FriendApplicationsData;
 import com.juggle.im.android.server.beans.UserInfoBean;
 import com.juggle.im.android.server.http.ApiCallback;
 import com.juggle.im.android.server.http.ServiceManager;
+import com.juggle.im.android.utils.HiddenConversationStore;
 import com.juggle.im.android.utils.NetworkStateManager;
 import com.juggle.im.call.CallConst;
 import com.juggle.im.model.Conversation;
@@ -48,6 +52,7 @@ import com.juggle.im.model.ConversationInfo;
 import com.juggle.im.model.GroupInfo;
 import com.juggle.im.model.UserInfo;
 import com.qiniu.android.utils.StringUtils;
+import android.text.TextUtils;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
@@ -57,7 +62,9 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -211,10 +218,13 @@ public class MainActivity extends AppCompatActivity {
         }
         btnSearch = findViewById(R.id.btn_search);
         btnSearch.setOnClickListener( v -> {
-            startActivity(new Intent(MainActivity.this, SearchActivity.class));
+            startActivity(new Intent(MainActivity.this, AddFriendActivity.class));
         });
 
         EventBus.getDefault().register(this);
+
+        // 延迟拉取好友申请数量并刷新红点（服务端可能未通过 IM friend_apply 会话推送，用 HTTP 兜底）
+        reconnectHandler.postDelayed(this::refreshFriendApplicationBadgeFromServer, 800);
 
         JIM.getInstance().getCallManager().addReceiveListener("CallReceive", iCallSession -> {
             Log.d("MainActivity", "receive call: " + iCallSession.getCallId());
@@ -467,22 +477,40 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+    /**
+     * 判断是否为系统/广播类会话的 conversationId（如添加好友、朋友圈通知等）。
+     * 这类会话在消息列表中隐藏，仅在通讯录「新朋友」等入口展示。
+     */
+    private static boolean isSystemOrBroadcastConversationId(String convId) {
+        if (convId == null || convId.isEmpty()) return false;
+        if (convId.contains(":")) return true;
+        String lower = convId.toLowerCase();
+        return lower.startsWith("friend_apply") || lower.startsWith("post_ntf")
+                || lower.startsWith("broadcast") || lower.startsWith("system");
+    }
+
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onConversationUpdated(ConversationUpdatedEvent event) {
         Log.i("MainActivity", "onConversationUpdated");
         List<ConversationInfo> infoList = event.getConversationInfoList();
         if (infoList == null || infoList.isEmpty()) return;
 
-        List<UiConversation> uiList = new ArrayList<>();
+        Map<String, UiConversation> byId = new LinkedHashMap<>();
         Set<String> privateIdsWithoutUserInfo = new HashSet<>();
-        
+
         for (ConversationInfo info : infoList) {
-            UiConversation ui = UiConversation.fromConversationInfo(info);
-            //不显示系统消息
-            if (info.getConversation().getConversationType().equals(Conversation.ConversationType.SYSTEM)) {
+            Conversation conversation = info.getConversation();
+            if (conversation == null) continue;
+            String convId = conversation.getConversationId();
+            if (HiddenConversationStore.isHidden(this, convId)) continue;
+            Conversation.ConversationType type = conversation.getConversationType();
+            // 不显示系统会话（好友申请、朋友圈通知等）
+            if (type == Conversation.ConversationType.SYSTEM) continue;
+            if (type == Conversation.ConversationType.PRIVATE && convId != null && isSystemOrBroadcastConversationId(convId)) {
                 continue;
             }
-            if (info.getConversation().getConversationType().equals(Conversation.ConversationType.GROUP)) {
+            UiConversation ui = UiConversation.fromConversationInfo(info);
+            if (type == Conversation.ConversationType.GROUP) {
                 GroupInfo groupInfo = JIM.getInstance().getUserInfoManager().getGroupInfo(ui.getConversationInfo().getConversation().getConversationId());
                 if (groupInfo != null) {
                     ui.setName(groupInfo.getGroupName());
@@ -494,23 +522,29 @@ public class MainActivity extends AppCompatActivity {
                 if (userInfo != null) {
                     ui.setLastMessageUserName(userInfo.getUserName());
                 }
-            } else if (info.getConversation().getConversationType().equals(Conversation.ConversationType.PRIVATE)) {
+            } else if (type == Conversation.ConversationType.PRIVATE) {
                 UserInfo userInfo = JIM.getInstance().getUserInfoManager().getUserInfo(ui.getConversationInfo().getConversation().getConversationId());
                 if (userInfo != null) {
                     ui.setName(userInfo.getUserName());
                     ui.setAvatar(userInfo.getPortrait());
                     ui.setLastMessageUserName(userInfo.getUserName());
                 } else {
-                    // 本地无用户信息，记录下来稍后从服务器拉取
-                    privateIdsWithoutUserInfo.add(ui.getConversationInfo().getConversation().getConversationId());
+                    privateIdsWithoutUserInfo.add(convId);
                 }
             }
-            uiList.add(ui);
+            UiConversation existing = byId.get(convId);
+            if (existing == null || ui.getSortTime() > existing.getSortTime()) {
+                byId.put(convId, ui);
+            }
         }
+        List<UiConversation> uiList = new ArrayList<>(byId.values());
+        uiList.sort((a, b) -> {
+            if (a.isTop() != b.isTop()) return a.isTop() ? -1 : 1;
+            return Long.compare(b.getSortTime(), a.getSortTime());
+        });
         ConversationListFragment frag = (ConversationListFragment) getSupportFragmentManager().findFragmentByTag("conversations");
         if (frag != null) {
             runOnUiThread(() -> frag.upsertConversations(uiList));
-            // 从服务器拉取本地无用户信息的私聊会话的用户信息
             for (String userId : privateIdsWithoutUserInfo) {
                 fetchAndUpdateConversationDisplay(frag, userId);
             }
@@ -544,13 +578,67 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    @Subscribe(threadMode = ThreadMode.MAIN)
-    public void onUnreadMessageCountEvent(UnreadMessageCountEvent event) {
-        bottomNav.updateUnreadCount(event.getTotalCount());
+    /**
+     * 由通讯录/其他页面在拿到最新好友资料（昵称、头像）时调用，
+     * 主动刷新消息列表中对应私聊会话的展示信息，避免头像/昵称不同步。
+     */
+    public void updateConversationUserDisplay(String userId, String name, String avatar) {
+        if (userId == null) return;
+        ConversationListFragment frag = (ConversationListFragment) getSupportFragmentManager()
+                .findFragmentByTag("conversations");
+        if (frag != null) {
+            String finalName = (name != null && !name.isEmpty()) ? name : userId;
+            frag.updateConversationDisplayInfo(userId, finalName, avatar);
+        }
     }
 
-    // 设置用户信息显示
-    private void setupUserInfo() {
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onUnreadMessageCountEvent(UnreadMessageCountEvent event) {
+        if (bottomNav != null) bottomNav.updateUnreadCount(event.getTotalCount());
+    }
+
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onFriendApplicationUpdate(FriendApplicationUpdateEvent event) {
+        if (bottomNav != null) {
+            bottomNav.updateContactsBadge(event.getPendingCount());
+        }
+    }
+
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onFriendApplicationRefreshRequest(FriendApplicationRefreshRequestEvent event) {
+        refreshFriendApplicationBadgeFromServer();
+    }
+
+    /**
+     * 通过 HTTP 拉取好友申请列表，统计「待处理」数量并刷新通讯录/新朋友红点。
+     * 用于服务端未向 IM friend_apply 会话推送消息时的兜底。
+     */
+    private void refreshFriendApplicationBadgeFromServer() {
+        ServiceManager.getUserService().getFriendApplications(0, 100, new ApiCallback<FriendApplicationsData>() {
+            @Override
+            public void onSuccess(FriendApplicationsData data) {
+                int count = 0;
+                if (data != null && data.getItems() != null) {
+                    for (FriendApplicationBean app : data.getItems()) {
+                        // 对方发给我且状态为申请中(0)
+                        if (!app.isSponsor() && app.getStatus() == 0) {
+                            count++;
+                        }
+                    }
+                }
+                final int pending = count;
+                runOnUiThread(() -> EventBus.getDefault().post(new FriendApplicationUpdateEvent(pending)));
+            }
+
+            @Override
+            public void onError(int code, String message) {
+                // 失败不更新，保留当前红点状态
+            }
+        });
+    }
+
+    // 设置用户信息显示（公开方法，便于资料页更新头像后主动刷新顶部区域）
+    public void setupUserInfo() {
         ImageView ivUserAvatar = findViewById(R.id.iv_user_avatar);
         TextView tvUserName = findViewById(R.id.tv_user_name);
         TextView tvUserId = findViewById(R.id.tv_user_id);
@@ -573,12 +661,17 @@ public class MainActivity extends AppCompatActivity {
                 UserInfo userInfo = JIM.getInstance().getUserInfoManager().getUserInfo(currentUserId);
                 
                 if (userInfo != null) {
-                    // 设置用户昵称
-                    tvUserName.setText(userInfo.getUserName());
-                    // 设置用户ID
+                    // 昵称优先使用 ConfigUtils 中最新的缓存，头像优先使用本地缓存，其次回退到 SDK portrait
+                    String displayName = !TextUtils.isEmpty(ConfigUtils.myName)
+                            ? ConfigUtils.myName
+                            : userInfo.getUserName();
+                    String displayAvatar = !TextUtils.isEmpty(ConfigUtils.myAvatarUrl)
+                            ? ConfigUtils.myAvatarUrl
+                            : userInfo.getPortrait();
+
+                    tvUserName.setText(displayName);
                     tvUserId.setText("@" + userInfo.getUserId());
-                    // 设置用户头像
-                    com.juggle.im.android.utils.AvatarUtils.loadAvatar(ivUserAvatar, ConfigUtils.myAvatarUrl, userInfo.getUserName());
+                    com.juggle.im.android.utils.AvatarUtils.loadAvatar(ivUserAvatar, displayAvatar, displayName);
                 } else {
                     // 如果用户信息不存在，先使用ConfigUtils中的缓存数据
                     if (ConfigUtils.myName != null && !ConfigUtils.myName.isEmpty()) {
@@ -625,14 +718,15 @@ public class MainActivity extends AppCompatActivity {
         
         UserInfo userInfo = JIM.getInstance().getUserInfoManager().getUserInfo(userId);
         if (userInfo != null) {
-            // 成功获取用户信息，更新UI
+            // 成功获取用户信息，更新UI，并同步到 ConfigUtils 作为后续显示的首选来源
             Log.d("MainActivity", "retryFetchUserInfo: 成功获取用户信息 userId=" + userId + ", name=" + userInfo.getUserName());
-            tvUserName.setText(userInfo.getUserName());
+            String displayName = userInfo.getUserName();
+            tvUserName.setText(displayName);
             tvUserId.setText("@" + userInfo.getUserId());
-            com.juggle.im.android.utils.AvatarUtils.loadAvatar(ivUserAvatar, ConfigUtils.myAvatarUrl, userInfo.getUserName());
+            com.juggle.im.android.utils.AvatarUtils.loadAvatar(ivUserAvatar, ConfigUtils.myAvatarUrl, displayName);
             
             // 更新缓存
-            ConfigUtils.myName = userInfo.getUserName();
+            ConfigUtils.myName = displayName;
         } else {
             // 继续重试
             Log.d("MainActivity", "retryFetchUserInfo: 本地未找到用户信息，继续重试 retryCount=" + retryCount);
@@ -712,6 +806,15 @@ public class MainActivity extends AppCompatActivity {
             statusIndicator.setBackground(getDrawable(R.drawable.status_indicator_online));
             tvStatus.setText(R.string.status_online);
         }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // 每次从后台回到前台时用 HTTP 拉取好友申请数量，确保红点正确（不依赖 IM 推送）
+        refreshFriendApplicationBadgeFromServer();
+        // 同步刷新顶部用户信息区域，确保使用最新昵称和头像（包括在其他设备更新后的情况）
+        setupUserInfo();
     }
 
     @Override

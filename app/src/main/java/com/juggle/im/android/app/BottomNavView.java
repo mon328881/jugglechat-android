@@ -7,6 +7,9 @@ import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import static android.view.View.GONE;
+import static android.view.View.VISIBLE;
+
 import androidx.annotation.Nullable;
 
 import com.juggle.im.android.R;
@@ -34,6 +37,7 @@ public class BottomNavView extends LinearLayout {
     private android.widget.ImageView tabMeIcon;
     private android.widget.TextView tabMeLabel;
     private TextView unReadView;
+    private TextView contactsBadge;
 
     public BottomNavView(Context context) {
         super(context);
@@ -62,6 +66,7 @@ public class BottomNavView extends LinearLayout {
         tabMeIcon = tabMe.findViewById(R.id.tab_me_icon);
         tabMeLabel = tabMe.findViewById(R.id.tab_me_label);
         unReadView = tabChat.findViewById(R.id.unread_dot);
+        contactsBadge = tabContact.findViewById(R.id.contacts_badge);
 
         tabChat.setOnClickListener(v -> selectTab(0, true));
         tabContact.setOnClickListener(v -> selectTab(1, true));
@@ -113,9 +118,22 @@ public class BottomNavView extends LinearLayout {
     }
 
     public void updateUnreadCount(int c) {
+        if (unReadView == null) return;
         if (c > 0) unReadView.setVisibility(VISIBLE);
         else unReadView.setVisibility(GONE);
-        // Show 99+ when count exceeds 99
         unReadView.setText(c > 99 ? "99+" : String.valueOf(c));
+    }
+
+    /**
+     * 更新通讯录 Tab 红点（新好友申请未读数）。
+     */
+    public void updateContactsBadge(int count) {
+        if (contactsBadge == null) return;
+        if (count > 0) {
+            contactsBadge.setVisibility(VISIBLE);
+            contactsBadge.setText(count > 99 ? "99+" : String.valueOf(count));
+        } else {
+            contactsBadge.setVisibility(GONE);
+        }
     }
 }

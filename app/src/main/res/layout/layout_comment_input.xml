@@ -16,12 +16,17 @@
         android:layout_height="40dp"
         android:layout_weight="1"
         android:hint="@string/txt_post_comment"
+<<<<<<< Updated upstream
         android:background="@drawable/bg_comment_input"
         android:paddingHorizontal="12dp"
         android:paddingVertical="8dp"
         android:textSize="14sp"
         android:textColor="#333333"
         android:textColorHint="#999999"
+=======
+        android:background="?attr/colorSurface"
+        android:padding="8dp"
+>>>>>>> Stashed changes
         android:imeOptions="actionSend" />
 
     <TextView

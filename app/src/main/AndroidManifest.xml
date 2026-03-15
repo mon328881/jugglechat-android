@@ -1,7 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
+    <!-- 极光推送自定义权限（包名需与 applicationId 一致） -->
+    <permission
+        android:name="com.juggle.im.android.permission.JPUSH_MESSAGE"
+        android:protectionLevel="signature" />
 
+    <uses-permission android:name="com.juggle.im.android.permission.JPUSH_MESSAGE" />   
     <uses-feature
         android:name="android.hardware.camera"
         android:required="false" />
@@ -172,7 +177,10 @@
         <activity android:name=".chat.TransferOwnerActivity"
             android:screenOrientation="portrait" />
         <activity android:name=".chat.VideoPlayerActivity"
-            android:screenOrientation="landscape"
+            android:screenOrientation="portrait"
+            android:exported="false" />
+        <activity android:name=".chat.MomentDetailActivity"
+            android:screenOrientation="portrait"
             android:exported="false" />
         <activity android:name=".chat.ScanActivity"
             android:screenOrientation="portrait"
@@ -183,6 +191,27 @@
             android:name=".service.ImForegroundService"
             android:exported="false"
             android:foregroundServiceType="dataSync" />
+
+        <!-- 极光推送：自定义消息接收器 -->
+        <receiver
+            android:name=".MyJPushMessageReceiver"
+            android:enabled="true"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="cn.jpush.android.intent.RECEIVE_MESSAGE" />
+                <category android:name="${applicationId}" />
+            </intent-filter>
+        </receiver>
+
+        <!-- 极光推送：通用 Service -->
+        <service
+            android:name=".MyJCommonService"
+            android:exported="false"
+            android:permission="cn.jpush.android.permission.JPUSH_MESSAGE">
+            <intent-filter>
+                <action android:name="cn.jpush.android.intent.JCOMMON_SERVICE" />
+            </intent-filter>
+        </service>
     </application>
 
 </manifest>

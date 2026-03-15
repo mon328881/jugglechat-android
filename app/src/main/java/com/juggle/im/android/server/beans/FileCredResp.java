@@ -65,6 +65,7 @@ public class FileCredResp {
 
     /**
      * 预签名响应
+     * url: 上传用 PUT 预签名地址；download_url: 播放/下载用 GET 地址（后端返回时优先使用，避免 404）
      */
     public static class PreSignResp {
         private String url;
@@ -74,6 +75,7 @@ public class FileCredResp {
         private String credential;
         private String date;
         private String signature;
+        private String download_url;
 
         public String getUrl() {
             return url;
@@ -81,6 +83,14 @@ public class FileCredResp {
 
         public void setUrl(String url) {
             this.url = url;
+        }
+
+        public String getDownload_url() {
+            return download_url;
+        }
+
+        public void setDownload_url(String download_url) {
+            this.download_url = download_url;
         }
 
         public String getObj_key() {

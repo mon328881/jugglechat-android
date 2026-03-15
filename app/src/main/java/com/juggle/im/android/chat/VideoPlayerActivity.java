@@ -27,6 +27,7 @@ public class VideoPlayerActivity extends AppCompatActivity {
     private static final String TAG = "VideoPlayerActivity";
     private static final String EXTRA_VIDEO_PATH = "video_path";
     private static final String EXTRA_VIDEO_NAME = "video_name";
+    private static final String EXTRA_VIDEO_URL = "video_url";
 
     private VideoView videoView;
     private ProgressBar progressBar;
@@ -40,6 +41,14 @@ public class VideoPlayerActivity extends AppCompatActivity {
         context.startActivity(intent);
     }
 
+    /** 通过网络 URL 直接播放（用于朋友圈列表点击视频） */
+    public static void startWithUrl(Context context, String videoUrl) {
+        if (context == null || videoUrl == null || videoUrl.isEmpty()) return;
+        Intent intent = new Intent(context, VideoPlayerActivity.class);
+        intent.putExtra(EXTRA_VIDEO_URL, videoUrl);
+        context.startActivity(intent);
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -49,6 +58,12 @@ public class VideoPlayerActivity extends AppCompatActivity {
         progressBar = findViewById(R.id.progress_bar);
         errorLayout = findViewById(R.id.error_layout);
         errorMessage = findViewById(R.id.error_message);
+
+        String videoUrl = getIntent().getStringExtra(EXTRA_VIDEO_URL);
+        if (videoUrl != null && !videoUrl.isEmpty()) {
+            playVideoUri(Uri.parse(videoUrl), "视频");
+            return;
+        }
 
         String videoPath = getIntent().getStringExtra(EXTRA_VIDEO_PATH);
         String videoName = getIntent().getStringExtra(EXTRA_VIDEO_NAME);
@@ -65,6 +80,28 @@ public class VideoPlayerActivity extends AppCompatActivity {
         }
 
         playVideo(videoPath, videoName);
+    }
+
+    private void playVideoUri(Uri videoUri, String videoName) {
+        try {
+            progressBar.setVisibility(View.VISIBLE);
+            errorLayout.setVisibility(View.GONE);
+            videoView.setVideoURI(videoUri);
+            videoView.setOnPreparedListener(mp -> {
+                progressBar.setVisibility(View.GONE);
+                videoView.start();
+                Log.d(TAG, "视频开始播放: " + videoName);
+            });
+            videoView.setOnCompletionListener(mp -> finish());
+            videoView.setOnErrorListener((mp, what, extra) -> {
+                progressBar.setVisibility(View.GONE);
+                showError("视频播放失败 (错误码: " + what + ")");
+                return true;
+            });
+        } catch (Exception e) {
+            progressBar.setVisibility(View.GONE);
+            showError("播放异常: " + e.getMessage());
+        }
     }
 
     private void playVideo(String videoPath, String videoName) {

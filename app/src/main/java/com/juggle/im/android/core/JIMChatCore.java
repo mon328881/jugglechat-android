@@ -8,6 +8,7 @@ import com.juggle.im.JIMConst;
 import com.juggle.im.android.chat.message.FriendNotifyMessage;
 import com.juggle.im.android.chat.message.GroupNotifyMessage;
 import com.juggle.im.android.event.ConnectStatusEvent;
+import com.juggle.im.android.event.FriendApplicationUpdateEvent;
 import com.juggle.im.android.event.MessageReadUpdatedEvent;
 import com.juggle.im.android.event.MessageTopEvent;
 import com.juggle.im.android.event.MessageUpdatedEvent;
@@ -18,6 +19,7 @@ import com.juggle.im.interfaces.IConversationManager;
 import com.juggle.im.interfaces.IMessageManager;
 import com.juggle.im.internal.logger.JLogConfig;
 import com.juggle.im.internal.logger.JLogLevel;
+import com.juggle.im.push.PushConfig;
 import com.juggle.im.model.Conversation;
 import com.juggle.im.model.ConversationInfo;
 
@@ -76,9 +78,18 @@ public class JIMChatCore {
         JIM.getInstance().getCallManager().initZegoEngine(ConfigUtils.zegoId, context);
         JIM.getInstance().setServerUrls(serverList);
         JIM.InitConfig.Builder builder = new JIM.InitConfig.Builder();
+
+        // 日志配置
         JLogConfig.Builder logBuilder = new JLogConfig.Builder(context);
         logBuilder.setLogConsoleLevel(JLogLevel.JLogLevelVerbose);
         builder.setJLogConfig(new JLogConfig(logBuilder));
+
+        // 极光推送配置：启用 JIM 的 JPush 支持
+        PushConfig pushConfig = new PushConfig.Builder()
+                .setJgConfig()
+                .build();
+        builder.setPushConfig(pushConfig);
+
         JIM.getInstance().getMessageManager().registerContentType(FriendNotifyMessage.class);
         JIM.getInstance().getMessageManager().registerContentType(GroupNotifyMessage.class);
         JIM.getInstance().init(context, appKey, builder.build());
@@ -139,8 +150,9 @@ public class JIMChatCore {
                 break;
             }
         }
-        int c = JIM.getInstance().getConversationManager().getTotalUnreadCount();
+        int c = getChatUnreadCountExcludingSystem();
         EventBus.getDefault().post(new UnreadMessageCountEvent(c));
+        postFriendApplyBadge();
     }
 
     /**
@@ -171,12 +183,14 @@ public class JIMChatCore {
             public void onConversationInfoAdd(List<ConversationInfo> list) {
                 Log.i(tag, "onConversationInfoAdd: " + list.size());
                 EventBus.getDefault().post(new ConversationUpdatedEvent(list));
+                maybePostFriendApplyBadge(list);
             }
 
             @Override
             public void onConversationInfoUpdate(List<ConversationInfo> list) {
                 Log.i(tag, "onConversationInfoUpdate: " + list.size());
                 EventBus.getDefault().post(new ConversationUpdatedEvent(list));
+                maybePostFriendApplyBadge(list);
             }
 
             @Override
@@ -186,7 +200,8 @@ public class JIMChatCore {
 
             @Override
             public void onTotalUnreadMessageCountUpdate(int i) {
-                EventBus.getDefault().post(new UnreadMessageCountEvent(i));
+                int c = getChatUnreadCountExcludingSystem();
+                EventBus.getDefault().post(new UnreadMessageCountEvent(c));
             }
         });
         JIM.getInstance().getMessageManager().addListener("msg", new IMessageManager.IMessageListener() {
@@ -194,6 +209,12 @@ public class JIMChatCore {
             public void onMessageReceive(Message message) {
                 Log.d(tag, "onMessageReceive: " + message.toString());
                 EventBus.getDefault().post(new MessageUpdatedEvent(message));
+                // 好友申请会话收到新消息时立即刷新通讯录/新朋友红点（会话列表回调可能晚于消息回调）
+                if (message != null && message.getConversation() != null
+                        && message.getConversation().getConversationId() != null
+                        && message.getConversation().getConversationId().startsWith("friend_apply")) {
+                    postFriendApplyBadge();
+                }
             }
 
             @Override
@@ -245,6 +266,81 @@ public class JIMChatCore {
 
             }
         });
+    }
+
+    /**
+     * 判断是否为系统/广播类会话的 conversationId，与 MainActivity 过滤规则一致。
+     */
+    private static boolean isSystemOrBroadcastConversationId(String convId) {
+        if (convId == null || convId.isEmpty()) return false;
+        if (convId.contains(":")) return true;
+        String lower = convId.toLowerCase();
+        return lower.startsWith("friend_apply") || lower.startsWith("post_ntf")
+                || lower.startsWith("broadcast") || lower.startsWith("system");
+    }
+
+    /**
+     * 计算消息 Tab 未读数：仅统计会展示的普通会话，排除系统/好友申请等隐藏会话。
+     */
+    private int getChatUnreadCountExcludingSystem() {
+        IConversationManager cm = JIM.getInstance().getConversationManager();
+        int total = 0;
+        long cursor = -1L;
+        for (;;) {
+            List<ConversationInfo> list = cm.getConversationInfoList(50, cursor, JIMConst.PullDirection.NEWER);
+            if (list == null || list.isEmpty()) break;
+            for (ConversationInfo info : list) {
+                if (info == null || info.getConversation() == null) continue;
+                Conversation c = info.getConversation();
+                String convId = c.getConversationId();
+                Conversation.ConversationType type = c.getConversationType();
+                if (type == Conversation.ConversationType.SYSTEM) continue;
+                if (type == Conversation.ConversationType.PRIVATE && convId != null && isSystemOrBroadcastConversationId(convId)) {
+                    continue;
+                }
+                total += info.getUnreadCount();
+            }
+            ConversationInfo last = list.get(list.size() - 1);
+            cursor = last.getSortTime();
+            if (list.size() < 50) break;
+        }
+        return Math.max(total, 0);
+    }
+
+    /**
+     * 根据好友申请会话未读数发送 FriendApplicationUpdateEvent，用于通讯录 Tab 与新朋友红点。
+     * 服务端通过 SendPrivateMsg(SenderId=friend_apply) 推送，IM 可能存为 PRIVATE 会话，故同时查 SYSTEM 与 PRIVATE。
+     * 取两者最大值，避免同一逻辑会话被存成两种类型时重复计数导致红点一直增加。
+     */
+    private void postFriendApplyBadge() {
+        IConversationManager cm = JIM.getInstance().getConversationManager();
+        Conversation sysConv = new Conversation(Conversation.ConversationType.SYSTEM, "friend_apply");
+        Conversation privateConv = new Conversation(Conversation.ConversationType.PRIVATE, "friend_apply");
+        ConversationInfo infoSys = cm.getConversationInfo(sysConv);
+        ConversationInfo infoPrv = cm.getConversationInfo(privateConv);
+        int sysCount = infoSys != null ? infoSys.getUnreadCount() : 0;
+        int prvCount = infoPrv != null ? infoPrv.getUnreadCount() : 0;
+        int pending = Math.max(sysCount, prvCount);
+        EventBus.getDefault().post(new FriendApplicationUpdateEvent(pending));
+    }
+
+    /**
+     * 会话变更时若包含好友申请会话，则更新通讯录/新朋友红点。
+     * 服务端可能推成 PRIVATE 会话（conversationId=friend_apply），需同时匹配 SYSTEM 与 PRIVATE。
+     */
+    private void maybePostFriendApplyBadge(List<ConversationInfo> list) {
+        if (list == null || list.isEmpty()) return;
+        for (ConversationInfo info : list) {
+            if (info == null || info.getConversation() == null) continue;
+            Conversation c = info.getConversation();
+            String convId = c.getConversationId();
+            if (convId != null && convId.startsWith("friend_apply")
+                    && (c.getConversationType() == Conversation.ConversationType.SYSTEM
+                    || c.getConversationType() == Conversation.ConversationType.PRIVATE)) {
+                EventBus.getDefault().post(new FriendApplicationUpdateEvent(info.getUnreadCount()));
+                return;
+            }
+        }
     }
 
     /**

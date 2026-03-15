@@ -17,6 +17,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.juggle.im.JIM;
 import com.juggle.im.android.R;
 import com.juggle.im.android.chat.component.FriendsListAdapter;
+import com.juggle.im.android.event.FriendApplicationRefreshRequestEvent;
+import com.juggle.im.android.event.FriendApplicationUpdateEvent;
 import com.juggle.im.android.chat.component.UserListAdapter;
 import com.juggle.im.android.server.http.ApiCallback;
 import com.juggle.im.android.server.http.ServiceManager;
@@ -24,6 +26,10 @@ import com.juggle.im.android.server.beans.FriendsListData;
 import com.juggle.im.android.server.beans.FriendBean;
 import com.juggle.im.model.Conversation;
 import com.juggle.im.model.ConversationInfo;
+
+import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
+import org.greenrobot.eventbus.ThreadMode;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -101,6 +107,48 @@ public class FriendsFragment extends Fragment {
         checkNewFriend(view);
     }
 
+    @Override
+    public void onResume() {
+        super.onResume();
+        View v = getView();
+        if (v != null) checkNewFriend(v);
+        // 从新朋友页同意/拒绝返回后刷新联系人列表，使新通过的好友立即显示
+        loadFriends();
+        // 切换到通讯录/新朋友时请求刷新红点（HTTP 兜底，不依赖 IM 推送）
+        EventBus.getDefault().post(new FriendApplicationRefreshRequestEvent());
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        if (!EventBus.getDefault().isRegistered(this)) {
+            EventBus.getDefault().register(this);
+        }
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        if (EventBus.getDefault().isRegistered(this)) {
+            EventBus.getDefault().unregister(this);
+        }
+    }
+
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onFriendApplicationUpdate(FriendApplicationUpdateEvent event) {
+        View v = getView();
+        if (v != null) {
+            updateNewFriendTipVisibility(v, event.getPendingCount());
+        }
+    }
+
+    private void updateNewFriendTipVisibility(View root, int pendingCount) {
+        View tip = root.findViewById(R.id.new_friend_tip);
+        if (tip != null) {
+            tip.setVisibility(pendingCount > 0 ? View.VISIBLE : View.GONE);
+        }
+    }
+
     public void setSelectionMode(String mode) {
         this.selectionMode = mode;
     }
@@ -149,6 +197,18 @@ public class FriendsFragment extends Fragment {
                     }
                     if (adapter != null) {
                         adapter.setFriends(friendList);
+                    }
+                }
+
+                // 同步刷新消息列表中对应私聊会话的头像和昵称
+                if (getActivity() instanceof com.juggle.im.android.app.MainActivity && items != null) {
+                    com.juggle.im.android.app.MainActivity act = (com.juggle.im.android.app.MainActivity) getActivity();
+                    for (FriendBean member : items) {
+                        if (member == null) continue;
+                        act.updateConversationUserDisplay(
+                                member.getUser_id(),
+                                member.getNickname(),
+                                member.getAvatar());
                     }
                 }
             }

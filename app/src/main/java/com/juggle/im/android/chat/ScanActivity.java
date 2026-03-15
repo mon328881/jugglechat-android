@@ -4,7 +4,9 @@ import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.hardware.Camera;
+import android.net.Uri;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -21,6 +23,10 @@ import com.google.zxing.Result;
 import com.google.zxing.common.HybridBinarizer;
 import com.juggle.im.android.R;
 import com.juggle.im.android.chat.zxing.ViewfinderView;
+import com.juggle.im.android.model.ConfigUtils;
+import com.juggle.im.android.server.beans.FriendApplicationBean;
+import com.juggle.im.android.server.http.ApiCallback;
+import com.juggle.im.android.server.http.ServiceManager;
 
 import java.io.IOException;
 
@@ -217,15 +223,87 @@ public class ScanActivity extends AppCompatActivity implements SurfaceHolder.Cal
     }
 
     private void handleScanResult(Result result) {
-        if (result != null) {
-            String scanResult = result.getText();
-            Log.d(TAG, "Scan result: " + scanResult);
-            
-            Intent intent = new Intent();
-            intent.putExtra("scan_result", scanResult);
-            setResult(RESULT_OK, intent);
+        if (result == null) {
             finish();
+            return;
         }
+        String content = result.getText();
+        Log.d(TAG, "Scan result: " + content);
+        if (content == null || content.trim().isEmpty()) {
+            finish();
+            return;
+        }
+        content = content.trim();
+
+        // 1) APP 内用户二维码：juggleim://user/{userId}
+        if (content.startsWith(com.juggle.im.android.app.QRShareActivity.SCHEME_USER)) {
+            String userId = content.substring(com.juggle.im.android.app.QRShareActivity.SCHEME_USER.length()).trim();
+            if (!userId.isEmpty()) {
+                applyFriendAndFinish(userId);
+                return;
+            }
+        }
+
+        // 2) 可选：HTTPS 邀请 / 下载链接，例如 https://xxx?...&user_id=xxx
+        try {
+            Uri uri = Uri.parse(content);
+            if ("https".equalsIgnoreCase(uri.getScheme()) || "http".equalsIgnoreCase(uri.getScheme())) {
+                String userId = uri.getQueryParameter("user_id");
+                if (!TextUtils.isEmpty(userId)) {
+                    applyFriendAndFinish(userId);
+                    return;
+                }
+                // 若是配置的下载页或已知域名，可打开浏览器
+                String host = uri.getHost();
+                if (host != null && !TextUtils.isEmpty(ConfigUtils.appDownloadPageUrl)
+                        && ConfigUtils.appDownloadPageUrl.contains(host)) {
+                    openInBrowser(content);
+                    return;
+                }
+            }
+        } catch (Exception ignored) {
+        }
+
+        // 3) 其他链接：尝试用浏览器打开
+        if (content.startsWith("http://") || content.startsWith("https://")) {
+            openInBrowser(content);
+            return;
+        }
+
+        // 4) 既不是用户二维码也不是可识别的链接，提示无效
+        Toast.makeText(this, "无法识别的二维码", Toast.LENGTH_SHORT).show();
+        finish();
+    }
+
+    private void applyFriendAndFinish(String userId) {
+        ServiceManager.getUserService().applyFriend(userId, new ApiCallback<FriendApplicationBean>() {
+            @Override
+            public void onSuccess(FriendApplicationBean data) {
+                Toast.makeText(ScanActivity.this, "已发送好友申请", Toast.LENGTH_SHORT).show();
+                finish();
+            }
+
+            @Override
+            public void onError(int code, String message) {
+                String msg = message != null && !message.isEmpty()
+                        ? message
+                        : "添加好友失败";
+                Toast.makeText(ScanActivity.this, msg, Toast.LENGTH_SHORT).show();
+                finish();
+            }
+        });
+    }
+
+    private void openInBrowser(String url) {
+        try {
+            Intent i = new Intent(Intent.ACTION_VIEW);
+            i.setData(Uri.parse(url));
+            startActivity(i);
+            Toast.makeText(this, "即将打开下载页面", Toast.LENGTH_SHORT).show();
+        } catch (Exception e) {
+            Toast.makeText(this, "无法打开该链接", Toast.LENGTH_SHORT).show();
+        }
+        finish();
     }
 
     @Override

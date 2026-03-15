@@ -29,7 +29,6 @@ public class LoginActivity extends AppCompatActivity {
     private EditText passwordInput;
     private Button loginButton;
     private Button registerButton;
-    private ProgressBar loginProgress;
     private CheckBox rememberAccountCheckbox;
     private TextView serviceAgreementText;
     private TextView privacyPolicyText;
@@ -40,8 +39,12 @@ public class LoginActivity extends AppCompatActivity {
     public static final String KEY_EXPIRE_TIME = "expire_time";
     public static final String KEY_REMEMBER_ACCOUNT = "remember_account";
     public static final String KEY_LAST_ACCOUNT = "last_account";
+<<<<<<< Updated upstream
     // 默认 token 有效期为 30 天（与后端保持一致）
     private static final long DEFAULT_TOKEN_VALIDITY_DURATION = 30 * 24 * 60 * 60 * 1000;
+=======
+    private static final long TOKEN_VALIDITY_DURATION = 1 * 24 * 60 * 60 * 1000; // 一天
+>>>>>>> Stashed changes
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,7 +61,6 @@ public class LoginActivity extends AppCompatActivity {
         passwordInput = findViewById(R.id.passwordInput);
         loginButton = findViewById(R.id.loginButton);
         registerButton = findViewById(R.id.registerButton);
-        loginProgress = findViewById(R.id.loginProgress);
         rememberAccountCheckbox = findViewById(R.id.rememberAccountCheckbox);
         serviceAgreementText = findViewById(R.id.serviceAgreementText);
         privacyPolicyText = findViewById(R.id.privacyPolicyText);
@@ -81,11 +83,16 @@ public class LoginActivity extends AppCompatActivity {
     private void loadRememberedAccount() {
         SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         boolean remember = prefs.getBoolean(KEY_REMEMBER_ACCOUNT, false);
+<<<<<<< Updated upstream
         String lastAccount = prefs.getString(KEY_LAST_ACCOUNT, "");
         
         Log.d("LoginActivity", "加载记住的账号 - remember: " + remember + ", lastAccount: " + lastAccount);
         
         if (remember && !lastAccount.isEmpty()) {
+=======
+        if (remember) {
+            String lastAccount = prefs.getString(KEY_LAST_ACCOUNT, "");
+>>>>>>> Stashed changes
             phoneInput.setText(lastAccount);
             if (rememberAccountCheckbox != null) {
                 rememberAccountCheckbox.setChecked(true);
@@ -111,9 +118,13 @@ public class LoginActivity extends AppCompatActivity {
         // 显示loading状态
         showLoading(true);
         
+<<<<<<< Updated upstream
         // 检查复选框状态
         boolean isRememberChecked = rememberAccountCheckbox != null && rememberAccountCheckbox.isChecked();
         Log.d("LoginActivity", "发送登录请求 - 账号: " + account + ", 记住账号: " + isRememberChecked);
+=======
+        Log.d("LoginActivity", "发送登录请求 - 账号: " + account);
+>>>>>>> Stashed changes
         
         ServiceManager.getUserService().login(new LoginRequest(account, password), new ApiCallback<LoginResult>() {
             @Override
@@ -138,6 +149,9 @@ public class LoginActivity extends AppCompatActivity {
                 boolean shouldRemember = rememberAccountCheckbox != null && rememberAccountCheckbox.isChecked();
                 Log.d("LoginActivity", "登录成功，准备保存账号 - shouldRemember: " + shouldRemember);
                 saveAccount(account, shouldRemember);
+                
+                // 根据勾选状态记住账号
+                saveAccount(account, rememberAccountCheckbox != null && rememberAccountCheckbox.isChecked());
                 
                 JIMChatCore.getInstance().connect(ConfigUtils.imToken);
                 // 隐藏loading状态
@@ -198,15 +212,26 @@ public class LoginActivity extends AppCompatActivity {
         editor.commit(); // 使用 commit() 确保数据立即写入
     }
 
+    private void saveAccount(String account, boolean remember) {
+        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = prefs.edit();
+        if (remember) {
+            editor.putBoolean(KEY_REMEMBER_ACCOUNT, true);
+            editor.putString(KEY_LAST_ACCOUNT, account);
+        } else {
+            editor.putBoolean(KEY_REMEMBER_ACCOUNT, false);
+            editor.remove(KEY_LAST_ACCOUNT);
+        }
+        editor.apply();
+    }
+
     private void showLoading(boolean show) {
         if (show) {
             loginButton.setText("登录中...");
             loginButton.setEnabled(false);
-            loginProgress.setVisibility(View.VISIBLE);
         } else {
             loginButton.setText("开启连接");
             loginButton.setEnabled(true);
-            loginProgress.setVisibility(View.GONE);
         }
     }
 

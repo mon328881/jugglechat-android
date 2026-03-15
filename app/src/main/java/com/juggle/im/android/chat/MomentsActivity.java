@@ -8,6 +8,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.graphics.Rect;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
@@ -36,6 +37,7 @@ import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.recyclerview.widget.StaggeredGridLayoutManager;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.google.android.material.appbar.AppBarLayout;
@@ -68,6 +70,7 @@ import java.util.Map;
 public class MomentsActivity extends AppCompatActivity {
 
     private AppBarLayout appBarLayout;
+    private com.google.android.material.appbar.CollapsingToolbarLayout collapsingContainer;
     private Toolbar toolbar;
     private RecyclerView recyclerView;
     private SwipeRefreshLayout swipeRefreshLayout;
@@ -95,6 +98,8 @@ public class MomentsActivity extends AppCompatActivity {
 
     // 标签切换相关变量
     private String mCurrentPage = "moments"; // "moments" 或 "community"
+    // 当前选中的社区标签（null 或空表示不过滤，展示所有社区贴）
+    private String mSelectedCommunityTag = null;
 
     protected static class CommentDetail {
         String content;
@@ -143,6 +148,7 @@ public class MomentsActivity extends AppCompatActivity {
         }
 
         appBarLayout = findViewById(R.id.appbar);
+        collapsingContainer = findViewById(R.id.collapsing_container);
         recyclerView = findViewById(R.id.rv_moments);
         swipeRefreshLayout = findViewById(R.id.swipe_refresh);
         tvName = findViewById(R.id.tv_name);
@@ -189,7 +195,9 @@ public class MomentsActivity extends AppCompatActivity {
         tvName.setText(!TextUtils.isEmpty(userName) ? userName : "我");
         AvatarUtils.loadAvatar(ivAvatar, userAvatar, !TextUtils.isEmpty(userName) ? userName : "我");
 
+        // 默认进入页面为朋友圈模式：使用单列 LinearLayoutManager
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        recyclerView.addItemDecoration(new SpacesItemDecoration(dpToPx(this, 4)));
         adapter = new MomentsAdapter(new ArrayList<>());
         recyclerView.setAdapter(adapter);
 
@@ -250,19 +258,38 @@ public class MomentsActivity extends AppCompatActivity {
             refreshMoments();
         });
 
-        // 设置上拉加载更多
+        // 设置上拉加载更多（兼容 LinearLayoutManager 与 StaggeredGridLayoutManager）
         recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
                 super.onScrolled(recyclerView, dx, dy);
 
-                LinearLayoutManager layoutManager = (LinearLayoutManager) recyclerView.getLayoutManager();
-                int visibleItemCount = layoutManager.getChildCount();
-                int totalItemCount = layoutManager.getItemCount();
-                int firstVisibleItemPosition = layoutManager.findFirstVisibleItemPosition();
+                RecyclerView.LayoutManager lm = recyclerView.getLayoutManager();
+                if (lm == null) return;
+
+                int visibleItemCount = lm.getChildCount();
+                int totalItemCount = lm.getItemCount();
+                int lastVisibleItemPosition = 0;
+                int firstVisibleItemPosition = 0;
+
+                if (lm instanceof StaggeredGridLayoutManager) {
+                    StaggeredGridLayoutManager sgm = (StaggeredGridLayoutManager) lm;
+                    lastVisibleItemPosition = getLastVisibleItemPosition(sgm);
+                    firstVisibleItemPosition = getFirstVisibleItemPosition(sgm);
+                } else if (lm instanceof LinearLayoutManager) {
+                    LinearLayoutManager llm = (LinearLayoutManager) lm;
+                    lastVisibleItemPosition = llm.findLastVisibleItemPosition();
+                    firstVisibleItemPosition = llm.findFirstVisibleItemPosition();
+                } else {
+                    return;
+                }
 
                 // 判断是否需要加载更多
-                if (!isLoading && hasMore && (visibleItemCount + firstVisibleItemPosition) >= totalItemCount && firstVisibleItemPosition >= 0) {
+                if (!isLoading
+                        && hasMore
+                        && visibleItemCount > 0
+                        && lastVisibleItemPosition >= totalItemCount - 1
+                        && firstVisibleItemPosition >= 0) {
                     loadMoreMoments();
                 }
             }
@@ -510,7 +537,7 @@ public class MomentsActivity extends AppCompatActivity {
         commentBar.setVisibility(VISIBLE);
         editTextField.requestFocus();
 
-        // 监听布局变化以处理键盘弹出后的滚动定位
+        // 监听布局变化以处理键盘弹出后的滚动定位（兼容 LinearLayoutManager 与 StaggeredGridLayoutManager）
         View rootView = findViewById(android.R.id.content);
         View.OnLayoutChangeListener layoutChangeListener = new View.OnLayoutChangeListener() {
             @Override
@@ -520,7 +547,7 @@ public class MomentsActivity extends AppCompatActivity {
                 v.removeOnLayoutChangeListener(this);
 
                 // 获取布局管理器
-                LinearLayoutManager layoutManager = (LinearLayoutManager) recyclerView.getLayoutManager();
+                RecyclerView.LayoutManager layoutManager = recyclerView.getLayoutManager();
                 if (layoutManager == null) return;
 
                 // 折叠AppBarLayout确保可见性
@@ -545,7 +572,7 @@ public class MomentsActivity extends AppCompatActivity {
                 adjustScrollPosition(targetView, layoutManager, position);
             }
 
-            private void adjustScrollPosition(View targetView, LinearLayoutManager layoutManager, int position) {
+            private void adjustScrollPosition(View targetView, RecyclerView.LayoutManager layoutManager, int position) {
                 // 计算键盘高度
                 int screenHeight = getResources().getDisplayMetrics().heightPixels;
                 int rootViewHeight = rootView.getHeight();
@@ -576,7 +603,14 @@ public class MomentsActivity extends AppCompatActivity {
                     int editTextHeight = editTextField.getHeight();
                     // 检查是否在底部
                     int totalItemCount = layoutManager.getItemCount();
-                    int lastVisiblePosition = layoutManager.findLastVisibleItemPosition();
+                    int lastVisiblePosition;
+                    if (layoutManager instanceof StaggeredGridLayoutManager) {
+                        lastVisiblePosition = getLastVisibleItemPosition((StaggeredGridLayoutManager) layoutManager);
+                    } else if (layoutManager instanceof LinearLayoutManager) {
+                        lastVisiblePosition = ((LinearLayoutManager) layoutManager).findLastVisibleItemPosition();
+                    } else {
+                        lastVisiblePosition = totalItemCount - 1;
+                    }
                     boolean isAtBottom = (totalItemCount > 0) && (lastVisiblePosition >= totalItemCount - 1);
 
                     // 在底部时增加滚动距离确保可见
@@ -669,20 +703,27 @@ public class MomentsActivity extends AppCompatActivity {
         
         for (PostBean post : allPosts) {
             boolean hasCommunityInfo = post.getCommunity_info() != null;
-            
+
             if ("community".equals(mCurrentPage)) {
-                // Community mode: show only posts with community_info
+                // 社区模式：只展示有 community_info 的帖子，并根据当前选中的标签过滤
                 if (hasCommunityInfo) {
-                    filtered.add(post);
+                    if (mSelectedCommunityTag == null || mSelectedCommunityTag.isEmpty()) {
+                        // 未选中特定标签，展示所有社区帖子
+                        filtered.add(post);
+                    } else if (post.getCommunity_info().getTags() != null
+                            && post.getCommunity_info().getTags().contains(mSelectedCommunityTag)) {
+                        // 只展示包含当前标签的帖子
+                        filtered.add(post);
+                    }
                 }
             } else {
-                // Moments mode: show only posts without community_info
+                // 朋友圈模式：只展示没有 community_info 的帖子
                 if (!hasCommunityInfo) {
                     filtered.add(post);
                 }
             }
         }
-        
+
         return filtered;
     }
 
@@ -690,14 +731,39 @@ public class MomentsActivity extends AppCompatActivity {
         return (int) (dp * context.getResources().getDisplayMetrics().density);
     }
 
+    private int getFirstVisibleItemPosition(StaggeredGridLayoutManager layoutManager) {
+        int[] into = layoutManager.findFirstVisibleItemPositions(null);
+        int min = Integer.MAX_VALUE;
+        if (into != null) {
+            for (int value : into) {
+                if (value < min) {
+                    min = value;
+                }
+            }
+        }
+        return min == Integer.MAX_VALUE ? 0 : min;
+    }
+
+    private int getLastVisibleItemPosition(StaggeredGridLayoutManager layoutManager) {
+        int[] into = layoutManager.findLastVisibleItemPositions(null);
+        int max = Integer.MIN_VALUE;
+        if (into != null) {
+            for (int value : into) {
+                if (value > max) {
+                    max = value;
+                }
+            }
+        }
+        return max == Integer.MIN_VALUE ? 0 : max;
+    }
+
     // 切换到朋友圈模式
     private void switchToMoments(TextView tabMoments, TextView tabCommunity) {
         if ("moments".equals(mCurrentPage)) {
             return; // 已经在朋友圈模式
         }
-
         mCurrentPage = "moments";
-        
+
         // 更新标签样式
         tabMoments.setTypeface(null, android.graphics.Typeface.BOLD);
         tabMoments.setAlpha(1.0f);
@@ -720,6 +786,21 @@ public class MomentsActivity extends AppCompatActivity {
             communityTagsScroll.setVisibility(View.GONE);
         }
 
+        // 显示顶部大封面区域（朋友圈模式使用 Collapsing）
+        if (collapsingContainer != null) {
+            collapsingContainer.setVisibility(View.VISIBLE);
+            ViewGroup.LayoutParams lp = collapsingContainer.getLayoutParams();
+            lp.height = dpToPx(this, 250);
+            collapsingContainer.setLayoutParams(lp);
+        }
+        View cover = findViewById(R.id.header_cover_image);
+        View headerUser = findViewById(R.id.header_user_container);
+        if (cover != null) cover.setVisibility(View.VISIBLE);
+        if (headerUser != null) headerUser.setVisibility(View.VISIBLE);
+
+        // 使用单列列表布局
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+
         // 刷新数据（加载朋友圈内容）
         refreshMoments();
     }
@@ -729,9 +810,8 @@ public class MomentsActivity extends AppCompatActivity {
         if ("community".equals(mCurrentPage)) {
             return; // 已经在社区模式
         }
-
         mCurrentPage = "community";
-        
+
         // 更新标签样式
         tabMoments.setTypeface(null, android.graphics.Typeface.NORMAL);
         tabMoments.setAlpha(0.6f);
@@ -755,6 +835,20 @@ public class MomentsActivity extends AppCompatActivity {
             generateCommunityTags();
         }
 
+        // 社区模式使用两列瀑布流布局
+        recyclerView.setLayoutManager(new StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL));
+
+        // 收起顶部大封面区域，只保留折叠体系中的 Toolbar + 社区标签栏
+        if (collapsingContainer != null) {
+            ViewGroup.LayoutParams lp = collapsingContainer.getLayoutParams();
+            lp.height = dpToPx(this, 96); // 约等于 Toolbar(48dp) + 标签栏(48dp)
+            collapsingContainer.setLayoutParams(lp);
+        }
+        View cover = findViewById(R.id.header_cover_image);
+        View headerUser = findViewById(R.id.header_user_container);
+        if (cover != null) cover.setVisibility(View.GONE);
+        if (headerUser != null) headerUser.setVisibility(View.GONE);
+
         // 刷新数据（加载社区内容）
         refreshMoments();
     }
@@ -775,11 +869,15 @@ public class MomentsActivity extends AppCompatActivity {
             public void onSuccess(List<String> tagList) {
                 runOnUiThread(() -> {
                     if (tagList != null && !tagList.isEmpty()) {
-                        String[] tags = tagList.toArray(new String[0]);
+                        // 在服务端返回的标签前面加上一个“全部”标签
+                        List<String> allTags = new ArrayList<>();
+                        allTags.add("全部");
+                        allTags.addAll(tagList);
+                        String[] tags = allTags.toArray(new String[0]);
                         createTagViews(tagsContainer, tags);
                     } else {
-                        // 如果后端返回空列表，使用默认标签
-                        String[] defaultTags = {"推荐", "直播", "短剧", "美食", "穿搭", "旅行"};
+                        // 如果后端返回空列表，使用默认标签（第一个为“全部”）
+                        String[] defaultTags = {"全部", "推荐", "直播", "短剧", "美食", "穿搭", "旅行"};
                         createTagViews(tagsContainer, defaultTags);
                     }
                 });
@@ -789,8 +887,8 @@ public class MomentsActivity extends AppCompatActivity {
             public void onError(int code, String message) {
                 Log.e("MomentsActivity", "获取社区标签失败: " + message);
                 runOnUiThread(() -> {
-                    // 获取失败时使用默认标签
-                    String[] defaultTags = {"推荐", "直播", "短剧", "美食", "穿搭", "旅行"};
+                    // 获取失败时使用默认标签（第一个为“全部”）
+                    String[] defaultTags = {"全部", "推荐", "直播", "短剧", "美食", "穿搭", "旅行"};
                     createTagViews(tagsContainer, defaultTags);
                 });
             }
@@ -801,7 +899,8 @@ public class MomentsActivity extends AppCompatActivity {
      * 创建标签视图
      */
     private void createTagViews(LinearLayout tagsContainer, String[] tags) {
-        for (String tag : tags) {
+        for (int index = 0; index < tags.length; index++) {
+            String tag = tags[index];
             // 创建标签容器
             FrameLayout tagContainer = new FrameLayout(this);
             FrameLayout.LayoutParams containerParams = new FrameLayout.LayoutParams(
@@ -840,6 +939,7 @@ public class MomentsActivity extends AppCompatActivity {
             tagContainer.addView(underline);
 
             // 设置点击事件
+            final int tagIndex = index;
             tagContainer.setOnClickListener(v -> {
                 // 更新所有标签的样式
                 for (int i = 0; i < tagsContainer.getChildCount(); i++) {
@@ -857,6 +957,15 @@ public class MomentsActivity extends AppCompatActivity {
                         line.setVisibility(View.GONE);
                     }
                 }
+
+                // 更新当前选中的社区标签：
+                // 约定第一个标签为“推荐/全部”，选中时不过滤，显示所有社区内容
+                if (tagIndex == 0) {
+                    mSelectedCommunityTag = null;
+                } else {
+                    mSelectedCommunityTag = tag;
+                }
+
                 // 刷新数据
                 refreshMoments();
             });
@@ -864,7 +973,7 @@ public class MomentsActivity extends AppCompatActivity {
             tagsContainer.addView(tagContainer);
         }
 
-        // 设置第一个标签为选中状态
+        // 设置第一个标签为选中状态，并默认不过滤（推荐/全部）
         if (tagsContainer.getChildCount() > 0) {
             FrameLayout firstContainer = (FrameLayout) tagsContainer.getChildAt(0);
             TextView firstText = (TextView) firstContainer.getChildAt(0);
@@ -872,6 +981,26 @@ public class MomentsActivity extends AppCompatActivity {
             firstText.setAlpha(1.0f);
             firstText.setTypeface(null, android.graphics.Typeface.BOLD);
             firstLine.setVisibility(View.VISIBLE);
+            mSelectedCommunityTag = null;
+        }
+    }
+
+    private static class SpacesItemDecoration extends RecyclerView.ItemDecoration {
+        private final int space;
+
+        SpacesItemDecoration(int space) {
+            this.space = space;
+        }
+
+        @Override
+        public void getItemOffsets(@NonNull Rect outRect, @NonNull View view, @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
+            int position = parent.getChildAdapterPosition(view);
+            outRect.left = space;
+            outRect.right = space;
+            outRect.bottom = space;
+            if (position < 2) {
+                outRect.top = space;
+            }
         }
     }
 
@@ -884,6 +1013,8 @@ public class MomentsActivity extends AppCompatActivity {
     }
 
     class MomentsAdapter extends RecyclerView.Adapter<MomentsAdapter.VH> {
+        private static final int TYPE_MOMENT = 0;
+        private static final int TYPE_COMMUNITY = 1;
         private final List<PostBean> items;
         private Listener listener;
 
@@ -917,10 +1048,20 @@ public class MomentsActivity extends AppCompatActivity {
             }
         }
 
+        @Override
+        public int getItemViewType(int position) {
+            PostBean post = items.get(position);
+            // 有 community_info 的视为社区贴子
+            return post.getCommunity_info() != null ? TYPE_COMMUNITY : TYPE_MOMENT;
+        }
+
         @NonNull
         @Override
         public VH onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-            View v = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_moment_post, parent, false);
+            int layoutId = (viewType == TYPE_COMMUNITY)
+                    ? R.layout.item_moment_post_community
+                    : R.layout.item_moment_post;
+            View v = LayoutInflater.from(parent.getContext()).inflate(layoutId, parent, false);
             return new VH(v);
         }
 
@@ -945,101 +1086,208 @@ public class MomentsActivity extends AppCompatActivity {
                 holder.tvContent.setText(text);
             }
 
-            // media (images)
+            // 分社区模式与朋友圈模式渲染媒体区域
             holder.mediaContainer.removeAllViews();
-            if (post.getContent() != null && post.getContent().getImages() != null && !post.getContent().getImages().isEmpty()) {
+            boolean isCommunity = post.getCommunity_info() != null;
+
+            if (isCommunity) {
+                // 社区模式：使用单张封面图形成瀑布流卡片，并支持点击进入详情页
                 holder.mediaContainer.setVisibility(VISIBLE);
-                int imageSize = post.getContent().getImages().size();
-                
-                // 限制最多显示9张图片
-                int displaySize = Math.min(imageSize, 9);
-
-                // 根据图片数量确定行列数和尺寸
-                int rows, cols;
-                int spacing = 8; // 图片间距
-                
-                if (displaySize == 1) {
-                    // 1张图片：平铺（占满宽度）
-                    rows = 1;
-                    cols = 1;
-                } else if (displaySize == 2) {
-                    // 2张图片：平分宽度
-                    rows = 1;
-                    cols = 2;
-                } else if (displaySize == 3) {
-                    // 3张图片：3列展示
-                    rows = 1;
-                    cols = 3;
-                } else if (displaySize == 4) {
-                    // 4张图片：2行2列
-                    rows = 2;
-                    cols = 2;
-                } else if (displaySize <= 6) {
-                    // 5-6张图片：2行3列
-                    rows = 2;
-                    cols = 3;
-                } else {
-                    // 7-9张图片：3行3列
-                    rows = 3;
-                    cols = 3;
+                ImageView cover = (ImageView) holder.itemView.findViewById(R.id.iv_cover);
+                if (cover == null) {
+                    cover = new ImageView(holder.itemView.getContext());
+                    ViewGroup.LayoutParams lp = new ViewGroup.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT,
+                            ViewGroup.LayoutParams.WRAP_CONTENT);
+                    cover.setLayoutParams(lp);
+                    cover.setAdjustViewBounds(true);
+                    cover.setScaleType(ImageView.ScaleType.CENTER_CROP);
+                    cover.setBackgroundColor(0xFFCCCCCC);
+                    holder.mediaContainer.addView(cover);
                 }
 
-                // 设置GridLayout的行列数
-                GridLayout gridLayout = (GridLayout) holder.mediaContainer;
-                gridLayout.setRowCount(rows);
-                gridLayout.setColumnCount(cols);
-                
-                // 计算每个图片的宽度和高度
-                int screenWidth = holder.itemView.getResources().getDisplayMetrics().widthPixels;
-                int containerWidth = screenWidth - 32; // 减去左右padding (16dp * 2)
-                int totalSpacing = spacing * (cols - 1); // 总间距
-                int imageWidth = (containerWidth - totalSpacing) / cols;
-                int imageHeight = imageWidth; // 正方形图片
+                boolean boundMedia = false;
+                if (post.getContent() != null) {
+                    if (post.getContent().getVideo() != null
+                            && !TextUtils.isEmpty(post.getContent().getVideo().getUrl())) {
+                        AvatarUtils.loadVideoCover(cover,
+                                post.getContent().getVideo().getSnapshot_url(),
+                                post.getContent().getVideo().getUrl());
+                        boundMedia = true;
+                        // 视频封面中央：圆形半透明黑底 + 白色播放图标
+                        int iconSize = (int) (32 * holder.itemView.getResources().getDisplayMetrics().density);
+                        int circleSize = (int) (56 * holder.itemView.getResources().getDisplayMetrics().density);
+                        FrameLayout playContainer = new FrameLayout(holder.itemView.getContext());
+                        FrameLayout.LayoutParams lpContainer = new FrameLayout.LayoutParams(circleSize, circleSize);
+                        lpContainer.gravity = android.view.Gravity.CENTER;
+                        playContainer.setLayoutParams(lpContainer);
+                        playContainer.setBackgroundResource(R.drawable.bg_play_icon_circle);
+                        ImageView playIcon = new ImageView(holder.itemView.getContext());
+                        FrameLayout.LayoutParams lpPlay = new FrameLayout.LayoutParams(iconSize, iconSize);
+                        lpPlay.gravity = android.view.Gravity.CENTER;
+                        playIcon.setLayoutParams(lpPlay);
+                        playIcon.setImageResource(R.drawable.ic_play);
+                        playIcon.setColorFilter(0xFFFFFFFF);
+                        playIcon.setScaleType(ImageView.ScaleType.FIT_CENTER);
+                        playContainer.addView(playIcon);
+                        holder.mediaContainer.addView(playContainer);
+                    }
 
-                // 添加图片视图
-                for (int i = 0; i < displaySize; i++) {
-                    com.juggle.im.android.server.beans.ImageBean img = post.getContent().getImages().get(i);
-                    ImageView iv = new ImageView(holder.itemView.getContext());
-
-                    GridLayout.LayoutParams lp = new GridLayout.LayoutParams();
-                    
-                    // 设置行列位置
-                    lp.columnSpec = GridLayout.spec(i % cols);
-                    lp.rowSpec = GridLayout.spec(i / cols);
-                    
-                    // 设置具体的宽高
-                    lp.width = imageWidth;
-                    lp.height = imageHeight;
-                    
-                    // 设置间距 - 只在右侧和下方添加间距
-                    int marginRight = (i % cols == cols - 1) ? 0 : spacing;
-                    int marginBottom = (i / cols == rows - 1) ? 0 : spacing;
-                    lp.setMargins(0, 0, marginRight, marginBottom);
-                    
-                    iv.setLayoutParams(lp);
-                    iv.setScaleType(ImageView.ScaleType.CENTER_CROP);
-                    iv.setBackgroundColor(0xFFE0E0E0);
-                    
-                    // 添加圆角效果
-                    iv.setClipToOutline(true);
-                    android.graphics.drawable.RippleDrawable ripple = new android.graphics.drawable.RippleDrawable(
-                        android.content.res.ColorStateList.valueOf(0x20000000),
-                        null,
-                        null
-                    );
-                    iv.setForeground(ripple);
-                    
-                    AvatarUtils.loadImage(iv, img.getUrl());
-
-                    gridLayout.addView(iv);
-                    final int positionCopy = position;
-                    final String imageUrl = img.getUrl();
-                    iv.setOnClickListener(l -> {
-                        if (listener != null) listener.onClickImage(positionCopy, post, imageUrl);
-                    });
+                    if (!boundMedia
+                            && post.getContent().getImages() != null
+                            && !post.getContent().getImages().isEmpty()) {
+                        com.juggle.im.android.server.beans.ImageBean firstImg = post.getContent().getImages().get(0);
+                        AvatarUtils.loadImage(cover, firstImg.getUrl());
+                        boundMedia = true;
+                    }
                 }
+
+                if (!boundMedia) {
+                    cover.setImageResource(R.drawable.profile_cover);
+                }
+
+                View.OnClickListener goDetail = v -> {
+                    Intent it = new Intent(v.getContext(), MomentDetailActivity.class);
+                    it.putExtra(MomentDetailActivity.EXTRA_POST_ID, post.getPost_id());
+                    v.getContext().startActivity(it);
+                };
+                cover.setOnClickListener(goDetail);
+                holder.itemView.setOnClickListener(goDetail);
             } else {
-                holder.mediaContainer.setVisibility(View.GONE);
+                // 朋友圈模式：优先展示视频封面，其次展示 1~9 宫格图片
+                if (post.getContent() != null
+                        && post.getContent().getVideo() != null
+                        && !TextUtils.isEmpty(post.getContent().getVideo().getUrl())) {
+                    // 有视频：封面图 + 居中播放图标，点击直接播放
+                    holder.mediaContainer.setVisibility(VISIBLE);
+                    holder.mediaContainer.removeAllViews();
+
+                    FrameLayout wrap = new FrameLayout(holder.itemView.getContext());
+                    GridLayout.LayoutParams lpWrap = new GridLayout.LayoutParams();
+                    lpWrap.width = ViewGroup.LayoutParams.MATCH_PARENT;
+                    lpWrap.height = ViewGroup.LayoutParams.WRAP_CONTENT;
+                    wrap.setLayoutParams(lpWrap);
+
+                    ImageView cover = new ImageView(holder.itemView.getContext());
+                    FrameLayout.LayoutParams lpCover = new FrameLayout.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                    cover.setLayoutParams(lpCover);
+                    cover.setAdjustViewBounds(true);
+                    cover.setScaleType(ImageView.ScaleType.CENTER_CROP);
+                    cover.setBackgroundColor(0xFFCCCCCC);
+                    wrap.addView(cover);
+
+                    // 播放按钮：圆形半透明黑底 + 白色播放图标
+                    int iconSize = (int) (32 * holder.itemView.getResources().getDisplayMetrics().density);
+                    int circleSize = (int) (56 * holder.itemView.getResources().getDisplayMetrics().density);
+                    FrameLayout playContainer = new FrameLayout(holder.itemView.getContext());
+                    FrameLayout.LayoutParams lpContainer = new FrameLayout.LayoutParams(circleSize, circleSize);
+                    lpContainer.gravity = android.view.Gravity.CENTER;
+                    playContainer.setLayoutParams(lpContainer);
+                    playContainer.setBackgroundResource(R.drawable.bg_play_icon_circle);
+                    ImageView playIcon = new ImageView(holder.itemView.getContext());
+                    FrameLayout.LayoutParams lpPlay = new FrameLayout.LayoutParams(iconSize, iconSize);
+                    lpPlay.gravity = android.view.Gravity.CENTER;
+                    playIcon.setLayoutParams(lpPlay);
+                    playIcon.setImageResource(R.drawable.ic_play);
+                    playIcon.setColorFilter(0xFFFFFFFF);
+                    playIcon.setScaleType(ImageView.ScaleType.FIT_CENTER);
+                    playContainer.addView(playIcon);
+                    wrap.addView(playContainer);
+
+                    holder.mediaContainer.addView(wrap);
+
+                    final String videoUrl = post.getContent().getVideo().getUrl();
+                    AvatarUtils.loadVideoCover(
+                            cover,
+                            post.getContent().getVideo().getSnapshot_url(),
+                            videoUrl
+                    );
+
+                    // 朋友圈模式：点击视频直接播放，不跳详情页
+                    View.OnClickListener playVideo = v -> VideoPlayerActivity.startWithUrl(v.getContext(), videoUrl);
+                    wrap.setOnClickListener(playVideo);
+                    holder.itemView.setOnClickListener(playVideo);
+
+                } else if (post.getContent() != null
+                        && post.getContent().getImages() != null
+                        && !post.getContent().getImages().isEmpty()) {
+                    holder.mediaContainer.setVisibility(VISIBLE);
+                    int imageSize = post.getContent().getImages().size();
+
+                    // 限制最多显示9张图片
+                    int displaySize = Math.min(imageSize, 9);
+
+                    // 根据图片数量确定行列数和尺寸
+                    int rows, cols;
+                    int spacing = 8; // 图片间距
+
+                    if (displaySize == 1) {
+                        rows = 1;
+                        cols = 1;
+                    } else if (displaySize == 2) {
+                        rows = 1;
+                        cols = 2;
+                    } else if (displaySize == 3) {
+                        rows = 1;
+                        cols = 3;
+                    } else if (displaySize == 4) {
+                        rows = 2;
+                        cols = 2;
+                    } else if (displaySize <= 6) {
+                        rows = 2;
+                        cols = 3;
+                    } else {
+                        rows = 3;
+                        cols = 3;
+                    }
+
+                    GridLayout gridLayout = (GridLayout) holder.mediaContainer;
+                    gridLayout.setRowCount(rows);
+                    gridLayout.setColumnCount(cols);
+
+                    int screenWidth = holder.itemView.getResources().getDisplayMetrics().widthPixels;
+                    int containerWidth = screenWidth - 32; // 减去左右padding (16dp * 2)
+                    int totalSpacing = spacing * (cols - 1);
+                    int imageWidth = (containerWidth - totalSpacing) / cols;
+                    int imageHeight = imageWidth;
+
+                    for (int i = 0; i < displaySize; i++) {
+                        com.juggle.im.android.server.beans.ImageBean img = post.getContent().getImages().get(i);
+                        ImageView iv = new ImageView(holder.itemView.getContext());
+
+                        GridLayout.LayoutParams lp = new GridLayout.LayoutParams();
+                        lp.columnSpec = GridLayout.spec(i % cols);
+                        lp.rowSpec = GridLayout.spec(i / cols);
+                        lp.width = imageWidth;
+                        lp.height = imageHeight;
+                        int marginRight = (i % cols == cols - 1) ? 0 : spacing;
+                        int marginBottom = (i / cols == rows - 1) ? 0 : spacing;
+                        lp.setMargins(0, 0, marginRight, marginBottom);
+
+                        iv.setLayoutParams(lp);
+                        iv.setScaleType(ImageView.ScaleType.CENTER_CROP);
+                        iv.setBackgroundColor(0xFFE0E0E0);
+                        iv.setClipToOutline(true);
+                        android.graphics.drawable.RippleDrawable ripple = new android.graphics.drawable.RippleDrawable(
+                                android.content.res.ColorStateList.valueOf(0x20000000),
+                                null,
+                                null
+                        );
+                        iv.setForeground(ripple);
+
+                        AvatarUtils.loadImage(iv, img.getUrl());
+
+                        gridLayout.addView(iv);
+                        final int positionCopy = position;
+                        final String imageUrl = img.getUrl();
+                        iv.setOnClickListener(l -> {
+                            if (listener != null) listener.onClickImage(positionCopy, post, imageUrl);
+                        });
+                    }
+                } else {
+                    holder.mediaContainer.setVisibility(View.GONE);
+                }
             }
 
             // time
@@ -1069,26 +1317,25 @@ public class MomentsActivity extends AppCompatActivity {
                 holder.tvTime.setText("");
             }
 
-            // likes (reactions) - flatten user nicknames
+            // likes (reactions) - 社区模式仅展示总数，朋友圈模式保持原展示昵称样式
             boolean hasLikes = false;
+            int likesCount = 0;
             if (post.getReactions() != null && !post.getReactions().isEmpty()) {
-                StringBuilder sb = new StringBuilder();
-                for (java.util.Map.Entry<String, java.util.List<com.juggle.im.android.server.beans.ReactionItem>> entry : post.getReactions().entrySet()) {
-                    for (com.juggle.im.android.server.beans.ReactionItem it : entry.getValue()) {
-                        if (it.getUser_info() != null) {
-                            if (sb.length() > 0) sb.append(", ");
-                            sb.append(it.getUser_info().getNickname());
+                if (post.getReactions() != null) {
+                    for (java.util.Map.Entry<String, java.util.List<com.juggle.im.android.server.beans.ReactionItem>> entry : post.getReactions().entrySet()) {
+                        if (entry.getValue() != null) {
+                            likesCount += entry.getValue().size();
                         }
                     }
                 }
-                if (sb.length() > 0) {
+
+                if (likesCount > 0) {
                     hasLikes = true;
                     holder.tvLikes.setVisibility(VISIBLE);
-                    // color the names using Spannable
-                    android.text.SpannableStringBuilder ssb = new android.text.SpannableStringBuilder(sb.toString());
-                    // naive: color full string; for more precise color-per-name we'd parse and apply spans per name
-                    ssb.setSpan(new android.text.style.ForegroundColorSpan(0xFF576B95), 0, ssb.length(), android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-                    holder.tvLikes.setText(ssb);
+                    String likeText = isCommunity
+                            ? likesCount + "赞"
+                            : String.valueOf(likesCount) + "赞";
+                    holder.tvLikes.setText(likeText);
                 }
                 holder.likesContainer.setVisibility(VISIBLE);
             } else {
@@ -1096,10 +1343,10 @@ public class MomentsActivity extends AppCompatActivity {
             }
             holder.dividerLikes.setVisibility(hasLikes ? VISIBLE : View.GONE);
 
-            // comments
+            // comments：社区模式卡片不在列表内展开评论，只在详情页展示
             holder.commentsContainer.removeAllViews();
             boolean hasComments = false;
-            if (post.getTop_comments() != null && !post.getTop_comments().isEmpty()) {
+            if (!isCommunity && post.getTop_comments() != null && !post.getTop_comments().isEmpty()) {
                 hasComments = true;
                 for (com.juggle.im.android.server.beans.TopCommentBean c : post.getTop_comments()) {
                     TextView tv = new TextView(holder.itemView.getContext());
@@ -1205,10 +1452,10 @@ public class MomentsActivity extends AppCompatActivity {
         class VH extends RecyclerView.ViewHolder {
             ImageView ivAvatar;
             TextView tvName;
-            LinearLayout vDelete;
+            View vDelete;
             ImageView btnMore;
             TextView tvContent;
-            GridLayout mediaContainer;
+            ViewGroup mediaContainer;
             TextView tvTime;
             ImageView btnComment;
             View blockLikesComments;
