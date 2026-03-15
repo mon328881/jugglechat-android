@@ -1,23 +1,20 @@
 package com.juggle.im.android.model;
 
 /**
- * 应用配置工具类
+ * 应用配置工具类。
+ * 服务地址、密钥等由 Application 从 BuildConfig 注入（BuildConfig 来自 local.properties 或默认值）。
  */
 public class ConfigUtils {
-    // 应用密钥
-    public static String appKey = "JJJB0Dh1PtDgZx5X";
+    // 应用密钥（由 Application 从 BuildConfig.APP_KEY 注入）
+    public static String appKey;
     
     // 业务服务（jugglechat-server）的HTTP地址
-    // 用于用户、好友、朋友圈等业务接口
-    public static String appServerUrl = "http://192.168.123.214:8070";
-    // IM 核心服务（im-server-master）的 WebSocket 地址，用于长连接收发消息（端口与 im-server defaultPort/connectManager.wsPort 一致，默认 9003）
-    public static String imServer = "ws://192.168.123.214:9003";
+    public static String appServerUrl;
+    // IM 核心服务 WebSocket 地址
+    public static String imServer;
     
-    /**
-     * 音视频ID
-     * 需要申请即构音视频ID
-     */
-    public static Integer zegoId = 1881186044;
+    /** 音视频ID（由 Application 从 BuildConfig.ZEGO_ID 注入） */
+    public static Integer zegoId;
 
     /**
      * 应用Token
@@ -46,11 +43,8 @@ public class ConfigUtils {
      */
     public static String currentUserId = null;
 
-    /**
-     * 非APP扫码时的下载页地址
-     * 用于二维码分享页「打开下载页」及提示
-     */
-    public static String appDownloadPageUrl = "https://im-anhui.onego.top/";
+    /** 非APP扫码时的下载页地址（由 Application 从 BuildConfig 注入） */
+    public static String appDownloadPageUrl;
 
     /**
      * 极光推送registrationId

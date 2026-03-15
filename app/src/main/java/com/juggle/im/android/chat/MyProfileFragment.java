@@ -1,6 +1,5 @@
 package com.juggle.im.android.chat;
 
-import static com.juggle.im.android.app.LoginActivity.PREFS_NAME;
 import static com.juggle.im.android.app.LoginActivity.KEY_APP_TOKEN;
 import static com.juggle.im.android.app.LoginActivity.KEY_IM_TOKEN;
 import static com.juggle.im.android.app.LoginActivity.KEY_EXPIRE_TIME;
@@ -28,6 +27,7 @@ import com.juggle.im.JIM;
 import com.juggle.im.android.R;
 import com.juggle.im.android.app.LoginActivity;
 import com.juggle.im.android.model.ConfigUtils;
+import com.juggle.im.android.utils.SecurePrefsHelper;
 import com.juggle.im.android.chat.utils.FileUtils;
 import com.juggle.im.android.server.beans.UserInfoBean;
 import com.juggle.im.android.server.beans.UserInfoRequest;
@@ -125,6 +125,7 @@ public class MyProfileFragment extends Fragment {
                 if (getActivity() == null) return;
                 
                 getActivity().runOnUiThread(() -> {
+                    if (getActivity() == null) return;
                     currentUserInfo = data;
                     updateUI();
                 });
@@ -135,7 +136,7 @@ public class MyProfileFragment extends Fragment {
                 if (getActivity() == null) return;
                 
                 getActivity().runOnUiThread(() -> {
-                    // 网络请求失败时，如果本地有缓存则不显示错误提示
+                    if (getActivity() == null) return;
                     if (currentUserInfo == null) {
                         Toast.makeText(getContext(), "获取用户信息失败: " + errorMsg, Toast.LENGTH_SHORT).show();
                     }
@@ -282,15 +283,19 @@ public class MyProfileFragment extends Fragment {
                 @Override
                 public void onSuccess(String url) {
                     if (getActivity() == null) return;
-                    getActivity().runOnUiThread(() -> updateUserInfo(null, url));
+                    getActivity().runOnUiThread(() -> {
+                        if (getActivity() == null) return;
+                        updateUserInfo(null, url);
+                    });
                 }
 
                 @Override
                 public void onError(int errorCode, String errorMsg) {
                     if (getActivity() == null) return;
                     getActivity().runOnUiThread(() -> {
+                        if (getActivity() == null) return;
                         Toast.makeText(getContext(), "头像上传失败: " + errorMsg, Toast.LENGTH_SHORT).show();
-                        updateUI(); // 回退到原头像
+                        updateUI();
                     });
                 }
             });
@@ -369,6 +374,7 @@ public class MyProfileFragment extends Fragment {
                 if (getActivity() == null) return;
                 
                 getActivity().runOnUiThread(() -> {
+                    if (getActivity() == null) return;
                     Toast.makeText(getContext(), "更新成功", Toast.LENGTH_SHORT).show();
                     // 更新本地缓存
                     if (!TextUtils.isEmpty(nicknameToSave)) {
@@ -408,9 +414,10 @@ public class MyProfileFragment extends Fragment {
             public void onError(int errorCode, String errorMsg) {
                 if (getActivity() == null) return;
                 
-                getActivity().runOnUiThread(() -> 
-                    Toast.makeText(getContext(), "更新失败: " + errorMsg, Toast.LENGTH_SHORT).show()
-                );
+                getActivity().runOnUiThread(() -> {
+                    if (getActivity() == null) return;
+                    Toast.makeText(getContext(), "更新失败: " + errorMsg, Toast.LENGTH_SHORT).show();
+                });
             }
         });
     }
@@ -422,13 +429,15 @@ public class MyProfileFragment extends Fragment {
         ConfigUtils.myName = null;
         ConfigUtils.myAvatarUrl = null;
         ConfigUtils.currentUserId = null;
-        SharedPreferences prefs = getActivity().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        SharedPreferences.Editor editor = prefs.edit();
-        // 仅清除登录态相关字段，保留"记住账号"配置，方便下次登录自动填充账号
-        editor.remove(KEY_APP_TOKEN);
-        editor.remove(KEY_IM_TOKEN);
-        editor.remove(KEY_EXPIRE_TIME);
-        editor.apply();
+        Context ctx = getActivity();
+        SharedPreferences prefs = ctx != null ? SecurePrefsHelper.getLoginPrefs(ctx) : null;
+        if (prefs != null) {
+            SharedPreferences.Editor editor = prefs.edit();
+            editor.remove(KEY_APP_TOKEN);
+            editor.remove(KEY_IM_TOKEN);
+            editor.remove(KEY_EXPIRE_TIME);
+            editor.apply();
+        }
         JIM.getInstance().getConnectionManager().disconnect(false);
 
         // 跳转到登录页面

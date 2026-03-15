@@ -46,6 +46,7 @@ import com.juggle.im.android.server.http.ApiCallback;
 import com.juggle.im.android.server.http.ServiceManager;
 import com.juggle.im.android.utils.HiddenConversationStore;
 import com.juggle.im.android.utils.NetworkStateManager;
+import com.juggle.im.android.utils.SecurePrefsHelper;
 import com.juggle.im.call.CallConst;
 import com.juggle.im.model.Conversation;
 import com.juggle.im.model.ConversationInfo;
@@ -841,15 +842,17 @@ public class MainActivity extends AppCompatActivity {
         ConfigUtils.myAvatarUrl = null;
         ConfigUtils.currentUserId = null;
         
-        // 清除 SharedPreferences 中的 token
-        SharedPreferences prefs = getSharedPreferences(LoginActivity.PREFS_NAME, MODE_PRIVATE);
-        SharedPreferences.Editor editor = prefs.edit();
+        // 清除加密 Prefs 中的 token
+        SharedPreferences prefs = SecurePrefsHelper.getLoginPrefs(this);
+        if (prefs != null) {
+            SharedPreferences.Editor editor = prefs.edit();
         editor.remove(LoginActivity.KEY_APP_TOKEN);
         editor.remove(LoginActivity.KEY_IM_TOKEN);
-        editor.remove(LoginActivity.KEY_EXPIRE_TIME);
-        // 注意：不清除 KEY_REMEMBER_ACCOUNT 和 KEY_LAST_ACCOUNT，保留"记住账号"功能
-        editor.apply();
-        
+            editor.remove(LoginActivity.KEY_EXPIRE_TIME);
+            // 注意：不清除 KEY_REMEMBER_ACCOUNT 和 KEY_LAST_ACCOUNT，保留"记住账号"功能
+            editor.apply();
+        }
+
         // 断开 IM 连接
         try {
             JIM.getInstance().getConnectionManager().disconnect(false);

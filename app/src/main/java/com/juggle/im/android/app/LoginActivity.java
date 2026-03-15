@@ -23,6 +23,7 @@ import com.juggle.im.android.server.beans.LoginRequest;
 import com.juggle.im.android.server.beans.LoginResult;
 import com.juggle.im.android.server.http.ApiCallback;
 import com.juggle.im.android.server.http.ServiceManager;
+import com.juggle.im.android.utils.SecurePrefsHelper;
 
 public class LoginActivity extends AppCompatActivity {
     private EditText phoneInput;
@@ -79,7 +80,8 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void loadRememberedAccount() {
-        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        SharedPreferences prefs = SecurePrefsHelper.getLoginPrefs(this);
+        if (prefs == null) return;
         boolean remember = prefs.getBoolean(KEY_REMEMBER_ACCOUNT, false);
         String lastAccount = prefs.getString(KEY_LAST_ACCOUNT, "");
         
@@ -159,7 +161,8 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void saveToken(String token, String imToken, long expiresIn) {
-        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        SharedPreferences prefs = SecurePrefsHelper.getLoginPrefs(this);
+        if (prefs == null) return;
         SharedPreferences.Editor editor = prefs.edit();
         editor.putString(KEY_APP_TOKEN, token);
         editor.putString(KEY_IM_TOKEN, imToken);
@@ -181,7 +184,8 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void saveAccount(String account, boolean remember) {
-        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        SharedPreferences prefs = SecurePrefsHelper.getLoginPrefs(this);
+        if (prefs == null) return;
         SharedPreferences.Editor editor = prefs.edit();
         
         Log.d("LoginActivity", "保存账号 - account: " + account + ", remember: " + remember);

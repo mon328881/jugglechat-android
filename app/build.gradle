@@ -2,6 +2,14 @@ plugins {
     alias(libs.plugins.android.application)
 }
 
+// 从 local.properties 读取配置，未配置时使用默认值（勿将敏感信息提交到仓库）
+def getLocalProp = { String key, String fallback ->
+    def props = new Properties()
+    def f = rootProject.file("local.properties")
+    if (f.exists()) f.withInputStream { props.load(it) }
+    return props.getProperty(key, fallback)
+}
+
 android {
     namespace 'com.juggle.im.app.android'
     compileSdk 34
@@ -16,27 +24,33 @@ android {
         namespace "com.juggle.im.android"
         manifestPlaceholders = [
                 JPUSH_PKGNAME: "com.juggle.im.android",
-                JPUSH_APPKEY : "d381f2fe7e594b7f28d42986",
+                JPUSH_APPKEY : getLocalProp("JPUSH_APPKEY", "d381f2fe7e594b7f28d42986"),
                 JPUSH_CHANNEL: "developer-default"
         ]
         ndk {
             abiFilters 'armeabi-v7a', 'arm64-v8a'
         }
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+
+        buildConfigField "String", "APP_KEY", "\"${getLocalProp('APP_KEY', 'JJJB0Dh1PtDgZx5X')}\""
+        buildConfigField "String", "APP_SERVER_URL", "\"${getLocalProp('APP_SERVER_URL', 'http://192.168.123.214:8070')}\""
+        buildConfigField "String", "IM_SERVER", "\"${getLocalProp('IM_SERVER', 'ws://192.168.123.214:9003')}\""
+        buildConfigField "int", "ZEGO_ID", getLocalProp("ZEGO_ID", "1881186044")
+        buildConfigField "String", "APP_DOWNLOAD_PAGE_URL", "\"${getLocalProp('APP_DOWNLOAD_PAGE_URL', 'https://im-anhui.onego.top/')}\""
     }
     signingConfigs {
         release {
             storeFile file("../keystore/key.keystore")
-            storePassword "juggleim"
-            keyAlias "juggleim"
-            keyPassword "juggleim"
+            storePassword getLocalProp("KEYSTORE_PASSWORD", "juggleim")
+            keyAlias getLocalProp("KEY_ALIAS", "juggleim")
+            keyPassword getLocalProp("KEY_PASSWORD", "juggleim")
         }
 
         debug {
             storeFile file("../keystore/key.keystore")
-            storePassword "juggleim"
-            keyAlias "juggleim"
-            keyPassword "juggleim"
+            storePassword getLocalProp("KEYSTORE_PASSWORD", "juggleim")
+            keyAlias getLocalProp("KEY_ALIAS", "juggleim")
+            keyPassword getLocalProp("KEY_PASSWORD", "juggleim")
         }
     }
     buildTypes {
@@ -60,6 +74,9 @@ android {
         baseline = file("lint-baseline.xml")
     }
 
+    buildFeatures {
+        buildConfig = true
+    }
 }
 
 dependencies {
@@ -124,4 +141,10 @@ dependencies {
     implementation files('libs/JGPlugin-release.aar')
 
     implementation 'com.belerweb:pinyin4j:2.5.1'
+
+    // 敏感数据加密存储（Token 等）
+    implementation 'androidx.security:security-crypto:1.1.0-alpha06'
+
+    // Debug：内存泄漏检测
+    debugImplementation 'com.squareup.leakcanary:leakcanary-android:2.12'
 }

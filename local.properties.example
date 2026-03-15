@@ -1,0 +1,20 @@
+# 复制为 local.properties 并填写实际值，勿将 local.properties 提交到版本库
+# 若不配置，build.gradle 会使用默认值，仅适合本地/内网开发
+
+# 应用与 IM 配置（可选）
+# APP_KEY=your_app_key
+# APP_SERVER_URL=http://192.168.123.214:8070
+# IM_SERVER=ws://192.168.123.214:9003
+# ZEGO_ID=1881186044
+# APP_DOWNLOAD_PAGE_URL=https://your-download-page/
+
+# 极光推送（可选）
+# JPUSH_APPKEY=your_jpush_appkey
+
+# 签名（可选，生产环境建议从 CI 环境变量读取）
+# KEYSTORE_PASSWORD=your_keystore_password
+# KEY_ALIAS=your_key_alias
+# KEY_PASSWORD=your_key_password
+
+# SDK 路径（Android Studio 自动生成）
+# sdk.dir=C\:\\Users\\xxx\\AppData\\Local\\Android\\Sdk

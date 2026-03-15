@@ -116,6 +116,12 @@ public final class AvatarUtils {
                 if (iv == null) return;
                 Object tag = iv.getTag(TAG_VIDEO_COVER);
                 if (!videoUrl.equals(tag)) return;
+                // 若 Context 为 Activity 且已销毁/finishing，不再更新，避免泄漏与异常
+                android.content.Context ctx = iv.getContext();
+                if (ctx instanceof android.app.Activity) {
+                    android.app.Activity act = (android.app.Activity) ctx;
+                    if (act.isFinishing() || (android.os.Build.VERSION.SDK_INT >= 17 && act.isDestroyed())) return;
+                }
                 if (finalFrame != null) {
                     iv.setImageBitmap(finalFrame);
                     iv.setScaleType(ImageView.ScaleType.CENTER_CROP);

@@ -21,6 +21,7 @@ import com.google.gson.JsonParser;
 import com.juggle.im.android.model.ConfigUtils;
 
 import java.io.IOException;
+import java.lang.ref.WeakReference;
 import java.util.Collections;
 import java.util.Objects;
 
@@ -61,8 +62,10 @@ public final class UpdateChecker {
 
     /**
      * 检查更新：从 ConfigUtils.appDownloadPageUrl 读取下载页，拉取 page.json 进行版本比对。
+     * 使用 WeakReference 持有 Activity，避免异步回调导致泄漏。
      */
     public static void checkForUpdate(@NonNull Activity activity) {
+        final WeakReference<Activity> activityRef = new WeakReference<>(activity);
         String base = ConfigUtils.appDownloadPageUrl;
         if (TextUtils.isEmpty(base)) {
             Toast.makeText(activity, "未配置下载页地址", Toast.LENGTH_SHORT).show();
@@ -83,8 +86,9 @@ public final class UpdateChecker {
             @Override
             public void onFailure(@NonNull Call call, @NonNull IOException e) {
                 MAIN.post(() -> {
-                    if (!isActivityUsable(activity)) return;
-                    Toast.makeText(activity, "检查更新失败：" + safeMsg(e.getMessage()), Toast.LENGTH_SHORT).show();
+                    Activity a = activityRef.get();
+                    if (!isActivityUsable(a)) return;
+                    Toast.makeText(a, "检查更新失败：" + safeMsg(e.getMessage()), Toast.LENGTH_SHORT).show();
                 });
             }
 
@@ -92,31 +96,32 @@ public final class UpdateChecker {
             public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
                 String body = response.body() != null ? response.body().string() : null;
                 MAIN.post(() -> {
-                    if (!isActivityUsable(activity)) return;
+                    Activity a = activityRef.get();
+                    if (!isActivityUsable(a)) return;
                     if (!response.isSuccessful()) {
-                        Toast.makeText(activity, "检查更新失败：网络错误 " + response.code(), Toast.LENGTH_SHORT).show();
+                        Toast.makeText(a, "检查更新失败：网络错误 " + response.code(), Toast.LENGTH_SHORT).show();
                         return;
                     }
                     if (TextUtils.isEmpty(body)) {
-                        Toast.makeText(activity, "检查更新失败：返回为空", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(a, "检查更新失败：返回为空", Toast.LENGTH_SHORT).show();
                         return;
                     }
                     UpdateInfo info = parseUpdateInfo(body, baseNorm);
                     if (info == null) {
-                        Toast.makeText(activity, "检查更新失败：解析失败", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(a, "检查更新失败：解析失败", Toast.LENGTH_SHORT).show();
                         return;
                     }
 
-                    AppVersion local = getLocalVersion(activity);
+                    AppVersion local = getLocalVersion(a);
                     if (local == null) {
-                        Toast.makeText(activity, "检查更新失败：无法获取当前版本", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(a, "检查更新失败：无法获取当前版本", Toast.LENGTH_SHORT).show();
                         return;
                     }
 
                     if (isNewerThanCurrent(local, info)) {
-                        showUpdateDialog(activity, local, info);
+                        showUpdateDialog(a, local, info);
                     } else {
-                        Toast.makeText(activity, "已是最新版本", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(a, "已是最新版本", Toast.LENGTH_SHORT).show();
                     }
                 });
             }

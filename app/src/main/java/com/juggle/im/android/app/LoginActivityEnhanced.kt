@@ -6,6 +6,7 @@ import android.widget.CheckBox
 import android.widget.TextView
 import android.widget.EditText
 import com.juggle.im.android.utils.AccountTypeDetector
+import com.juggle.im.android.utils.SecurePrefsHelper
 
 /**
  * 登录界面增强功能
@@ -14,7 +15,6 @@ import com.juggle.im.android.utils.AccountTypeDetector
 class LoginActivityEnhanced {
     
     companion object {
-        private const val PREFS_NAME = "login_prefs"
         private const val KEY_REMEMBER_ACCOUNT = "remember_account"
         private const val KEY_SAVED_ACCOUNT = "saved_account"
         private const val KEY_ACCOUNT_TYPE = "account_type"
@@ -83,7 +83,7 @@ class LoginActivityEnhanced {
         account: String,
         rememberCheckBox: CheckBox
     ) {
-        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val prefs = SecurePrefsHelper.getLoginPrefs(context) ?: return
         val editor = prefs.edit()
         
         if (rememberCheckBox.isChecked) {
@@ -112,7 +112,7 @@ class LoginActivityEnhanced {
         accountInput: EditText,
         rememberCheckBox: CheckBox
     ) {
-        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val prefs = SecurePrefsHelper.getLoginPrefs(context) ?: return
         val rememberAccount = prefs.getBoolean(KEY_REMEMBER_ACCOUNT, false)
         
         if (rememberAccount) {
@@ -130,7 +130,7 @@ class LoginActivityEnhanced {
      * @param context 上下文
      */
     fun clearSavedAccount(context: Context) {
-        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val prefs = SecurePrefsHelper.getLoginPrefs(context) ?: return
         val editor = prefs.edit()
         editor.remove(KEY_REMEMBER_ACCOUNT)
         editor.remove(KEY_SAVED_ACCOUNT)

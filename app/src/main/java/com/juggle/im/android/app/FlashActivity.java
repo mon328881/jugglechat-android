@@ -8,6 +8,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.view.Window;
 
@@ -17,35 +18,41 @@ import com.juggle.im.android.R;
 import com.juggle.im.android.core.JIMChatCore;
 import com.juggle.im.android.model.ConfigUtils;
 import com.juggle.im.android.server.http.ServiceManager;
+import com.juggle.im.android.utils.SecurePrefsHelper;
 
 import java.util.Date;
 
 public class FlashActivity extends AppCompatActivity {
     private static final String TAG = "FlashActivity";
-    private static final String PREFS_NAME = "login_prefs";
     private static final String KEY_EXPIRE_TIME = "expire_time";
-    // 默认 token 有效期为 30 天（与后端保持一致）
-    private static final long DEFAULT_TOKEN_VALIDITY_DURATION = 30 * 24 * 60 * 60 * 1000;
+
+    private final Handler handler = new Handler(Looper.getMainLooper());
+    private final Runnable goToLoginRunnable = this::goToLogin;
+    private final Runnable goToMainRunnable = this::goToMain;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_flash);
 
-        // 检查是否存在有效的登录token
         if (hasValidToken()) {
-            // 自动登录
-            autoLogin();
+            handler.postDelayed(goToMainRunnable, 1200);
         } else {
-            // 延迟跳转到登录页面
-            new Handler().postDelayed(this::goToLogin, 1500);
+            handler.postDelayed(goToLoginRunnable, 1500);
         }
         Window window = getWindow();
         window.setNavigationBarColor(getColor(R.color.primary_bg_light));
     }
 
+    @Override
+    protected void onDestroy() {
+        handler.removeCallbacksAndMessages(null);
+        super.onDestroy();
+    }
+
     private boolean hasValidToken() {
-        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        SharedPreferences prefs = SecurePrefsHelper.getLoginPrefs(this);
+        if (prefs == null) return false;
         String token = prefs.getString(KEY_APP_TOKEN, null);
         long expireTime = prefs.getLong(KEY_EXPIRE_TIME, 0);
         String imToken = prefs.getString(KEY_IM_TOKEN, null);
@@ -56,11 +63,6 @@ public class FlashActivity extends AppCompatActivity {
             return true;
         }
         return false;
-    }
-
-    private void autoLogin() {
-        // 尝试连接
-        new Handler().postDelayed(this::goToMain, 1200);
     }
 
     private void goToMain() {

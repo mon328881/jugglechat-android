@@ -358,6 +358,12 @@ public class VoiceInputAction extends FrameLayout {
         }
     }
 
+    @Override
+    protected void onDetachedFromWindow() {
+        uiHandler.removeCallbacksAndMessages(null);
+        super.onDetachedFromWindow();
+    }
+
     private void stopRipple() {
         rippleActive = false;
         if (rippleCenter != null) {

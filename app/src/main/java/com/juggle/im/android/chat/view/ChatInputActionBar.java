@@ -368,6 +368,8 @@ public class ChatInputActionBar extends LinearLayout {
             }
         } catch (Exception ignored) {
         }
+        // 避免持有已销毁 Activity 的 plugin 回调
+        activityResultHandlers.clear();
         // Clear any cached panel references to help GC (we generally inflate panels on demand)
         morePanel = null;
         listener = null;

@@ -7,6 +7,7 @@ import androidx.multidex.MultiDexApplication;
 
 import com.juggle.im.android.core.JIMChatCore;
 import com.juggle.im.android.model.ConfigUtils;
+import com.juggle.im.android.utils.SecurePrefsHelper;
 import com.tencent.tencentmap.mapsdk.maps.TencentMapInitializer;
 
 import java.util.Collections;
@@ -14,7 +15,6 @@ import java.util.Collections;
 import cn.jpush.android.api.JPushInterface;
 
 public class Application extends MultiDexApplication {
-    private static final String PREFS_NAME = "login_prefs";
     private static final String KEY_APP_TOKEN = "app_token";
     private static final String KEY_IM_TOKEN = "im_token";
     private static final String KEY_EXPIRE_TIME = "expire_time";
@@ -25,6 +25,23 @@ public class Application extends MultiDexApplication {
     public void onCreate() {
         super.onCreate();
 
+        // 从 BuildConfig 注入配置（来自 local.properties 或默认值）
+        ConfigUtils.appKey = BuildConfig.APP_KEY;
+        ConfigUtils.appServerUrl = BuildConfig.APP_SERVER_URL;
+        ConfigUtils.imServer = BuildConfig.IM_SERVER;
+        ConfigUtils.zegoId = BuildConfig.ZEGO_ID;
+        ConfigUtils.appDownloadPageUrl = BuildConfig.APP_DOWNLOAD_PAGE_URL;
+
+        if (BuildConfig.DEBUG) {
+            try {
+                android.os.StrictMode.setThreadPolicy(new android.os.StrictMode.ThreadPolicy.Builder()
+                        .detectDiskReads().detectDiskWrites().detectNetwork().penaltyLog().build());
+                android.os.StrictMode.setVmPolicy(new android.os.StrictMode.VmPolicy.Builder()
+                        .detectLeakedClosableObjects().detectLeakedSqlLiteObjects().penaltyLog().build());
+            } catch (Throwable ignored) {
+            }
+        }
+
         // 腾讯地图隐私协议同意（必须在地图初始化之前调用）
         try {
             TencentMapInitializer.setAgreePrivacy(true);
@@ -32,17 +49,19 @@ public class Application extends MultiDexApplication {
             // 如果地图SDK类不可用，不要崩溃应用启动
         }
 
-        // 恢复上次登录态：避免进程被系统回收后，静态变量丢失导致接口请求 17005（not logged in）
+        // 恢复上次登录态：使用加密 Prefs 读取 Token
         try {
-            android.content.SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-            String appToken = prefs.getString(KEY_APP_TOKEN, null);
-            String imToken = prefs.getString(KEY_IM_TOKEN, null);
-            long expireTime = prefs.getLong(KEY_EXPIRE_TIME, 0L);
-            if (appToken != null && !appToken.isEmpty() && expireTime > System.currentTimeMillis()) {
-                ConfigUtils.appToken = appToken;
-            }
-            if (imToken != null && !imToken.isEmpty() && expireTime > System.currentTimeMillis()) {
-                ConfigUtils.imToken = imToken;
+            android.content.SharedPreferences prefs = SecurePrefsHelper.getLoginPrefs(this);
+            if (prefs != null) {
+                String appToken = prefs.getString(KEY_APP_TOKEN, null);
+                String imToken = prefs.getString(KEY_IM_TOKEN, null);
+                long expireTime = prefs.getLong(KEY_EXPIRE_TIME, 0L);
+                if (appToken != null && !appToken.isEmpty() && expireTime > System.currentTimeMillis()) {
+                    ConfigUtils.appToken = appToken;
+                }
+                if (imToken != null && !imToken.isEmpty() && expireTime > System.currentTimeMillis()) {
+                    ConfigUtils.imToken = imToken;
+                }
             }
         } catch (Throwable ignored) {
             // ignore any unexpected prefs errors
@@ -59,10 +78,10 @@ public class Application extends MultiDexApplication {
             Log.i(TAG, "JPush registrationId raw = " + regId);
             if (!TextUtils.isEmpty(regId)) {
                 Log.i(TAG, "JPush registrationId = " + regId);
-                // 持久化 registrationId，方便后续上报 IM
-                android.content.SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-                prefs.edit().putString(KEY_JPUSH_REG_ID, regId).apply();
-                // 也缓存到内存配置，便于其他地方直接使用
+                android.content.SharedPreferences prefs = SecurePrefsHelper.getLoginPrefs(this);
+                if (prefs != null) {
+                    prefs.edit().putString(KEY_JPUSH_REG_ID, regId).apply();
+                }
                 ConfigUtils.jpushRegistrationId = regId;
             }
         } catch (Throwable ignored) {
