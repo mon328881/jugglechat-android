@@ -1,10 +1,11 @@
 # 复制为 local.properties 并填写实际值，勿将 local.properties 提交到版本库
 # 若不配置，build.gradle 会使用默认值，仅适合本地/内网开发
 
+# 生产环境请使用 https / wss，Debug 下若使用 http/ws 会在 Logcat 中看到提示
 # 应用与 IM 配置（可选）
 # APP_KEY=your_app_key
-# APP_SERVER_URL=http://192.168.123.214:8070
-# IM_SERVER=ws://192.168.123.214:9003
+# APP_SERVER_URL=https://your-domain.com
+# IM_SERVER=wss://your-domain.com/ws
 # ZEGO_ID=1881186044
 # APP_DOWNLOAD_PAGE_URL=https://your-download-page/
 

@@ -4,7 +4,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.util.Log;
+import com.juggle.im.android.utils.LogUtil;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -85,7 +85,7 @@ public class LoginActivity extends AppCompatActivity {
         boolean remember = prefs.getBoolean(KEY_REMEMBER_ACCOUNT, false);
         String lastAccount = prefs.getString(KEY_LAST_ACCOUNT, "");
         
-        Log.d("LoginActivity", "加载记住的账号 - remember: " + remember + ", lastAccount: " + lastAccount);
+        LogUtil.d("LoginActivity", "加载记住的账号 remember=" + remember);
         
         if (remember && !lastAccount.isEmpty()) {
             phoneInput.setText(lastAccount);
@@ -115,14 +115,14 @@ public class LoginActivity extends AppCompatActivity {
         
         // 检查复选框状态
         boolean isRememberChecked = rememberAccountCheckbox != null && rememberAccountCheckbox.isChecked();
-        Log.d("LoginActivity", "发送登录请求 - 账号: " + account + ", 记住账号: " + isRememberChecked);
+        LogUtil.d("LoginActivity", "发送登录请求 remember=" + isRememberChecked);
         
         ServiceManager.getUserService().login(new LoginRequest(account, password), new ApiCallback<LoginResult>() {
             @Override
             public void onSuccess(LoginResult data) {
-                Log.i("login", "登录成功");
+                LogUtil.i("login", "登录成功");
                 if (data == null) {
-                    Log.e("login", "LoginResult 为 null，后端可能返回了错误的数据格式");
+                    LogUtil.e("login", "LoginResult 为 null，后端可能返回了错误的数据格式");
                     Toast.makeText(LoginActivity.this, "登录失败：服务器返回数据异常", Toast.LENGTH_SHORT).show();
                     showLoading(false);
                     return;
@@ -138,7 +138,7 @@ public class LoginActivity extends AppCompatActivity {
                 
                 // 根据勾选状态记住账号
                 boolean shouldRemember = rememberAccountCheckbox != null && rememberAccountCheckbox.isChecked();
-                Log.d("LoginActivity", "登录成功，准备保存账号 - shouldRemember: " + shouldRemember);
+                LogUtil.d("LoginActivity", "登录成功，准备保存账号 shouldRemember=" + shouldRemember);
                 saveAccount(account, shouldRemember);
                 
                 JIMChatCore.getInstance().connect(ConfigUtils.imToken);
@@ -151,7 +151,7 @@ public class LoginActivity extends AppCompatActivity {
             public void onError(int code, String message) {
                 // 隐藏loading状态
                 showLoading(false);
-                Log.e("login", "登录失败 - 错误代码: " + code + ", 错误信息: " + message);
+                LogUtil.e("login", "登录失败 code=" + code);
                 String tip = (message == null || message.isEmpty())
                         ? "登录失败，请稍后重试"
                         : "登录失败：" + message;
@@ -172,11 +172,11 @@ public class LoginActivity extends AppCompatActivity {
         if (expiresIn > 0) {
             // 后端返回的是秒数，需要转换为毫秒
             expireTime = System.currentTimeMillis() + (expiresIn * 1000);
-            Log.d("LoginActivity", "使用后端返回的过期时间: " + expiresIn + " 秒");
+            LogUtil.d("LoginActivity", "使用后端返回的过期时间");
         } else {
             // 后端没有返回过期时间，使用默认值
             expireTime = System.currentTimeMillis() + DEFAULT_TOKEN_VALIDITY_DURATION;
-            Log.d("LoginActivity", "使用默认过期时间: " + (DEFAULT_TOKEN_VALIDITY_DURATION / 1000 / 60 / 60 / 24) + " 天");
+            LogUtil.d("LoginActivity", "使用默认过期时间");
         }
         
         editor.putLong(KEY_EXPIRE_TIME, expireTime);
@@ -188,16 +188,16 @@ public class LoginActivity extends AppCompatActivity {
         if (prefs == null) return;
         SharedPreferences.Editor editor = prefs.edit();
         
-        Log.d("LoginActivity", "保存账号 - account: " + account + ", remember: " + remember);
+        LogUtil.d("LoginActivity", "保存账号 remember=" + remember);
         
         if (remember) {
             editor.putBoolean(KEY_REMEMBER_ACCOUNT, true);
             editor.putString(KEY_LAST_ACCOUNT, account);
-            Log.d("LoginActivity", "已保存账号到SharedPreferences");
+            LogUtil.d("LoginActivity", "已保存账号到SharedPreferences");
         } else {
             editor.putBoolean(KEY_REMEMBER_ACCOUNT, false);
             editor.remove(KEY_LAST_ACCOUNT);
-            Log.d("LoginActivity", "已清除SharedPreferences中的账号");
+            LogUtil.d("LoginActivity", "已清除SharedPreferences中的账号");
         }
         editor.commit(); // 使用 commit() 确保数据立即写入
     }

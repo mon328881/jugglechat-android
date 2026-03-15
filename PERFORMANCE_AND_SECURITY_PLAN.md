@@ -177,3 +177,11 @@ IM_SERVER=ws://192.168.123.214:9003
 ---
 
 以上方案可直接按优先级分阶段落地；先做 P0 的安全与泄漏项，再逐步完成 P1/P2，并配合 LeakCanary 与真机测试验证。
+
+---
+
+## 六、P2 实施说明（已完成）
+
+- **日志脱敏**：新增 `utils/LogUtil.java`，仅 `BuildConfig.DEBUG` 时输出 d/i/w/e；Application、LoginActivity、MainActivity、GroupListActivity 等敏感处改为使用 `LogUtil`，不再打印 token、registrationId、userId、账号、完整 URL。
+- **生产环境 HTTPS/WSS**：`Application.onCreate()` 在 Debug 下若检测到 `appServerUrl` 非 https 或 `imServer` 非 wss，会打一条 LogUtil 提示；`local.properties.example` 中已注明生产环境请配置 https/wss。
+- **RecyclerView 调优**：`MessageListFragment`、`ConversationListFragment`、`MomentsActivity` 的 RecyclerView 已设置 `setItemViewCacheSize(20/24)`，减少滑动时重复创建 ViewHolder。

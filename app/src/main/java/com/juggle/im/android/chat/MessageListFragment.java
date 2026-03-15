@@ -120,6 +120,7 @@ public class MessageListFragment extends Fragment {
         recyclerView = view.findViewById(R.id.recycler_view_messages);
         layoutManager = new LinearLayoutManager(requireContext());
         recyclerView.setLayoutManager(layoutManager);
+        recyclerView.setItemViewCacheSize(24);
         adapter = new MessageListAdapter(isGroup, (message, action) -> {
             // handle message actions here on UI thread (position is adapter/display
             // position)

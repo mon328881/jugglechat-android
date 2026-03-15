@@ -8,7 +8,7 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.util.Log;
+import com.juggle.im.android.utils.LogUtil;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.Window;
@@ -116,7 +116,7 @@ public class MainActivity extends AppCompatActivity {
             currentRetryCount++;
 
             if (ConfigUtils.imToken != null && !ConfigUtils.imToken.isEmpty()) {
-                Log.i("MainActivity", "try reconnect, attempt " + currentRetryCount);
+                LogUtil.i("MainActivity", "try reconnect, attempt " + currentRetryCount);
                 JIMChatCore.getInstance().connect(ConfigUtils.imToken);
             }
 
@@ -148,7 +148,7 @@ public class MainActivity extends AppCompatActivity {
         networkStateManager = new NetworkStateManager(this, new NetworkStateManager.Callback() {
             @Override
             public void onNetworkAvailable() {
-                Log.i("MainActivity", "网络已连接，尝试重连");
+                LogUtil.i("MainActivity", "网络已连接，尝试重连");
                 if (ConfigUtils.imToken != null && !ConfigUtils.imToken.isEmpty()) {
                     currentRetryCount = 0;
                     isReconnecting = true;
@@ -159,7 +159,7 @@ public class MainActivity extends AppCompatActivity {
             
             @Override
             public void onNetworkLost() {
-                Log.i("MainActivity", "网络已断开");
+                LogUtil.i("MainActivity", "网络已断开");
                 isReconnecting = false;
                 reconnectHandler.removeCallbacks(reconnectRunnable);
             }
@@ -228,7 +228,7 @@ public class MainActivity extends AppCompatActivity {
         reconnectHandler.postDelayed(this::refreshFriendApplicationBadgeFromServer, 800);
 
         JIM.getInstance().getCallManager().addReceiveListener("CallReceive", iCallSession -> {
-            Log.d("MainActivity", "receive call: " + iCallSession.getCallId());
+            LogUtil.d("MainActivity", "receive call: " + iCallSession.getCallId());
             int members = iCallSession.getMembers().size();
             Intent it = members == 2
                     ? new Intent(this, SingleCallActivity.class)
@@ -347,7 +347,7 @@ public class MainActivity extends AppCompatActivity {
 
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onConnectStatusChanged(ConnectStatusEvent event) {
-        Log.i("MainActivity", event.getConnectionStatus().toString() + "," + event.getCode());
+        LogUtil.i("MainActivity", event.getConnectionStatus().toString() + "," + event.getCode());
         View v = findViewById(R.id.connect_status);
         View btnReconnect = findViewById(R.id.btn_reconnect);
         TextView vStatus = findViewById(R.id.connect_text_view);
@@ -492,7 +492,7 @@ public class MainActivity extends AppCompatActivity {
 
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onConversationUpdated(ConversationUpdatedEvent event) {
-        Log.i("MainActivity", "onConversationUpdated");
+        LogUtil.i("MainActivity", "onConversationUpdated");
         List<ConversationInfo> infoList = event.getConversationInfoList();
         if (infoList == null || infoList.isEmpty()) return;
 
@@ -712,7 +712,7 @@ public class MainActivity extends AppCompatActivity {
     private void retryFetchUserInfo(ImageView ivUserAvatar, TextView tvUserName, TextView tvUserId, String userId, int retryCount) {
         if (retryCount >= 3) {
             // 本地重试3次都失败，尝试从服务器拉取
-            Log.d("MainActivity", "retryFetchUserInfo: 本地重试3次失败，开始从服务器拉取用户信息 userId=" + userId);
+            LogUtil.d("MainActivity", "retryFetchUserInfo: 本地重试3次失败，开始从服务器拉取用户信息");
             fetchUserInfoFromServer(ivUserAvatar, tvUserName, tvUserId, userId);
             return;
         }
@@ -720,7 +720,7 @@ public class MainActivity extends AppCompatActivity {
         UserInfo userInfo = JIM.getInstance().getUserInfoManager().getUserInfo(userId);
         if (userInfo != null) {
             // 成功获取用户信息，更新UI，并同步到 ConfigUtils 作为后续显示的首选来源
-            Log.d("MainActivity", "retryFetchUserInfo: 成功获取用户信息 userId=" + userId + ", name=" + userInfo.getUserName());
+            LogUtil.d("MainActivity", "retryFetchUserInfo: 成功获取用户信息");
             String displayName = userInfo.getUserName();
             tvUserName.setText(displayName);
             tvUserId.setText("@" + userInfo.getUserId());
@@ -730,7 +730,7 @@ public class MainActivity extends AppCompatActivity {
             ConfigUtils.myName = displayName;
         } else {
             // 继续重试
-            Log.d("MainActivity", "retryFetchUserInfo: 本地未找到用户信息，继续重试 retryCount=" + retryCount);
+            LogUtil.d("MainActivity", "retryFetchUserInfo: 本地未找到用户信息，继续重试 retryCount=" + retryCount);
             ivUserAvatar.postDelayed(() -> {
                 retryFetchUserInfo(ivUserAvatar, tvUserName, tvUserId, userId, retryCount + 1);
             }, 1000);
@@ -739,16 +739,16 @@ public class MainActivity extends AppCompatActivity {
     
     // 从服务器拉取用户信息
     private void fetchUserInfoFromServer(ImageView ivUserAvatar, TextView tvUserName, TextView tvUserId, String userId) {
-        Log.d("MainActivity", "fetchUserInfoFromServer: 开始从服务器拉取用户信息 userId=" + userId);
+        LogUtil.d("MainActivity", "fetchUserInfoFromServer: 开始从服务器拉取用户信息");
         ServiceManager.getUserService().getUserInfo(userId, new ApiCallback<UserInfoBean>() {
             @Override
             public void onSuccess(UserInfoBean data) {
-                Log.d("MainActivity", "fetchUserInfoFromServer onSuccess: data=" + (data != null ? data.toString() : "null"));
+                LogUtil.d("MainActivity", "fetchUserInfoFromServer onSuccess: data=" + (data != null ? data.toString() : "null"));
                 if (data == null) return;
                 runOnUiThread(() -> {
                     String name = data.getNickname();
                     String avatar = data.getAvatar();
-                    Log.d("MainActivity", "fetchUserInfoFromServer updating UI: name=" + name + ", avatar=" + avatar);
+                    LogUtil.d("MainActivity", "fetchUserInfoFromServer updating UI: name=" + name + ", avatar=" + avatar);
                     if (name != null && !name.isEmpty()) {
                         tvUserName.setText(name);
                         ConfigUtils.myName = name;
@@ -762,7 +762,7 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onError(int code, String message) {
-                Log.d("MainActivity", "fetchUserInfoFromServer onError: code=" + code + ", message=" + message);
+                LogUtil.d("MainActivity", "fetchUserInfoFromServer onError: code=" + code);
             }
         });
     }
@@ -857,7 +857,7 @@ public class MainActivity extends AppCompatActivity {
         try {
             JIM.getInstance().getConnectionManager().disconnect(false);
         } catch (Exception e) {
-            Log.e("MainActivity", "断开连接失败", e);
+            LogUtil.e("MainActivity", "断开连接失败", e);
         }
     }
 

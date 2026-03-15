@@ -86,6 +86,7 @@ public class ConversationListFragment extends Fragment implements ConversationLi
         });
         LinearLayoutManager layoutManager = new LinearLayoutManager(requireContext());
         conversationListView.setLayoutManager(layoutManager);
+        conversationListView.setItemViewCacheSize(20);
         conversationListView.setAdapter(conversationListAdapter);
 
         // 禁用默认动画，避免会话移动时出现白屏闪烁（和微信一样）

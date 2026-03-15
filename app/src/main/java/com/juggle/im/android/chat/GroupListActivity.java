@@ -2,7 +2,7 @@ package com.juggle.im.android.chat;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.util.Log;
+import com.juggle.im.android.utils.LogUtil;
 import android.widget.ImageView;
 import android.widget.Toast;
 
@@ -89,7 +89,7 @@ public class GroupListActivity extends AppCompatActivity {
                         if (extra != null) {
                             creatorId = extra.get("creator_id");
                             if (creatorId != null) {
-                                Log.d("GroupListActivity", "Group: " + groupInfo.getGroupName() + ", CreatorId: " + creatorId + ", CurrentUserId: " + currentUserId);
+                                LogUtil.d("GroupListActivity", "Group loaded: " + groupInfo.getGroupName());
                             }
                         }
                         
@@ -107,7 +107,7 @@ public class GroupListActivity extends AppCompatActivity {
 
         if (!groups.isEmpty()) {
             adapter.setGroups(groups);
-            Log.d("GroupListActivity", "加载群组成功，共 " + groups.size() + " 个");
+            LogUtil.d("GroupListActivity", "加载群组成功，共 " + groups.size() + " 个");
         } else {
             Toast.makeText(GroupListActivity.this, "暂无群组", Toast.LENGTH_SHORT).show();
         }

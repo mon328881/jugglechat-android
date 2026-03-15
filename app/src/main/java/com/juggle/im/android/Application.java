@@ -1,11 +1,11 @@
 package com.juggle.im.android;
 
 import android.text.TextUtils;
-import android.util.Log;
 
 import androidx.multidex.MultiDexApplication;
 
 import com.juggle.im.android.core.JIMChatCore;
+import com.juggle.im.android.utils.LogUtil;
 import com.juggle.im.android.model.ConfigUtils;
 import com.juggle.im.android.utils.SecurePrefsHelper;
 import com.tencent.tencentmap.mapsdk.maps.TencentMapInitializer;
@@ -69,15 +69,22 @@ public class Application extends MultiDexApplication {
 
         JIMChatCore.getInstance().init(this, Collections.singletonList(ConfigUtils.imServer), ConfigUtils.appKey);
 
+        if (BuildConfig.DEBUG) {
+            boolean insecure = (ConfigUtils.appServerUrl != null && !ConfigUtils.appServerUrl.startsWith("https"))
+                    || (ConfigUtils.imServer != null && !ConfigUtils.imServer.startsWith("wss"));
+            if (insecure) {
+                LogUtil.w(TAG, "当前使用非加密连接(http/ws)，生产环境请配置 https/wss");
+            }
+        }
+
         // 初始化极光推送（这里直接开启调试日志，如需关闭可改为 false）
         try {
             JPushInterface.setDebugMode(true);
             JPushInterface.init(this);
 
             String regId = JPushInterface.getRegistrationID(this);
-            Log.i(TAG, "JPush registrationId raw = " + regId);
+            LogUtil.i(TAG, "JPush registrationId present: " + !TextUtils.isEmpty(regId));
             if (!TextUtils.isEmpty(regId)) {
-                Log.i(TAG, "JPush registrationId = " + regId);
                 android.content.SharedPreferences prefs = SecurePrefsHelper.getLoginPrefs(this);
                 if (prefs != null) {
                     prefs.edit().putString(KEY_JPUSH_REG_ID, regId).apply();

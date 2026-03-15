@@ -197,6 +197,7 @@ public class MomentsActivity extends AppCompatActivity {
 
         // 默认进入页面为朋友圈模式：使用单列 LinearLayoutManager
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        recyclerView.setItemViewCacheSize(20);
         recyclerView.addItemDecoration(new SpacesItemDecoration(dpToPx(this, 4)));
         adapter = new MomentsAdapter(new ArrayList<>());
         recyclerView.setAdapter(adapter);
