@@ -43,6 +43,14 @@ public class JIMChatCore {
     private static final String tag = "JIMCore";
     private static volatile JIMChatCore instance;
     private static final Object lock = new Object();
+
+    /**
+     * 主消息列表中的“系统通知”虚拟会话 ID。
+     * 约束：
+     * - 不要以 "system" / "broadcast" 开头，避免命中 MainActivity/JIMChatCore 的隐藏会话过滤规则
+     * - 不要包含 ":"，避免被当作系统/广播类隐藏会话
+     */
+    public static final String SYS_NOTICE_CONV_ID = "sys_notice";
     
     private JIMChatCore() {
         // 私有构造函数，防止外部实例化
@@ -93,6 +101,9 @@ public class JIMChatCore {
 
         JIM.getInstance().getMessageManager().registerContentType(FriendNotifyMessage.class);
         JIM.getInstance().getMessageManager().registerContentType(GroupNotifyMessage.class);
+        // 注册系统/广播自定义消息类型（jg:text & jg:notice）
+        JIM.getInstance().getMessageManager().registerContentType(com.juggle.im.android.chat.message.SystemTextMessage.class);
+        JIM.getInstance().getMessageManager().registerContentType(com.juggle.im.android.chat.message.SystemNoticeMessage.class);
         JIM.getInstance().init(context, appKey, builder.build());
         initListener();
         JIM.getInstance().getConnectionManager().addConnectionStatusListener("conn", new IConnectionManager.IConnectionStatusListener() {
@@ -233,7 +244,12 @@ public class JIMChatCore {
         JIM.getInstance().getMessageManager().addListener("msg", new IMessageManager.IMessageListener() {
             @Override
             public void onMessageReceive(Message message) {
-                LogUtil.d(tag, "onMessageReceive: " + message.toString());
+                // LogUtil.d(tag, "onMessageReceive: " + message.toString());
+                // JIMChatCore.initListener 中的 onMessageReceive 里，打印一下
+                LogUtil.d(tag, "onMessageReceive: convId=" 
+                        + (message.getConversation() != null ? message.getConversation().getConversationId() : "null")
+                        + ", channelType=" + message.getConversation().getConversationType()
+                        + ", msgType=" + message.getContent().getContentType());
                 EventBus.getDefault().post(new MessageUpdatedEvent(message));
                 // 好友申请会话收到新消息时立即刷新通讯录/新朋友红点（会话列表回调可能晚于消息回调）
                 if (message != null && message.getConversation() != null
@@ -294,11 +310,52 @@ public class JIMChatCore {
         });
     }
 
+    public static boolean isSysNoticeConversationId(String convId) {
+        return SYS_NOTICE_CONV_ID.equals(convId);
+    }
+
+    private static boolean isExcludedSystemConversationFromSysNotice(String convId) {
+        if (convId == null || convId.isEmpty()) return true;
+        // 好友申请/动态通知等系统会话走各自的红点逻辑，不纳入“系统通知”聚合
+        return convId.toLowerCase().startsWith("friend_apply")
+                || convId.toLowerCase().startsWith("post_ntf");
+    }
+
+    /**
+     * 清空“系统通知”虚拟会话的未读数。
+     * 注意：sys_notice 是 UI 层虚拟会话 ID，SDK/服务端未必存在该会话，直接 clearUnreadCount 可能失败（例如 21003）。
+     * 这里通过清空所有真实 SYSTEM 会话（排除 friend_apply/post_ntf）来达到“系统通知已读”的效果。
+     */
+    public void clearSysNoticeUnread() {
+        IConversationManager cm = JIM.getInstance().getConversationManager();
+        long cursor = -1L;
+        for (;;) {
+            List<ConversationInfo> list = cm.getConversationInfoList(50, cursor, JIMConst.PullDirection.NEWER);
+            if (list == null || list.isEmpty()) break;
+            for (ConversationInfo info : list) {
+                if (info == null || info.getConversation() == null) continue;
+                Conversation c = info.getConversation();
+                if (c.getConversationType() != Conversation.ConversationType.SYSTEM) continue;
+                String convId = c.getConversationId();
+                if (isExcludedSystemConversationFromSysNotice(convId)) continue;
+                try {
+                    cm.clearUnreadCount(c, null);
+                } catch (Throwable ignored) {
+                }
+            }
+            ConversationInfo last = list.get(list.size() - 1);
+            cursor = last.getSortTime();
+            if (list.size() < 50) break;
+        }
+    }
+
     /**
      * 判断是否为系统/广播类会话的 conversationId，与 MainActivity 过滤规则一致。
      */
     private static boolean isSystemOrBroadcastConversationId(String convId) {
         if (convId == null || convId.isEmpty()) return false;
+        // 系统通知虚拟会话需要常驻主消息列表，不能被当作隐藏会话过滤
+        if (isSysNoticeConversationId(convId)) return false;
         if (convId.contains(":")) return true;
         String lower = convId.toLowerCase();
         return lower.startsWith("friend_apply") || lower.startsWith("post_ntf")
@@ -320,7 +377,14 @@ public class JIMChatCore {
                 Conversation c = info.getConversation();
                 String convId = c.getConversationId();
                 Conversation.ConversationType type = c.getConversationType();
-                if (type == Conversation.ConversationType.SYSTEM) continue;
+                // 消息 Tab 未读数：SYSTEM 会话聚合到“系统通知”，因此要把真实 SYSTEM 未读计入（排除 friend_apply/post_ntf）
+                if (type == Conversation.ConversationType.SYSTEM) {
+                    if (isExcludedSystemConversationFromSysNotice(convId)) {
+                        continue;
+                    }
+                    total += info.getUnreadCount();
+                    continue;
+                }
                 if (type == Conversation.ConversationType.PRIVATE && convId != null && isSystemOrBroadcastConversationId(convId)) {
                     continue;
                 }

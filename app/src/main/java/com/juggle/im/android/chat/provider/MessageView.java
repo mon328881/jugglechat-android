@@ -16,6 +16,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.juggle.im.JIM;
 import com.juggle.im.android.R;
 import com.juggle.im.android.chat.utils.MessageUtils;
+import com.juggle.im.android.chat.message.SystemNoticeMessage;
+import com.juggle.im.android.chat.message.SystemTextMessage;
 import com.juggle.im.android.model.ConfigUtils;
 import com.juggle.im.android.model.UiMessage;
 import com.juggle.im.android.utils.AvatarUtils;
@@ -58,6 +60,11 @@ public abstract class MessageView<T extends UiMessage, K> extends RecyclerView.V
     final public void bind(T message, K content, boolean isGroup, View itemView) {
         ImageView ivAvatar = itemView.findViewById(R.id.image_avatar);
         if (ivAvatar != null) {
+            // 系统通知/系统文本消息：统一使用本地 notice 头像，避免拿不到 UserInfo 时退化成首字母头像
+            if (content instanceof SystemNoticeMessage || content instanceof SystemTextMessage) {
+                AvatarUtils.loadAvatar(ivAvatar, "res://notice", "系统");
+                message.setSenderName("系统");
+            } else {
             UserInfo sendUser = JIM.getInstance().getUserInfoManager().getUserInfo(message.getSenderId());
             if (sendUser != null) {
                 // 优先使用 IM 返回的用户资料；对于自己发送的消息，头像 URL 以 ConfigUtils.myAvatarUrl 为准，确保资料页更新后群聊/单聊头像立即生效
@@ -128,6 +135,7 @@ public abstract class MessageView<T extends UiMessage, K> extends RecyclerView.V
                         txSender.setVisibility(GONE);
                     }
                 }
+            }
             }
         }
         TextView vMsgTime = itemView.findViewById(R.id.msg_sent_time);

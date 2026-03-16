@@ -251,10 +251,18 @@ public class ConversationListFragment extends Fragment implements ConversationLi
     @Override
     public void onConversationClick(UiConversation uiConversation) {
         int unreadCount = uiConversation.getConversationInfo().getUnreadCount();
-        JIM.getInstance().getConversationManager()
-                .clearUnreadCount(uiConversation.getConversationInfo().getConversation(), null);
+        // 主消息列表中 SYSTEM 会话会被聚合映射为 sys_notice，点击进入时必须使用映射后的会话 ID/类型
+        String convId = uiConversation.getId();
+        boolean isSysNotice = com.juggle.im.android.core.JIMChatCore.isSysNoticeConversationId(convId);
+        if (isSysNotice) {
+            // sys_notice 为 UI 虚拟会话，直接 clearUnreadCount 可能失败（例如 21003），这里清空所有真实 SYSTEM 会话未读
+            com.juggle.im.android.core.JIMChatCore.getInstance().clearSysNoticeUnread();
+        } else {
+            Conversation clearConv = uiConversation.getConversationInfo().getConversation();
+            JIM.getInstance().getConversationManager().clearUnreadCount(clearConv, null);
+        }
         Intent intent = ConversationActivity.intentFor(this.getActivity(),
-                uiConversation.getConversationInfo().getConversation().getConversationId(),
+                convId,
                 uiConversation.getName(),
                 uiConversation.getConversationInfo().getConversation().getConversationType()
                         .equals(Conversation.ConversationType.GROUP),
@@ -267,6 +275,14 @@ public class ConversationListFragment extends Fragment implements ConversationLi
 
     @Override
     public void onConversationLongClick(UiConversation uiConversation) {
+        // 系统通知虚拟会话：不可删除、不可取消置顶，长按不弹出操作菜单，避免误操作
+        if (uiConversation != null
+                && uiConversation.getConversationInfo() != null
+                && uiConversation.getConversationInfo().getConversation() != null
+                && com.juggle.im.android.core.JIMChatCore.isSysNoticeConversationId(
+                        uiConversation.getConversationInfo().getConversation().getConversationId())) {
+            return;
+        }
         showPopupMenu(uiConversation);
     }
 
@@ -348,6 +364,13 @@ public class ConversationListFragment extends Fragment implements ConversationLi
     }
 
     private void deleteConversation(UiConversation uiConversation) {
+        if (uiConversation != null
+                && uiConversation.getConversationInfo() != null
+                && uiConversation.getConversationInfo().getConversation() != null
+                && com.juggle.im.android.core.JIMChatCore.isSysNoticeConversationId(
+                        uiConversation.getConversationInfo().getConversation().getConversationId())) {
+            return;
+        }
         JIM.getInstance().getConversationManager().deleteConversationInfo(
                 uiConversation.getConversationInfo().getConversation(),
                 null);

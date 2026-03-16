@@ -495,6 +495,8 @@ public class MainActivity extends AppCompatActivity {
      */
     private static boolean isSystemOrBroadcastConversationId(String convId) {
         if (convId == null || convId.isEmpty()) return false;
+        // 系统通知虚拟会话需要常驻主消息列表，不能被当作隐藏会话过滤
+        if (com.juggle.im.android.core.JIMChatCore.isSysNoticeConversationId(convId)) return false;
         if (convId.contains(":")) return true;
         String lower = convId.toLowerCase();
         return lower.startsWith("friend_apply") || lower.startsWith("post_ntf")
@@ -503,7 +505,7 @@ public class MainActivity extends AppCompatActivity {
 
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onConversationUpdated(ConversationUpdatedEvent event) {
-        LogUtil.i("MainActivity", "onConversationUpdated");
+        LogUtil.i("MainActivity", "onConversationUpdated, batch size=" + (event.getConversationInfoList() != null ? event.getConversationInfoList().size() : 0));
         List<ConversationInfo> infoList = event.getConversationInfoList();
         if (infoList == null || infoList.isEmpty()) return;
         final android.content.Context appContext = getApplicationContext();
@@ -514,12 +516,57 @@ public class MainActivity extends AppCompatActivity {
             for (ConversationInfo info : infoList) {
                 Conversation conversation = info.getConversation();
                 if (conversation == null) continue;
-                String convId = conversation.getConversationId();
-                if (HiddenConversationStore.isHidden(appContext, convId)) continue;
+                String rawConvId = conversation.getConversationId();
                 Conversation.ConversationType type = conversation.getConversationType();
-                if (type == Conversation.ConversationType.SYSTEM) continue;
-                if (type == Conversation.ConversationType.PRIVATE && convId != null && isSystemOrBroadcastConversationId(convId)) continue;
+                // 将所有 SYSTEM 类型的会话统一映射到 sys_notice 虚拟会话，用于在主消息列表聚合展示系统通知
+                String convId = rawConvId;
+                if (type == Conversation.ConversationType.SYSTEM) {
+                    convId = com.juggle.im.android.core.JIMChatCore.SYS_NOTICE_CONV_ID;
+                }
+                LogUtil.d("MainActivity", "[conv] id=" + convId
+                        + ", type=" + type
+                        + ", unread=" + info.getUnreadCount()
+                        + ", isTop=" + info.isTop()
+                        + ", sortTime=" + info.getSortTime()
+                        + ", isSysNotice=" + com.juggle.im.android.core.JIMChatCore.isSysNoticeConversationId(convId));
+                // 系统通知虚拟会话常驻，不受本地隐藏列表影响
+                if (!com.juggle.im.android.core.JIMChatCore.isSysNoticeConversationId(convId)
+                        && HiddenConversationStore.isHidden(appContext, convId)) {
+                    LogUtil.d("MainActivity", "[conv] filtered by HiddenConversationStore id=" + convId);
+                    continue;
+                }
+                // SYSTEM 类型会话默认不在主消息列表展示，但“系统通知”虚拟会话（sys_notice）是特例，需常驻主列表
+                if (type == Conversation.ConversationType.SYSTEM
+                        && !com.juggle.im.android.core.JIMChatCore.isSysNoticeConversationId(convId)) {
+                    LogUtil.d("MainActivity", "[conv] filtered: SYSTEM type id=" + convId);
+                    continue;
+                }
+                if (type == Conversation.ConversationType.PRIVATE && convId != null && isSystemOrBroadcastConversationId(convId)) {
+                    LogUtil.d("MainActivity", "[conv] filtered: private system/broadcast virtual id=" + convId);
+                    continue;
+                }
                 UiConversation ui = UiConversation.fromConversationInfo(info);
+                // 若为 SYSTEM 类型会话，则在 UI 层统一归并到 sys_notice 虚拟会话 ID
+                if (type == Conversation.ConversationType.SYSTEM) {
+                    ui.setId(com.juggle.im.android.core.JIMChatCore.SYS_NOTICE_CONV_ID);
+                }
+                // 系统通知虚拟会话：强制置顶、固定展示名称，且不可取消置顶
+                if (com.juggle.im.android.core.JIMChatCore.isSysNoticeConversationId(convId)) {
+                    try {
+                        if (!info.isTop()) {
+                            JIM.getInstance().getConversationManager().setTop(conversation, true, null);
+                            info.setTop(true);
+                        }
+                    } catch (Exception ignored) {
+                        // ignore: UI 仍按当前 info 状态展示
+                    }
+                    ui.setName("系统通知");
+                    ui.setLastMessageUserName("系统");
+                    // 使用本地资源图标作为头像（避免依赖网络/用户资料）
+                    ui.setAvatar("res://notice");
+                    LogUtil.i("MainActivity", "[conv] sys_notice applied: id=" + convId
+                            + ", sortTime=" + ui.getSortTime());
+                }
                 if (type == Conversation.ConversationType.GROUP) {
                     GroupInfo groupInfo = JIM.getInstance().getUserInfoManager().getGroupInfo(ui.getConversationInfo().getConversation().getConversationId());
                     if (groupInfo != null) {
@@ -549,6 +596,22 @@ public class MainActivity extends AppCompatActivity {
                 return Long.compare(b.getSortTime(), a.getSortTime());
             });
             final List<UiConversation> finalList = uiList;
+            // 打印排序后的会话列表概况
+            StringBuilder sb = new StringBuilder();
+            sb.append("[conv] final list size=").append(finalList.size()).append('\n');
+            for (int i = 0; i < finalList.size(); i++) {
+                UiConversation ui = finalList.get(i);
+                String id = ui.getId();
+                sb.append("  #").append(i)
+                        .append(" id=").append(id)
+                        .append(", name=").append(ui.getName())
+                        .append(", isTop=").append(ui.isTop())
+                        .append(", sortTime=").append(ui.getSortTime())
+                        .append(", unread=").append(ui.getUnreadCount())
+                        .append(", isSysNotice=").append(com.juggle.im.android.core.JIMChatCore.isSysNoticeConversationId(id))
+                        .append('\n');
+            }
+            LogUtil.i("MainActivity", sb.toString());
             final Set<String> finalIdsWithoutUserInfo = new HashSet<>(privateIdsWithoutUserInfo);
             runOnUiThread(() -> {
                 if (isFinishing()) return;

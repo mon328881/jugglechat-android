@@ -151,9 +151,14 @@ public class ConversationActivity extends AppCompatActivity {
             isGroup = getIntent().getBooleanExtra(EXTRA_IS_GROUP, false);
             boolean isMention = getIntent().getBooleanExtra(ARG_MENTION, false);
             int unreadCount = getIntent().getIntExtra(EXTRA_UNREAD_COUNT, 0);
-            conversation = new Conversation(
-                    isGroup ? Conversation.ConversationType.GROUP : Conversation.ConversationType.PRIVATE,
-                    conversationId);
+            // 系统通知虚拟会话（sys_notice）使用 SYSTEM 会话类型，其余按原逻辑区分 GROUP/PRIVATE
+            if (!isGroup && com.juggle.im.android.core.JIMChatCore.isSysNoticeConversationId(conversationId)) {
+                conversation = new Conversation(Conversation.ConversationType.SYSTEM, conversationId);
+            } else {
+                conversation = new Conversation(
+                        isGroup ? Conversation.ConversationType.GROUP : Conversation.ConversationType.PRIVATE,
+                        conversationId);
+            }
             
             // 如果是群组，检查当前用户是否是群组成员
             if (isGroup) {
@@ -171,6 +176,11 @@ public class ConversationActivity extends AppCompatActivity {
                     .beginTransaction()
                     .replace(R.id.fragment_messages_container, frag)
                     .commit();
+
+            // 进入系统通知虚拟会话时，主动清空所有真实 SYSTEM 会话未读，避免 sys_notice clearUnreadCount 失败导致红点残留
+            if (!isGroup && com.juggle.im.android.core.JIMChatCore.isSysNoticeConversationId(conversationId)) {
+                com.juggle.im.android.core.JIMChatCore.getInstance().clearSysNoticeUnread();
+            }
         }
 
         // wire up input bar
@@ -443,9 +453,18 @@ public class ConversationActivity extends AppCompatActivity {
             frag.onNewMessage(m);
         }
         // tag message read
-        Conversation conversation = new Conversation(
-                isGroup ? Conversation.ConversationType.GROUP : Conversation.ConversationType.PRIVATE,
-                conversationId);
+        if (!isGroup && com.juggle.im.android.core.JIMChatCore.isSysNoticeConversationId(conversationId)) {
+            com.juggle.im.android.core.JIMChatCore.getInstance().clearSysNoticeUnread();
+            return;
+        }
+        // 系统通知虚拟会话（sys_notice）需要用 SYSTEM 类型清未读，否则主列表红点/未读数不会消失
+        Conversation.ConversationType convType;
+        if (!isGroup && com.juggle.im.android.core.JIMChatCore.isSysNoticeConversationId(conversationId)) {
+            convType = Conversation.ConversationType.SYSTEM;
+        } else {
+            convType = isGroup ? Conversation.ConversationType.GROUP : Conversation.ConversationType.PRIVATE;
+        }
+        Conversation conversation = new Conversation(convType, conversationId);
         JIM.getInstance().getConversationManager().clearUnreadCount(conversation, null);
     }
 

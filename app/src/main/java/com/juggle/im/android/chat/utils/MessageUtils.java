@@ -13,6 +13,8 @@ import com.juggle.im.JIM;
 import com.juggle.im.android.R;
 import com.juggle.im.android.chat.message.FriendNotifyMessage;
 import com.juggle.im.android.chat.message.GroupNotifyMessage;
+import com.juggle.im.android.chat.message.SystemTextMessage;
+import com.juggle.im.android.chat.message.SystemNoticeMessage;
 import com.juggle.im.android.chat.message.InsertTimeStatusMessage;
 import com.juggle.im.android.chat.provider.FileMessageView;
 import com.juggle.im.android.chat.provider.ImageMessageView;
@@ -56,6 +58,10 @@ public class MessageUtils {
 
     static {
         registerMessageView(TextMessage.class, TextMessageView.class);
+        // 系统文本消息：按普通文本气泡展示
+        registerMessageView(SystemTextMessage.class, TextMessageView.class);
+        // 系统通知消息：按“通知条”样式展示（居中灰字），与普通文本区分
+        registerMessageView(SystemNoticeMessage.class, StatusMessageView.class);
         registerMessageView(ImageMessage.class, ImageMessageView.class);
         registerMessageView(VoiceMessage.class, VoiceMessageView.class);
         registerMessageView(FileMessage.class, FileMessageView.class);
@@ -261,6 +267,9 @@ public class MessageUtils {
         } else if (t instanceof FriendNotifyMessage) {
             FriendNotifyMessage msg = (FriendNotifyMessage) t;
             return (userInfo != null ? userInfo.getUserName() : "") + msg.description() + "你为好友";
+        } else if (t instanceof SystemNoticeMessage) {
+            // 系统通知：直接展示正文（服务端通常会带完整文案）
+            return ((com.juggle.im.model.messages.TextMessage) t).getContent();
         } else if (t instanceof InsertTimeStatusMessage) {
             InsertTimeStatusMessage msg = (InsertTimeStatusMessage) t;
             return msg.description();

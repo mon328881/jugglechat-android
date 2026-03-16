@@ -15,7 +15,7 @@ public class UiConversation {
     private long topTime;
 
     // Getters and Setters
-    public String getId() { return conversationInfo.getConversation().getConversationId(); }
+    public String getId() { return id != null ? id : conversationInfo.getConversation().getConversationId(); }
     public String getName() { return name; }
     public String getAvatar() { return avatar; }
 

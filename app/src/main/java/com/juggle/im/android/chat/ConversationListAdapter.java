@@ -92,7 +92,23 @@ public class ConversationListAdapter extends RecyclerView.Adapter<ConversationLi
      * Existing conversations (matched by id) will be updated in place or moved if position changed.
      */
     public void upsertConversations(List<UiConversation> newConversations) {
-        if (newConversations == null || newConversations.isEmpty()) return;
+        if (newConversations == null || newConversations.isEmpty()) {
+            LogUtil.d(TAG, "upsertConversations: empty batch, current size=" + uiConversations.size());
+            return;
+        }
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("upsertConversations: batchSize=").append(newConversations.size())
+                .append(", currentSize=").append(uiConversations.size()).append('\n');
+        for (UiConversation c : newConversations) {
+            if (c == null) continue;
+            sb.append("  incoming id=").append(c.getId())
+                    .append(", isTop=").append(c.isTop())
+                    .append(", sortTime=").append(c.getSortTime())
+                    .append(", unread=").append(c.getUnreadCount())
+                    .append('\n');
+        }
+        LogUtil.d(TAG, sb.toString());
 
         // Use a temporary map to track all updates first
         java.util.Map<String, UiConversation> updateMap = new java.util.LinkedHashMap<>();

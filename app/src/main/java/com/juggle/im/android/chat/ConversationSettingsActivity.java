@@ -78,8 +78,15 @@ public class ConversationSettingsActivity extends AppCompatActivity {
         isTop = getIntent().getBooleanExtra(EXTRA_IS_TOP, false);
         isMute = getIntent().getBooleanExtra(EXTRA_IS_MUTE, false);
 
-        // 免打扰按钮
-        findViewById(R.id.btn_mute).setOnClickListener(v -> {
+        final boolean isSysNotice = com.juggle.im.android.core.JIMChatCore.isSysNoticeConversationId(conversationId);
+
+        // 免打扰按钮（系统通知虚拟会话不开放设置入口，避免误操作）
+        View btnMute = findViewById(R.id.btn_mute);
+        if (isSysNotice && btnMute != null) {
+            btnMute.setVisibility(GONE);
+        }
+        if (btnMute != null) btnMute.setOnClickListener(v -> {
+            if (isSysNotice) return;
             Conversation.ConversationType conversationType = isGroup ? Conversation.ConversationType.GROUP : Conversation.ConversationType.PRIVATE;
             Conversation conv = new Conversation(conversationType, conversationId);
             JIM.getInstance().getConversationManager().setMute(conv, !isMute, null);
@@ -87,8 +94,13 @@ public class ConversationSettingsActivity extends AppCompatActivity {
             isMute = !isMute;
         });
         
-        // 置顶按钮
-        findViewById(R.id.btn_pin).setOnClickListener(v -> {
+        // 置顶按钮（系统通知虚拟会话强制置顶且不可取消）
+        View btnPin = findViewById(R.id.btn_pin);
+        if (isSysNotice && btnPin != null) {
+            btnPin.setVisibility(GONE);
+        }
+        if (btnPin != null) btnPin.setOnClickListener(v -> {
+            if (isSysNotice) return;
             Conversation.ConversationType conversationType = isGroup ? Conversation.ConversationType.GROUP : Conversation.ConversationType.PRIVATE;
             Conversation conv = new Conversation(conversationType, conversationId);
             JIM.getInstance().getConversationManager().setTop(conv, !isTop, null);
@@ -96,8 +108,13 @@ public class ConversationSettingsActivity extends AppCompatActivity {
             isTop = !isTop;
         });
         
-        // 清空消息按钮
-        findViewById(R.id.btn_clear_messages).setOnClickListener(v -> {
+        // 清空消息按钮（系统通知虚拟会话不开放）
+        View btnClear = findViewById(R.id.btn_clear_messages);
+        if (isSysNotice && btnClear != null) {
+            btnClear.setVisibility(GONE);
+        }
+        if (btnClear != null) btnClear.setOnClickListener(v -> {
+            if (isSysNotice) return;
             try {
                 Conversation.ConversationType conversationType = isGroup ? Conversation.ConversationType.GROUP : Conversation.ConversationType.PRIVATE;
                 Conversation conv = new Conversation(conversationType, conversationId);

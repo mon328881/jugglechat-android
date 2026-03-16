@@ -31,6 +31,7 @@ public final class AvatarUtils {
 
     private static final int TAG_URL = 0x7F0A0001;
     private static final int TAG_VIDEO_COVER = 0x7F0A0002;
+    private static final String RES_PREFIX = "res://";
     private static final ExecutorService videoCoverExecutor = Executors.newFixedThreadPool(2);
     private static final Handler mainHandler = new Handler(Looper.getMainLooper());
 
@@ -47,6 +48,26 @@ public final class AvatarUtils {
 
         // 检查URL是否与当前已加载的相同，避免重复加载导致闪烁
         String currentUrl = (String) iv.getTag(TAG_URL);
+        if (!TextUtils.isEmpty(url) && url.startsWith(RES_PREFIX)) {
+            if (url.equals(currentUrl)) return;
+            iv.setTag(TAG_URL, url);
+            String resName = url.substring(RES_PREFIX.length());
+            int resId = ctx.getResources().getIdentifier(resName, "drawable", ctx.getPackageName());
+            if (resId != 0) {
+                Glide.with(iv)
+                        .load(resId)
+                        .centerCrop()
+                        .transform(new CircleCrop())
+                        .placeholder(R.drawable.ic_avatar_loading)
+                        .error(R.drawable.default_avatar)
+                        .dontAnimate()
+                        .into(iv);
+            } else {
+                // fallback to default avatar if resource not found
+                Glide.with(iv).load(R.drawable.default_avatar).circleCrop().dontAnimate().into(iv);
+            }
+            return;
+        }
         if (!TextUtils.isEmpty(url)) {
             if (url.equals(currentUrl)) {
                 return; // URL相同，跳过加载

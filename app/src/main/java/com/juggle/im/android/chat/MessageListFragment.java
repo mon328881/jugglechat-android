@@ -154,8 +154,13 @@ public class MessageListFragment extends Fragment {
         }
 
         if (getArguments().getBoolean(ARG_MENTION, false)) {
-            Conversation conversation = new Conversation(
-                    isGroup ? Conversation.ConversationType.GROUP : Conversation.ConversationType.PRIVATE, conversationId);
+            Conversation.ConversationType convType;
+            if (!isGroup && JIMChatCore.isSysNoticeConversationId(conversationId)) {
+                convType = Conversation.ConversationType.SYSTEM;
+            } else {
+                convType = isGroup ? Conversation.ConversationType.GROUP : Conversation.ConversationType.PRIVATE;
+            }
+            Conversation conversation = new Conversation(convType, conversationId);
             JIM.getInstance().getMessageManager().getMentionMessageList(conversation, 5, 0, JIMConst.PullDirection.OLDER, new IMessageManager.IGetMessagesWithFinishCallback() {
                 @Override
                 public void onSuccess(List<Message> list, boolean b) {
@@ -492,8 +497,13 @@ public class MessageListFragment extends Fragment {
             cursor = oldest.getTimestamp();
         }
 
-        JIMChatCore.getInstance().getMessages(conversationId,
-                isGroup ? Conversation.ConversationType.GROUP : Conversation.ConversationType.PRIVATE, c, cursor,
+        Conversation.ConversationType convType;
+        if (!isGroup && JIMChatCore.isSysNoticeConversationId(conversationId)) {
+            convType = Conversation.ConversationType.SYSTEM;
+        } else {
+            convType = isGroup ? Conversation.ConversationType.GROUP : Conversation.ConversationType.PRIVATE;
+        }
+        JIMChatCore.getInstance().getMessages(conversationId, convType, c, cursor,
                 new IMessageManager.IGetMessagesCallbackV3() {
                     @Override
                     public void onGetMessages(List<Message> list, long timestamp, boolean hasMore, int code) {
@@ -664,8 +674,13 @@ public class MessageListFragment extends Fragment {
         }
         if (msgIds.isEmpty())
             return;
-        Conversation conversation = new Conversation(
-                isGroup ? Conversation.ConversationType.GROUP : Conversation.ConversationType.PRIVATE, conversationId);
+        Conversation.ConversationType convType;
+        if (!isGroup && JIMChatCore.isSysNoticeConversationId(conversationId)) {
+            convType = Conversation.ConversationType.SYSTEM;
+        } else {
+            convType = isGroup ? Conversation.ConversationType.GROUP : Conversation.ConversationType.PRIVATE;
+        }
+        Conversation conversation = new Conversation(convType, conversationId);
         JIM.getInstance().getMessageManager().sendReadReceipt(conversation, msgIds, null);
     }
 
