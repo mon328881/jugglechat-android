@@ -88,6 +88,8 @@ public class MomentsActivity extends AppCompatActivity {
     private int pageSize = 20;
     private boolean isLoading = false;
     private boolean hasMore = true;
+    // 基于时间戳的分页起点（后端使用 start=时间戳 分页）
+    private long lastStartTime = 0L;
 
     // 拍照相关变量
     private static final int REQUEST_CODE_CHOOSE_PHOTO = 1001;
@@ -197,7 +199,9 @@ public class MomentsActivity extends AppCompatActivity {
 
         // 默认进入页面为朋友圈模式：使用单列 LinearLayoutManager
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        recyclerView.setHasFixedSize(false);
         recyclerView.setItemViewCacheSize(20);
+        recyclerView.setItemAnimator(null);
         recyclerView.addItemDecoration(new SpacesItemDecoration(dpToPx(this, 4)));
         adapter = new MomentsAdapter(new ArrayList<>());
         recyclerView.setAdapter(adapter);
@@ -450,6 +454,7 @@ public class MomentsActivity extends AppCompatActivity {
     private void refreshMoments() {
         currentPage = 0;
         hasMore = true;
+        lastStartTime = 0L;
         loadMoments();
     }
 
@@ -648,8 +653,11 @@ public class MomentsActivity extends AppCompatActivity {
     }
 
     private void loadMoments() {
-        // fetch posts from server and populate adapter
-        ServiceManager.getMomentService().getPosts(null, pageSize, currentPage * pageSize, new ApiCallback<PostsListData>() {
+        // 使用后端基于时间戳的分页：
+        // - start 为起始时间戳，首次加载为 null
+        // - order=0 表示按时间倒序
+        Long startParam = (currentPage == 0 || lastStartTime <= 0) ? null : lastStartTime;
+        ServiceManager.getMomentService().getPosts(startParam, pageSize, 0, new ApiCallback<PostsListData>() {
             @Override
             public void onSuccess(PostsListData data) {
                 runOnUiThread(() -> {
@@ -668,11 +676,17 @@ public class MomentsActivity extends AppCompatActivity {
                             adapter.addItems(filteredItems);
                         }
 
-                        // 更新分页参数
-                        if (data.getItems().size() < pageSize) {
-                            hasMore = false; // 没有更多数据了
+                        // 更新分页参数：根据返回列表更新下一页起点
+                        List<PostBean> serverItems = data.getItems();
+                        if (serverItems.isEmpty()) {
+                            hasMore = false;
                         } else {
+                            // 使用本次返回的最后一条的创建时间作为下一页的 start
+                            PostBean last = serverItems.get(serverItems.size() - 1);
+                            lastStartTime = last.getCreated_time();
                             currentPage++;
+                            // 后端若显式返回结束标记，则以其为准
+                            hasMore = !data.isIs_finished();
                         }
                     } else if (currentPage == 0) {
                         // 第一页就没有数据，清空列表
@@ -1036,13 +1050,37 @@ public class MomentsActivity extends AppCompatActivity {
         }
 
         void setItems(List<PostBean> newItems) {
+            if (newItems == null) {
+                newItems = new ArrayList<>();
+            }
+            // 使用简单 Diff 方式，避免整列表刷新导致卡顿
+            List<PostBean> oldItems = new ArrayList<>(items);
             items.clear();
-            if (newItems != null) items.addAll(newItems);
-            notifyDataSetChanged();
+            items.addAll(newItems);
+            // 如果数量变化较大，直接全量刷新
+            if (Math.abs(oldItems.size() - newItems.size()) > 30) {
+                notifyDataSetChanged();
+                return;
+            }
+            int max = Math.max(oldItems.size(), newItems.size());
+            for (int i = 0; i < max; i++) {
+                if (i >= oldItems.size()) {
+                    notifyItemInserted(i);
+                } else if (i >= newItems.size()) {
+                    notifyItemRemoved(i);
+                } else {
+                    PostBean oldPost = oldItems.get(i);
+                    PostBean newPost = newItems.get(i);
+                    if (!oldPost.getPost_id().equals(newPost.getPost_id())
+                            || oldPost.getUpdated_time() != newPost.getUpdated_time()) {
+                        notifyItemChanged(i);
+                    }
+                }
+            }
         }
 
         void addItems(List<PostBean> newItems) {
-            if (newItems != null) {
+            if (newItems != null && !newItems.isEmpty()) {
                 int startPosition = items.size();
                 items.addAll(newItems);
                 notifyItemRangeInserted(startPosition, newItems.size());

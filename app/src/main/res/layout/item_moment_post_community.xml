@@ -126,6 +126,17 @@
                 tools:text="1234赞" />
         </LinearLayout>
 
+        <!-- 兼容旧代码的底部时间文本，占位用，可根据需要显示/隐藏 -->
+        <TextView
+            android:id="@+id/tv_time_bottom"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:textColor="#999999"
+            android:textSize="11sp"
+            android:visibility="gone"
+            tools:text="2小时前" />
+
         <!-- 三点更多按钮（社区卡片不展示，保留 id 仅为兼容） -->
         <ImageView
             android:id="@+id/btn_more"
